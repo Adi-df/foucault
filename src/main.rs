@@ -54,10 +54,11 @@ fn main() {
         match command {
             Commands::Create { name } => {
                 trace!("Create notebook {name}.");
+                Notebook::new_notebook(&name, &app_dir_path).unwrap();
             }
             Commands::Open { name } => {
+                trace!("Open notebook {name}.");
                 Notebook::open_notebook(&name, &app_dir_path).unwrap();
-                trace!("Open notebook {name}.")
             }
         }
     } else {
