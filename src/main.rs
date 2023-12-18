@@ -1,8 +1,27 @@
-use dirs;
-
 use std::fs::{self, ReadDir};
 use std::io;
 use std::path::PathBuf;
+
+use dirs;
+
+use clap::{Parser, Subcommand};
+
+#[derive(Parser)]
+#[command(
+    author = "Adrien Degliame <adidf-web@laposte.net>",
+    version = "0.0.0",
+    about = "The Foucault notebook CLI"
+)]
+struct Cli {
+    #[command(subcommand)]
+    command: Option<Commands>,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    Create { name: String },
+    Open { name: String },
+}
 
 fn main() {
     let app_dir_path: PathBuf = {
@@ -22,5 +41,14 @@ fn main() {
         _ => unimplemented!(),
     };
 
-    println!("{:?}", app_dir);
+    let cli = Cli::parse();
+
+    if let Some(command) = &cli.command {
+        match command {
+            Commands::Create { name } => println!("Create notebook {name}"),
+            Commands::Open { name } => println!("Open notebook {name}"),
+        }
+    } else {
+        println!("Open default notebook manager");
+    }
 }
