@@ -6,3 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+crossterm = "0.27.0"
+dirs = "5.0.1"
+markdown = "1.0.0-alpha.16"
+polodb_core = "4.4.0"
+ratatui = "0.25.0"
