@@ -291,6 +291,7 @@ dependencies = [
  "clap",
  "crossterm",
  "dirs",
+ "log",
  "markdown",
  "polodb_core",
  "ratatui",
