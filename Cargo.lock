@@ -79,6 +79,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "anyhow"
+version = "1.0.75"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4668cab20f66d8d020e1fbc0ebe47217433c1b6c8f2040faf858554e394ace6"
+
+[[package]]
 name = "atomic"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -288,6 +294,7 @@ checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
 name = "foucault"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "clap",
  "crossterm",
  "dirs",
@@ -295,6 +302,7 @@ dependencies = [
  "markdown",
  "polodb_core",
  "ratatui",
+ "thiserror",
 ]
 
 [[package]]

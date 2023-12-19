@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1.0.75"
 clap = { version = "4.4.11", features = ["derive"] }
 crossterm = "0.27.0"
 dirs = "5.0.1"
@@ -13,3 +14,4 @@ log = "0.4.20"
 markdown = "1.0.0-alpha.16"
 polodb_core = "4.4.0"
 ratatui = "0.25.0"
+thiserror = "1.0.51"
