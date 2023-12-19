@@ -4,13 +4,13 @@ use anyhow::Result;
 use log::error;
 use thiserror::Error;
 
-use polodb_core::Database;
+use rusqlite::Connection;
 
 use crate::note::Note;
 
 pub struct Notebook {
     name: String,
-    database: Database,
+    database: Connection,
 }
 
 #[derive(Error, Debug)]
@@ -37,7 +37,7 @@ impl Notebook {
             .into());
         }
 
-        let database = Database::open_file(notebook_path).unwrap_or_else(|_| {
+        let database = Connection::open(notebook_path).unwrap_or_else(|_| {
             error!("Unable to open the notebook \"{name}\".");
             todo!();
         });
@@ -59,7 +59,7 @@ impl Notebook {
             .into());
         }
 
-        let database = Database::open_file(notebook_path).unwrap_or_else(|_| {
+        let database = Connection::open(notebook_path).unwrap_or_else(|_| {
             error!("Unable to open the notebook \"{name}\".");
             todo!();
         });
