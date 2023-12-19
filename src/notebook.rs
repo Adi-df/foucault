@@ -7,7 +7,7 @@ use thiserror::Error;
 use rusqlite::Connection;
 use sea_query::{ColumnDef, Iden, SqliteQueryBuilder, Table};
 
-use crate::note::NoteCharacters;
+use crate::note::{Note, NoteCharacters};
 
 pub struct Notebook {
     name: String,
@@ -87,6 +87,14 @@ impl Notebook {
                 .col(ColumnDef::new(NoteCharacters::Content).text())
                 .build(SqliteQueryBuilder),
         )?;
+
+        (Note {
+            name: name.to_owned(),
+            tags: Vec::new(),
+            links: Vec::new(),
+            content: String::new(),
+        })
+        .insert(&database)?;
 
         Ok(Notebook {
             name: name.to_owned(),
