@@ -1,3 +1,4 @@
+mod note;
 mod notebook;
 
 use std::fs;

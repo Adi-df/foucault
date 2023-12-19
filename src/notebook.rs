@@ -5,8 +5,9 @@ use log::error;
 use thiserror::Error;
 
 use rusqlite::Connection;
+use sea_query::{ColumnDef, Iden, SqliteQueryBuilder, Table};
 
-use crate::note::Note;
+use crate::note::NoteCharacters;
 
 pub struct Notebook {
     name: String,
@@ -24,6 +25,9 @@ pub enum CreationError {
     #[error("Another notebook named \"{name:?}\" was found.")]
     NotebookAlreadyExists { name: String },
 }
+
+#[derive(Iden)]
+pub struct NoteTable;
 
 impl Notebook {
     pub fn open_notebook(name: &str, dir: &Path) -> Result<Self> {
@@ -63,6 +67,26 @@ impl Notebook {
             error!("Unable to open the notebook \"{name}\".");
             todo!();
         });
+
+        // Initialize
+
+        database.execute_batch(
+            &Table::create()
+                .if_not_exists()
+                .table(NoteTable)
+                .col(
+                    ColumnDef::new(NoteCharacters::Id)
+                        .integer()
+                        .primary_key()
+                        .not_null()
+                        .auto_increment(),
+                )
+                .col(ColumnDef::new(NoteCharacters::Name).string().not_null())
+                .col(ColumnDef::new(NoteCharacters::Tags).json_binary())
+                .col(ColumnDef::new(NoteCharacters::Links).json_binary())
+                .col(ColumnDef::new(NoteCharacters::Content).text())
+                .build(SqliteQueryBuilder),
+        )?;
 
         Ok(Notebook {
             name: name.to_owned(),
