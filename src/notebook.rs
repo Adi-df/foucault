@@ -74,13 +74,7 @@ impl Notebook {
             &Table::create()
                 .if_not_exists()
                 .table(NoteTable)
-                .col(
-                    ColumnDef::new(NoteCharacters::Id)
-                        .integer()
-                        .primary_key()
-                        .not_null()
-                        .auto_increment(),
-                )
+                .col(ColumnDef::new(NoteCharacters::Id).uuid().primary_key())
                 .col(ColumnDef::new(NoteCharacters::Name).string().not_null())
                 .col(ColumnDef::new(NoteCharacters::Tags).json_binary())
                 .col(ColumnDef::new(NoteCharacters::Links).json_binary())
@@ -88,13 +82,9 @@ impl Notebook {
                 .build(SqliteQueryBuilder),
         )?;
 
-        (Note {
-            name: name.to_owned(),
-            tags: Vec::new(),
-            links: Vec::new(),
-            content: String::new(),
-        })
-        .insert(&database)?;
+        // Add an initial note
+
+        (Note::new(name.to_owned(), Vec::new(), Vec::new(), String::new())).insert(&database)?;
 
         Ok(Notebook {
             name: name.to_owned(),
