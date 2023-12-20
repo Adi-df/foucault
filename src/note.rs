@@ -1,4 +1,5 @@
 use anyhow::Result;
+use json::JsonValue;
 use thiserror::Error;
 
 use uuid::Uuid;
@@ -62,7 +63,7 @@ impl Note {
                     json::stringify(
                         self.links
                             .iter()
-                            .map(|link| link.to_string())
+                            .map(Uuid::to_string)
                             .collect::<Vec<String>>(),
                     )
                     .into(),
@@ -92,27 +93,25 @@ impl Note {
 
         let tags = {
             let mut tags = json::parse(&raw_tags)?;
-            if !tags.is_array() {
-                Err(FormatError::UnknownFormatForTags { tags: raw_tags }.into())
-            } else {
+            if tags.is_array() {
                 tags.members_mut()
-                    .map(|tag| tag.take_string())
+                    .map(JsonValue::take_string)
                     .collect::<Option<Vec<String>>>()
                     .ok_or(FormatError::UnknownFormatForTags { tags: raw_tags })
+            } else {
+                Err(FormatError::UnknownFormatForTags { tags: raw_tags })
             }
         }?;
         let links = {
             let links = json::parse(&raw_links)?;
-            if !links.is_array() {
-                Err(FormatError::UnknownFormatForLinks { links: raw_links }.into())
-            } else {
+            if links.is_array() {
                 links
                     .members()
                     .map(|link| {
                         link.as_str()
                             .ok_or(())
                             .and_then(|str| Uuid::parse_str(str).map_err(|_| ()))
-                            .map_err(|_| {
+                            .map_err(|()| {
                                 FormatError::UnknownFormatForLinks {
                                     links: raw_links.clone(),
                                 }
@@ -120,6 +119,8 @@ impl Note {
                             })
                     })
                     .collect::<Result<Vec<Uuid>>>()
+            } else {
+                Err(FormatError::UnknownFormatForLinks { links: raw_links }.into())
             }
         }?;
 

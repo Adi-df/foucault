@@ -8,10 +8,9 @@ use std::path::PathBuf;
 
 use crate::logger::SimpleLogger;
 use anyhow::Result;
-use log::{error, trace};
+use log::{error, info};
 
 use clap::{Parser, Subcommand};
-use dirs;
 
 use crate::notebook::Notebook;
 use crate::notebook_selector::open_selector;
@@ -38,7 +37,9 @@ enum Commands {
 
 fn main() -> Result<()> {
     log::set_logger(&LOGGER).unwrap();
-    // log::set_max_level(log::LevelFilter::Trace);
+    log::set_max_level(log::LevelFilter::Info);
+
+    info!("Start foucault");
 
     let app_dir_path: PathBuf = {
         if let Some(data_dir) = dirs::data_dir() {
@@ -50,7 +51,7 @@ fn main() -> Result<()> {
     };
 
     if !app_dir_path.exists() {
-        if let Err(_) = fs::create_dir(&app_dir_path) {
+        if fs::create_dir(&app_dir_path).is_err() {
             error!("Unable to create app directory.");
             todo!();
         }
@@ -64,22 +65,25 @@ fn main() -> Result<()> {
     if let Some(command) = &cli.command {
         match command {
             Commands::Create { name } => {
-                trace!("Create notebook {name}.");
-                Notebook::new_notebook(&name, &app_dir_path)?;
+                info!("Create notebook {name}.");
+                Notebook::new_notebook(name, &app_dir_path)?;
             }
             Commands::Open { name } => {
-                trace!("Open notebook {name}.");
-                Notebook::open_notebook(&name, &app_dir_path)?;
+                info!("Open notebook {name}.");
+                Notebook::open_notebook(name, &app_dir_path)?;
             }
             Commands::Delete { name } => {
-                trace!("Delete notebook {name}.");
-                Notebook::delete_notebook(&name, &app_dir_path)?;
+                info!("Delete notebook {name}.");
+                Notebook::delete_notebook(name, &app_dir_path)?;
             }
         }
     } else {
-        trace!("Open default notebook manager.");
+        info!("Open default notebook manager.");
 
-        open_selector(&app_dir_path)?;
+        if let Some(name) = open_selector(&app_dir_path)? {
+            info!("Open notebook selected : {name}.");
+            Notebook::open_notebook(name.as_str(), &app_dir_path)?;
+        }
     }
 
     Ok(())

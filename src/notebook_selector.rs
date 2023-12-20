@@ -1,13 +1,13 @@
 use std::ffi::OsString;
 use std::fs;
 use std::io::stdout;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::Duration;
 
 use anyhow::Result;
 use crossterm::event::{Event, KeyCode, KeyEventKind};
 use crossterm::{event, ExecutableCommand};
-use log::trace;
+use log::info;
 
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
@@ -26,20 +26,18 @@ pub enum NotebookSelectorError {
     InvalidNotebookName { name: OsString },
 }
 
-pub fn open_selector(dir: &Path) -> Result<Option<PathBuf>> {
-    trace!("Open notebook selector.");
+pub fn open_selector(dir: &Path) -> Result<Option<String>> {
+    info!("Open notebook selector.");
 
     // Retreive notebooks
 
     let notebooks = fs::read_dir(dir)?
         .map(|file| {
-            file.map_err(anyhow::Error::from)
-                .and_then(|file| {
-                    file.file_name()
-                        .into_string()
-                        .map_err(|e| NotebookSelectorError::InvalidNotebookName { name: e }.into())
-                })
-                .into()
+            file.map_err(anyhow::Error::from).and_then(|file| {
+                file.file_name()
+                    .into_string()
+                    .map_err(|e| NotebookSelectorError::InvalidNotebookName { name: e }.into())
+            })
         })
         .collect::<Result<Vec<String>>>()?;
 
@@ -51,8 +49,29 @@ pub fn open_selector(dir: &Path) -> Result<Option<PathBuf>> {
 
     let mut selected_notebook = ListState::default().with_selected(Some(0));
 
-    let mut selector_loop = || -> Result<()> {
-        while !handle_events(&mut selected_notebook, notebooks.len())? {
+    let mut selector_loop = || {
+        loop {
+            if event::poll(Duration::from_millis(50))? {
+                if let Event::Key(key) = event::read()? {
+                    if key.kind == KeyEventKind::Press {
+                        if key.code == KeyCode::Esc || key.code == KeyCode::Char('q') {
+                            info!("Quit notebook selector.");
+                            break Ok(None);
+                        } else if let Some(selected) = selected_notebook.selected_mut() {
+                            match key.code {
+                                KeyCode::Up if *selected > 0 => *selected -= 1,
+                                KeyCode::Down if *selected < notebooks.len() - 1 => *selected += 1,
+                                KeyCode::Enter => {
+                                    break Ok(Some(notebooks[*selected].clone()));
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Draw
             terminal.draw(|frame| {
                 let main_block = Block::default()
                     .title("Foucault")
@@ -81,7 +100,6 @@ pub fn open_selector(dir: &Path) -> Result<Option<PathBuf>> {
                 frame.render_widget(main_block, frame.size());
             })?;
         }
-        Ok(())
     };
 
     let result = selector_loop();
@@ -89,26 +107,5 @@ pub fn open_selector(dir: &Path) -> Result<Option<PathBuf>> {
     stdout().execute(LeaveAlternateScreen)?;
     disable_raw_mode()?;
 
-    result.map(|_| None)
-}
-
-fn handle_events(selected: &mut ListState, max: usize) -> Result<bool> {
-    if event::poll(Duration::from_millis(50))? {
-        if let Event::Key(key) = event::read()? {
-            if key.kind == KeyEventKind::Press {
-                if key.code == KeyCode::Esc || key.code == KeyCode::Char('q') {
-                    trace!("Quit notebook selector");
-                    return Ok(true);
-                } else if let Some(selected) = selected.selected_mut() {
-                    match key.code {
-                        KeyCode::Up if *selected > 0 => *selected -= 1,
-                        KeyCode::Down if *selected < max - 1 => *selected += 1,
-                        _ => {}
-                    }
-                }
-            }
-        }
-    }
-
-    Ok(false)
+    result
 }
