@@ -17,6 +17,7 @@ use ratatui::text::Text;
 use ratatui::widgets::{Block, BorderType, Borders, Padding, Paragraph, Row, Table};
 use ratatui::{Frame, Terminal};
 
+use crate::helpers::create_popup;
 use crate::note::Note;
 use crate::notebook::Notebook;
 
@@ -216,20 +217,16 @@ fn draw_nothing(frame: &mut Frame, rect: Rect, name: &str) {
 }
 
 fn draw_new_note(frame: &mut Frame, rect: Rect, entry: &str) {
-    let vertical_layout = Layout::new(
-        Direction::Vertical,
-        [
-            Constraint::Percentage(45),
-            Constraint::Length(1),
-            Constraint::Percentage(45),
-        ],
-    )
-    .split(rect);
+    let new_note_entry = Paragraph::new(entry).style(Style::default()).block(
+        Block::default()
+            .title("New note name")
+            .title_style(Style::default().fg(Color::White))
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .padding(Padding::uniform(1)),
+    );
 
-    let new_note_entry =
-        Paragraph::new(entry).style(Style::default().add_modifier(Modifier::UNDERLINED));
-
-    frame.render_widget(new_note_entry, vertical_layout[1]);
+    frame.render_widget(new_note_entry, create_popup((50, 20), rect));
 }
 
 fn draw_viewed_note(

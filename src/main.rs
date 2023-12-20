@@ -1,4 +1,5 @@
 mod explore;
+mod helpers;
 mod logger;
 mod note;
 mod notebook;
