@@ -1,6 +1,7 @@
 mod logger;
 mod note;
 mod notebook;
+mod notebook_selector;
 
 use std::fs;
 use std::path::PathBuf;
@@ -9,11 +10,12 @@ use crate::logger::SimpleLogger;
 use anyhow::Result;
 use log::{error, trace};
 
-
 use clap::{Parser, Subcommand};
 use dirs;
 
 use crate::notebook::Notebook;
+use crate::notebook_selector::open_selector;
+
 static LOGGER: SimpleLogger = SimpleLogger;
 
 #[derive(Parser)]
@@ -76,6 +78,9 @@ fn main() -> Result<()> {
         }
     } else {
         trace!("Open default notebook manager.");
+
+        open_selector(&app_dir_path)?;
     }
+
     Ok(())
 }
