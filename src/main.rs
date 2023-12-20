@@ -1,16 +1,20 @@
+mod logger;
 mod note;
 mod notebook;
 
 use std::fs;
 use std::path::PathBuf;
 
+use crate::logger::SimpleLogger;
+use anyhow::Result;
 use log::{error, trace};
 
-use dirs;
 
 use clap::{Parser, Subcommand};
+use dirs;
 
 use crate::notebook::Notebook;
+static LOGGER: SimpleLogger = SimpleLogger;
 
 #[derive(Parser)]
 #[command(
@@ -30,7 +34,10 @@ enum Commands {
     Delete { name: String },
 }
 
-fn main() {
+fn main() -> Result<()> {
+    log::set_logger(&LOGGER).unwrap();
+    // log::set_max_level(log::LevelFilter::Trace);
+
     let app_dir_path: PathBuf = {
         if let Some(data_dir) = dirs::data_dir() {
             data_dir.join("foucault")
@@ -56,18 +63,19 @@ fn main() {
         match command {
             Commands::Create { name } => {
                 trace!("Create notebook {name}.");
-                Notebook::new_notebook(&name, &app_dir_path).unwrap();
+                Notebook::new_notebook(&name, &app_dir_path)?;
             }
             Commands::Open { name } => {
                 trace!("Open notebook {name}.");
-                Notebook::open_notebook(&name, &app_dir_path).unwrap();
+                Notebook::open_notebook(&name, &app_dir_path)?;
             }
             Commands::Delete { name } => {
                 trace!("Delete notebook {name}.");
-                Notebook::delete_notebook(&name, &app_dir_path).unwrap();
+                Notebook::delete_notebook(&name, &app_dir_path)?;
             }
         }
     } else {
         trace!("Open default notebook manager.");
     }
+    Ok(())
 }
