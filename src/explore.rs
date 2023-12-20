@@ -1,10 +1,12 @@
-use std::io::{stdout, Stdout};
+use std::io::stdout;
 use std::time::Duration;
 
 use anyhow::Result;
-use crossterm::event::{Event, KeyCode, KeyEventKind};
 use log::info;
+use scopeguard::defer;
+use thiserror::Error;
 
+use crossterm::event::{Event, KeyCode, KeyEventKind};
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
@@ -14,7 +16,6 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::Text;
 use ratatui::widgets::{Block, BorderType, Borders, Padding, Paragraph, Row, Table};
 use ratatui::{Frame, Terminal};
-use thiserror::Error;
 
 use crate::note::Note;
 use crate::notebook::Notebook;
@@ -39,20 +40,18 @@ pub enum ExplorerError {
 pub fn explore(notebook: Notebook) -> Result<()> {
     info!("Explore notebook : {}", notebook.name);
 
-    enable_raw_mode()?;
-    stdout().execute(EnterAlternateScreen)?;
+    enable_raw_mode().expect("Prepare terminal");
+    stdout()
+        .execute(EnterAlternateScreen)
+        .expect("Prepare terminal");
 
-    let terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
+    defer! {
+        stdout().execute(LeaveAlternateScreen).expect("Reset terminal");
+        disable_raw_mode().expect("Reset terminal");
+    }
 
-    let res = run(notebook, terminal);
+    let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
 
-    stdout().execute(LeaveAlternateScreen)?;
-    disable_raw_mode()?;
-
-    res
-}
-
-fn run(notebook: Notebook, mut terminal: Terminal<CrosstermBackend<Stdout>>) -> Result<()> {
     let mut state = State::Nothing;
     let mut openened_note: Option<Note> = None;
     let mut new_note_name: Option<String> = None;

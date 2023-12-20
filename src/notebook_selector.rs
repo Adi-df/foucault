@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use anyhow::Result;
 use log::info;
+use scopeguard::defer;
 use thiserror::Error;
 
 use crossterm::event::{Event, KeyCode, KeyEventKind};
@@ -42,70 +43,68 @@ pub fn open_selector(dir: &Path) -> Result<Option<String>> {
         .collect::<Result<Vec<String>>>()?;
 
     // Display
-    enable_raw_mode()?;
-    stdout().execute(EnterAlternateScreen)?;
+    enable_raw_mode().expect("Prepare terminal");
+    stdout()
+        .execute(EnterAlternateScreen)
+        .expect("Prepare terminal");
+
+    defer! {
+        stdout().execute(LeaveAlternateScreen).expect("Reset terminal");
+        disable_raw_mode().expect("Reset terminal");
+    }
 
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
 
     let mut selected_notebook = ListState::default().with_selected(Some(0));
 
-    let mut selector_loop = || {
-        loop {
-            if event::poll(Duration::from_millis(50))? {
-                if let Event::Key(key) = event::read()? {
-                    if key.kind == KeyEventKind::Press {
-                        if key.code == KeyCode::Esc || key.code == KeyCode::Char('q') {
-                            info!("Quit notebook selector.");
-                            break Ok(None);
-                        } else if let Some(selected) = selected_notebook.selected_mut() {
-                            match key.code {
-                                KeyCode::Up if *selected > 0 => *selected -= 1,
-                                KeyCode::Down if *selected < notebooks.len() - 1 => *selected += 1,
-                                KeyCode::Enter => {
-                                    break Ok(Some(notebooks[*selected].clone()));
-                                }
-                                _ => {}
+    loop {
+        if event::poll(Duration::from_millis(50))? {
+            if let Event::Key(key) = event::read()? {
+                if key.kind == KeyEventKind::Press {
+                    if key.code == KeyCode::Esc || key.code == KeyCode::Char('q') {
+                        info!("Quit notebook selector.");
+                        break Ok(None);
+                    } else if let Some(selected) = selected_notebook.selected_mut() {
+                        match key.code {
+                            KeyCode::Up if *selected > 0 => *selected -= 1,
+                            KeyCode::Down if *selected < notebooks.len() - 1 => *selected += 1,
+                            KeyCode::Enter => {
+                                break Ok(Some(notebooks[*selected].clone()));
                             }
+                            _ => {}
                         }
                     }
                 }
             }
-
-            // Draw
-            terminal.draw(|frame| {
-                let main_block = Block::default()
-                    .title("Foucault")
-                    .title_alignment(Alignment::Center)
-                    .title_style(Style::default().add_modifier(Modifier::BOLD))
-                    .padding(Padding::new(2, 2, 1, 1))
-                    .borders(Borders::all())
-                    .border_style(Style::default().fg(Color::White))
-                    .border_type(BorderType::Rounded);
-
-                let list = List::default()
-                    .items(
-                        notebooks
-                            .iter()
-                            .map(|notebook| Text::styled(notebook, Style::default())),
-                    )
-                    .highlight_symbol(">>")
-                    .highlight_style(Style::default().fg(Color::Black).bg(Color::White))
-                    .direction(ListDirection::TopToBottom);
-
-                frame.render_stateful_widget(
-                    list,
-                    main_block.inner(frame.size()),
-                    &mut selected_notebook,
-                );
-                frame.render_widget(main_block, frame.size());
-            })?;
         }
-    };
 
-    let result = selector_loop();
+        // Draw
+        terminal.draw(|frame| {
+            let main_block = Block::default()
+                .title("Foucault")
+                .title_alignment(Alignment::Center)
+                .title_style(Style::default().add_modifier(Modifier::BOLD))
+                .padding(Padding::new(2, 2, 1, 1))
+                .borders(Borders::all())
+                .border_style(Style::default().fg(Color::White))
+                .border_type(BorderType::Rounded);
 
-    stdout().execute(LeaveAlternateScreen)?;
-    disable_raw_mode()?;
+            let list = List::default()
+                .items(
+                    notebooks
+                        .iter()
+                        .map(|notebook| Text::styled(notebook, Style::default())),
+                )
+                .highlight_symbol(">>")
+                .highlight_style(Style::default().fg(Color::Black).bg(Color::White))
+                .direction(ListDirection::TopToBottom);
 
-    result
+            frame.render_stateful_widget(
+                list,
+                main_block.inner(frame.size()),
+                &mut selected_notebook,
+            );
+            frame.render_widget(main_block, frame.size());
+        })?;
+    }
 }

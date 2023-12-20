@@ -236,6 +236,7 @@ dependencies = [
  "markdown",
  "ratatui",
  "rusqlite",
+ "scopeguard",
  "sea-query",
  "sea-query-rusqlite",
  "thiserror",
