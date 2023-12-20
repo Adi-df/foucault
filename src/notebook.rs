@@ -1,3 +1,4 @@
+use std::fs;
 use std::path::Path;
 
 use anyhow::Result;
@@ -16,14 +17,20 @@ pub struct Notebook {
 
 #[derive(Error, Debug)]
 pub enum OpeningError {
-    #[error("No notebook named \"{name:?}\" was found.")]
+    #[error("No notebook named {name:?} was found.")]
     NotebookNotFound { name: String },
 }
 
 #[derive(Error, Debug)]
 pub enum CreationError {
-    #[error("Another notebook named \"{name:?}\" was found.")]
+    #[error("Another notebook named {name:?} was found.")]
     NotebookAlreadyExists { name: String },
+}
+
+#[derive(Error, Debug)]
+pub enum SuppressionError {
+    #[error("No notebook named {name:?} was found.")]
+    NoNotebookExists { name: String },
 }
 
 #[derive(Iden)]
@@ -90,5 +97,20 @@ impl Notebook {
             name: name.to_owned(),
             database,
         })
+    }
+
+    pub fn delete_notebook(name: &str, dir: &Path) -> Result<()> {
+        let notebook_path = dir.join(name);
+
+        if !notebook_path.exists() {
+            error!("No notebook named \"{name}\" exists.");
+            return Err(SuppressionError::NoNotebookExists {
+                name: name.to_owned(),
+            }
+            .into());
+        }
+
+        fs::remove_file(notebook_path)?;
+        Ok(())
     }
 }

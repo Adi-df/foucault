@@ -27,6 +27,7 @@ struct Cli {
 enum Commands {
     Create { name: String },
     Open { name: String },
+    Delete { name: String },
 }
 
 fn main() {
@@ -60,6 +61,10 @@ fn main() {
             Commands::Open { name } => {
                 trace!("Open notebook {name}.");
                 Notebook::open_notebook(&name, &app_dir_path).unwrap();
+            }
+            Commands::Delete { name } => {
+                trace!("Delete notebook {name}.");
+                Notebook::delete_notebook(&name, &app_dir_path).unwrap();
             }
         }
     } else {
