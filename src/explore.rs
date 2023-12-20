@@ -15,8 +15,6 @@ use ratatui::widgets::{Block, BorderType, Borders, Padding, Paragraph};
 use ratatui::{Frame, Terminal};
 use thiserror::Error;
 
-use rusqlite::Connection;
-
 use crate::note::Note;
 use crate::notebook::Notebook;
 
@@ -33,6 +31,8 @@ enum State {
 pub enum ExplorerError {
     #[error("No new note name. Should be unreachable.")]
     NoNewNoteName,
+    #[error("No note openend. Should be unreachable.")]
+    NoNoteOpened,
 }
 
 pub fn explore(notebook: Notebook) -> Result<()> {
@@ -160,6 +160,29 @@ fn run(notebook: Notebook, mut terminal: Terminal<CrosstermBackend<Stdout>>) -> 
                         frame.render_widget(main_frame, frame.size());
                     })?;
                 }
+                State::NoteViewing => {
+                    let note_name = openened_note
+                        .as_ref()
+                        .ok_or(ExplorerError::NoNoteOpened)?
+                        .name
+                        .as_str();
+                    let note_content = openened_note
+                        .as_ref()
+                        .ok_or(ExplorerError::NoNoteOpened)?
+                        .content
+                        .as_str();
+
+                    terminal.draw(|mut frame| {
+                        let main_rect = main_frame.inner(frame.size());
+                        draw_viewed_note(
+                            &mut frame,
+                            main_rect,
+                            note_name,
+                            Paragraph::new(note_content),
+                        );
+                        frame.render_widget(main_frame, frame.size());
+                    })?;
+                }
                 _ => {}
             }
         }
@@ -173,7 +196,7 @@ fn draw_nothing(frame: &mut Frame, rect: Rect, name: &str) {
         Direction::Vertical,
         [
             Constraint::Percentage(45),
-            Constraint::Percentage(10),
+            Constraint::Length(1),
             Constraint::Percentage(45),
         ],
     )
@@ -191,7 +214,7 @@ fn draw_new_note(frame: &mut Frame, rect: Rect, entry: &str) {
         Direction::Vertical,
         [
             Constraint::Percentage(45),
-            Constraint::Percentage(10),
+            Constraint::Length(1),
             Constraint::Percentage(45),
         ],
     )
@@ -201,4 +224,35 @@ fn draw_new_note(frame: &mut Frame, rect: Rect, entry: &str) {
         Paragraph::new(entry).style(Style::default().add_modifier(Modifier::UNDERLINED));
 
     frame.render_widget(new_note_entry, vertical_layout[1]);
+}
+
+fn draw_viewed_note(frame: &mut Frame, main_rect: Rect, note_name: &str, note_content: Paragraph) {
+    let vertical_layout = Layout::new(
+        Direction::Vertical,
+        [Constraint::Length(5), Constraint::Min(0)],
+    )
+    .split(main_rect);
+
+    let note_title = Paragraph::new(note_name)
+        .style(Style::default().add_modifier(Modifier::BOLD))
+        .alignment(Alignment::Left)
+        .block(
+            Block::default()
+                .title("Title")
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::White))
+                .border_type(BorderType::Rounded)
+                .padding(Padding::uniform(1)),
+        );
+    let note_content = note_content.block(
+        Block::default()
+            .title("Content")
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::White))
+            .border_type(BorderType::Rounded)
+            .padding(Padding::uniform(1)),
+    );
+
+    frame.render_widget(note_title, vertical_layout[0]);
+    frame.render_widget(note_content, vertical_layout[1]);
 }
