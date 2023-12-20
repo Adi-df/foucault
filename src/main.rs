@@ -39,7 +39,7 @@ enum Commands {
 
 fn main() -> Result<()> {
     log::set_logger(&LOGGER).unwrap();
-    log::set_max_level(log::LevelFilter::Info);
+    // log::set_max_level(log::LevelFilter::Info);
 
     info!("Start foucault");
 

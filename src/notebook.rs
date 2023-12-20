@@ -37,6 +37,10 @@ pub enum SuppressionError {
 pub struct NoteTable;
 
 impl Notebook {
+    pub fn db(&self) -> &Connection {
+        &self.database
+    }
+
     pub fn open_notebook(name: &str, dir: &Path) -> Result<Self> {
         let notebook_path = dir.join(name);
 
