@@ -11,7 +11,8 @@ use crossterm::terminal::{
 use crossterm::{event, ExecutableCommand};
 use ratatui::prelude::{Alignment, Constraint, CrosstermBackend, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
-use ratatui::widgets::{Block, BorderType, Borders, Padding, Paragraph};
+use ratatui::text::Text;
+use ratatui::widgets::{Block, BorderType, Borders, Padding, Paragraph, Row, Table};
 use ratatui::{Frame, Terminal};
 use thiserror::Error;
 
@@ -171,13 +172,19 @@ fn run(notebook: Notebook, mut terminal: Terminal<CrosstermBackend<Stdout>>) -> 
                         .ok_or(ExplorerError::NoNoteOpened)?
                         .content
                         .as_str();
+                    let note_tags = &openened_note
+                        .as_ref()
+                        .ok_or(ExplorerError::NoNoteOpened)?
+                        .tags;
 
                     terminal.draw(|mut frame| {
                         let main_rect = main_frame.inner(frame.size());
+                        // TODO : Render Markdown
                         draw_viewed_note(
                             &mut frame,
                             main_rect,
                             note_name,
+                            note_tags,
                             Paragraph::new(note_content),
                         );
                         frame.render_widget(main_frame, frame.size());
@@ -226,14 +233,25 @@ fn draw_new_note(frame: &mut Frame, rect: Rect, entry: &str) {
     frame.render_widget(new_note_entry, vertical_layout[1]);
 }
 
-fn draw_viewed_note(frame: &mut Frame, main_rect: Rect, note_name: &str, note_content: Paragraph) {
+fn draw_viewed_note(
+    frame: &mut Frame,
+    main_rect: Rect,
+    note_title: &str,
+    note_tags: &[String],
+    note_content: Paragraph,
+) {
     let vertical_layout = Layout::new(
         Direction::Vertical,
         [Constraint::Length(5), Constraint::Min(0)],
     )
     .split(main_rect);
+    let horizontal_layout = Layout::new(
+        Direction::Horizontal,
+        [Constraint::Percentage(40), Constraint::Min(0)],
+    )
+    .split(vertical_layout[0]);
 
-    let note_title = Paragraph::new(note_name)
+    let note_title = Paragraph::new(note_title)
         .style(Style::default().add_modifier(Modifier::BOLD))
         .alignment(Alignment::Left)
         .block(
@@ -244,6 +262,15 @@ fn draw_viewed_note(frame: &mut Frame, main_rect: Rect, note_name: &str, note_co
                 .border_type(BorderType::Rounded)
                 .padding(Padding::uniform(1)),
         );
+    let note_tags = Table::default()
+        .rows([Row::new(note_tags.into_iter().map(|tag| Text::raw(tag)))])
+        .block(
+            Block::default()
+                .title("Tags")
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::White))
+                .border_type(BorderType::Rounded),
+        );
     let note_content = note_content.block(
         Block::default()
             .title("Content")
@@ -253,6 +280,7 @@ fn draw_viewed_note(frame: &mut Frame, main_rect: Rect, note_name: &str, note_co
             .padding(Padding::uniform(1)),
     );
 
-    frame.render_widget(note_title, vertical_layout[0]);
+    frame.render_widget(note_title, horizontal_layout[0]);
+    frame.render_widget(note_tags, horizontal_layout[1]);
     frame.render_widget(note_content, vertical_layout[1]);
 }
