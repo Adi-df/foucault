@@ -11,7 +11,7 @@ use sea_query::{ColumnDef, Iden, SqliteQueryBuilder, Table};
 use crate::note::{Note, NoteCharacters};
 
 pub struct Notebook {
-    name: String,
+    pub name: String,
     database: Connection,
 }
 

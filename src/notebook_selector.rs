@@ -5,20 +5,20 @@ use std::path::Path;
 use std::time::Duration;
 
 use anyhow::Result;
-use crossterm::event::{Event, KeyCode, KeyEventKind};
-use crossterm::{event, ExecutableCommand};
 use log::info;
+use thiserror::Error;
 
+use crossterm::event::{Event, KeyCode, KeyEventKind};
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
+use crossterm::{event, ExecutableCommand};
 use ratatui::prelude::{Alignment, CrosstermBackend};
 use ratatui::style::Style;
 use ratatui::style::{Color, Modifier};
 use ratatui::text::Text;
 use ratatui::widgets::{Block, BorderType, Borders, List, ListDirection, ListState, Padding};
 use ratatui::Terminal;
-use thiserror::Error;
 
 #[derive(Clone, Debug, Error)]
 pub enum NotebookSelectorError {
