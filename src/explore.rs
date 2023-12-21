@@ -67,6 +67,11 @@ pub fn explore(notebook: Notebook) -> Result<()> {
             if event::poll(Duration::from_millis(50))? {
                 if let Event::Key(key) = event::read()? {
                     if key.kind == KeyEventKind::Press {
+                        info!(
+                            "Available rows {}, selected {}",
+                            search_note_result.len(),
+                            search_note_selected
+                        );
                         match state {
                             State::Nothing => match key.code {
                                 KeyCode::Esc | KeyCode::Char('q') => {
@@ -83,7 +88,7 @@ pub fn explore(notebook: Notebook) -> Result<()> {
                                     state = State::NoteListing;
                                     search_note_name = String::new();
                                     search_note_selected = 0;
-                                    search_note_result = Vec::new();
+                                    search_note_result = notebook.search_name("")?;
                                 }
                                 _ => {}
                             },
@@ -140,23 +145,24 @@ pub fn explore(notebook: Notebook) -> Result<()> {
                                     search_note_selected = 0;
                                 }
                                 KeyCode::Up if search_note_selected > 0 => {
-                                    search_note_selected -= 1
+                                    search_note_selected -= 1;
                                 }
                                 KeyCode::Down
                                     if search_note_selected < search_note_result.len() - 1 =>
                                 {
-                                    search_note_selected += 1
+                                    search_note_selected += 1;
                                 }
                                 KeyCode::Backspace => {
                                     search_note_selected = 0;
                                     search_note_name.pop();
-
                                     search_note_result =
-                                        notebook.search_name(search_note_name.as_str());
+                                        notebook.search_name(search_note_name.as_str())?;
                                 }
                                 KeyCode::Char(c) => {
                                     search_note_selected = 0;
                                     search_note_name.push(c);
+                                    search_note_result =
+                                        notebook.search_name(search_note_name.as_str())?;
                                 }
                                 _ => {}
                             },
@@ -225,7 +231,6 @@ pub fn explore(notebook: Notebook) -> Result<()> {
                         frame.render_widget(main_frame, frame.size());
                     })?;
                 }
-                _ => {}
             }
         }
     }
@@ -253,7 +258,8 @@ fn draw_note_listing(
         Block::new()
             .title("Searching")
             .borders(Borders::ALL)
-            .border_type(BorderType::Rounded),
+            .border_type(BorderType::Rounded)
+            .padding(Padding::uniform(1)),
     );
 
     let list_results = List::new(
@@ -261,11 +267,14 @@ fn draw_note_listing(
             .into_iter()
             .map(|note| Span::raw(note.name.as_str())),
     )
+    .highlight_symbol(">> ")
+    .highlight_style(Style::default().bg(Color::White).fg(Color::Black))
     .block(
         Block::new()
             .title("Results")
             .borders(Borders::ALL)
-            .border_type(BorderType::Rounded),
+            .border_type(BorderType::Rounded)
+            .padding(Padding::uniform(2)),
     );
 
     frame.render_widget(search_bar, layout[0]);

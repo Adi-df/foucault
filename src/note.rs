@@ -101,38 +101,8 @@ impl Note {
             |row| Ok([row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?]),
         )?;
 
-        let tags = {
-            let mut tags = json::parse(&raw_tags)?;
-            if tags.is_array() {
-                tags.members_mut()
-                    .map(JsonValue::take_string)
-                    .collect::<Option<Vec<String>>>()
-                    .ok_or(FormatError::UnknownFormatForTags { tags: raw_tags })
-            } else {
-                Err(FormatError::UnknownFormatForTags { tags: raw_tags })
-            }
-        }?;
-        let links = {
-            let links = json::parse(&raw_links)?;
-            if links.is_array() {
-                links
-                    .members()
-                    .map(|link| {
-                        link.as_str()
-                            .ok_or(())
-                            .and_then(|str| Uuid::parse_str(str).map_err(|_| ()))
-                            .map_err(|()| {
-                                FormatError::UnknownFormatForLinks {
-                                    links: raw_links.clone(),
-                                }
-                                .into()
-                            })
-                    })
-                    .collect::<Result<Vec<Uuid>>>()
-            } else {
-                Err(FormatError::UnknownFormatForLinks { links: raw_links }.into())
-            }
-        }?;
+        let tags = decode_tags(raw_tags.as_str())?;
+        let links = decode_links(raw_links.as_str())?;
 
         Ok(Note {
             id,
@@ -186,5 +156,50 @@ impl Note {
     pub fn import_content(&mut self, file: &Path) -> Result<()> {
         self.content = String::from_utf8(fs::read(file)?)?;
         Ok(())
+    }
+}
+
+pub fn decode_links(raw_links: &str) -> Result<Vec<Uuid>> {
+    let links = json::parse(&raw_links)?;
+    if links.is_array() {
+        links
+            .members()
+            .map(|link| {
+                link.as_str()
+                    .ok_or(())
+                    .and_then(|str| Uuid::parse_str(str).map_err(|_| ()))
+                    .map_err(|()| {
+                        FormatError::UnknownFormatForLinks {
+                            links: raw_links.to_owned(),
+                        }
+                        .into()
+                    })
+            })
+            .collect::<Result<Vec<Uuid>>>()
+    } else {
+        Err(FormatError::UnknownFormatForLinks {
+            links: raw_links.to_owned(),
+        }
+        .into())
+    }
+}
+
+pub fn decode_tags(raw_tags: &str) -> Result<Vec<String>> {
+    let mut tags = json::parse(&raw_tags)?;
+    if tags.is_array() {
+        tags.members_mut()
+            .map(JsonValue::take_string)
+            .collect::<Option<Vec<String>>>()
+            .ok_or(
+                FormatError::UnknownFormatForTags {
+                    tags: raw_tags.to_owned(),
+                }
+                .into(),
+            )
+    } else {
+        Err(FormatError::UnknownFormatForTags {
+            tags: raw_tags.to_owned(),
+        }
+        .into())
     }
 }

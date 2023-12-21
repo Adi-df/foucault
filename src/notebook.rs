@@ -1,13 +1,18 @@
+use std::fs;
 use std::path::Path;
-use std::{fs, path::PathBuf};
+use std::path::PathBuf;
+use std::str::FromStr;
 
 use anyhow::Result;
 use log::error;
 use thiserror::Error;
+use uuid::Uuid;
 
 use rusqlite::Connection;
-use sea_query::{ColumnDef, Iden, SqliteQueryBuilder, Table};
+use sea_query::{ColumnDef, Expr, Iden, Query, SqliteQueryBuilder, Table};
 
+use crate::note::decode_links;
+use crate::note::decode_tags;
 use crate::note::{Note, NoteCharacters, NoteSummary};
 
 pub struct Notebook {
@@ -129,7 +134,44 @@ impl Notebook {
         Ok(())
     }
 
-    pub fn search_name(&self, name: &str) -> Vec<NoteSummary> {
-        Vec::new()
+    pub fn search_name(&self, name: &str) -> Result<Vec<NoteSummary>> {
+        self.database
+            .prepare(
+                Query::select()
+                    .from(NoteTable)
+                    .columns([
+                        NoteCharacters::Id,
+                        NoteCharacters::Name,
+                        NoteCharacters::Tags,
+                        NoteCharacters::Links,
+                    ])
+                    .and_where(
+                        Expr::col(NoteCharacters::Name)
+                            .like(&format!("{}%", name))
+                            .into(),
+                    )
+                    .to_string(SqliteQueryBuilder)
+                    .as_str(),
+            )?
+            .query_map([], |row| {
+                Ok([row.get(0)?, row.get(1)?, row.get(2)?, row.get(2)?])
+            })?
+            .into_iter()
+            .map(|row| -> Result<[String; 4]> { row.map_err(anyhow::Error::from) })
+            .map(|row| {
+                row.and_then(|[raw_id, name, raw_tags, raw_links]| {
+                    let id = Uuid::from_str(raw_id.as_str()).map_err(anyhow::Error::from)?;
+                    let tags = decode_tags(raw_tags.as_str())?;
+                    let links = decode_links(raw_links.as_str())?;
+
+                    Ok(NoteSummary {
+                        id,
+                        name,
+                        tags,
+                        links,
+                    })
+                })
+            })
+            .collect::<Result<Vec<NoteSummary>>>()
     }
 }
