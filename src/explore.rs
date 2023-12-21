@@ -21,7 +21,7 @@ use ratatui::widgets::{
 };
 use ratatui::{Frame, Terminal};
 
-use crate::helpers::{create_popup, Capitalize, OptionalValue};
+use crate::helpers::{create_popup_proportion, create_popup_size, Capitalize, OptionalValue};
 use crate::note::{Note, NoteSummary};
 use crate::notebook::Notebook;
 
@@ -136,6 +136,14 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                                     info!("Edit note {}", openened_note.by_ref()?.name);
                                     edit_note(openened_note.by_ref_mut()?, notebook)?;
                                     forced_redraw = true;
+                                }
+                                KeyCode::Char('s') => {
+                                    info!("List notes");
+                                    openened_note.set(None);
+                                    state = State::NoteListing;
+                                    search_note_name = String::new();
+                                    search_note_selected = 0;
+                                    search_note_result = notebook.search_name("")?;
                                 }
                                 _ => {}
                             },
@@ -254,6 +262,86 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
     Ok(())
 }
 
+fn draw_nothing(frame: &mut Frame, rect: Rect, name: &str) {
+    let title = Paragraph::new(Line::from(vec![Span::raw(name.capitalize()).style(
+        Style::default()
+            .fg(Color::Blue)
+            .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
+    )]))
+    .alignment(Alignment::Center);
+
+    frame.render_widget(title, create_popup_proportion((40, 10), rect));
+}
+
+fn draw_new_note(frame: &mut Frame, rect: Rect, entry: &str) {
+    let new_note_entry = Paragraph::new(Line::from(vec![
+        Span::raw(entry).style(Style::default().add_modifier(Modifier::UNDERLINED))
+    ]))
+    .block(
+        Block::default()
+            .title("New note name")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::default().fg(Color::Green))
+            .padding(Padding::uniform(1)),
+    );
+
+    frame.render_widget(new_note_entry, create_popup_size((30, 5), rect));
+}
+
+fn draw_viewed_note(
+    frame: &mut Frame,
+    main_rect: Rect,
+    note_title: &str,
+    note_tags: &[String],
+    note_content: Paragraph,
+) {
+    let vertical_layout = Layout::new(
+        Direction::Vertical,
+        [Constraint::Length(5), Constraint::Min(0)],
+    )
+    .split(main_rect);
+    let horizontal_layout = Layout::new(
+        Direction::Horizontal,
+        [Constraint::Percentage(40), Constraint::Min(0)],
+    )
+    .split(vertical_layout[0]);
+
+    let note_title = Paragraph::new(note_title)
+        .style(Style::default().add_modifier(Modifier::BOLD))
+        .alignment(Alignment::Left)
+        .block(
+            Block::default()
+                .title("Title")
+                .title_style(Style::default())
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(Color::Green))
+                .padding(Padding::uniform(1)),
+        );
+    let note_tags = Table::default()
+        .rows([Row::new(note_tags.iter().map(Text::raw))])
+        .block(
+            Block::default()
+                .title("Tags")
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(Color::Red)),
+        );
+    let note_content = note_content.block(
+        Block::default()
+            .title("Content")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::default().fg(Color::Yellow))
+            .padding(Padding::uniform(1)),
+    );
+
+    frame.render_widget(note_title, horizontal_layout[0]);
+    frame.render_widget(note_tags, horizontal_layout[1]);
+    frame.render_widget(note_content, vertical_layout[1]);
+}
+
 fn draw_note_listing(
     frame: &mut Frame,
     main_rect: Rect,
@@ -275,6 +363,11 @@ fn draw_note_listing(
             .title("Searching")
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
+            .border_style(Style::default().fg(if search_note_result.is_empty() {
+                Color::Red
+            } else {
+                Color::Green
+            }))
             .padding(Padding::uniform(1)),
     );
 
@@ -290,6 +383,7 @@ fn draw_note_listing(
             .title("Results")
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
+            .border_style(Style::default().fg(Color::Yellow))
             .padding(Padding::uniform(2)),
     );
 
@@ -328,77 +422,4 @@ fn edit_note(note: &mut Note, notebook: &Notebook) -> Result<()> {
 
     fs::remove_file(&tmp_file_path)?;
     Ok(())
-}
-
-fn draw_nothing(frame: &mut Frame, rect: Rect, name: &str) {
-    let title = Paragraph::new(name.capitalize())
-        .style(Style::default().add_modifier(Modifier::UNDERLINED | Modifier::BOLD))
-        .alignment(Alignment::Center);
-
-    frame.render_widget(title, create_popup((40, 10), rect));
-}
-
-fn draw_new_note(frame: &mut Frame, rect: Rect, entry: &str) {
-    let new_note_entry = Paragraph::new(entry).style(Style::default()).block(
-        Block::default()
-            .title("New note name")
-            .title_style(Style::default().fg(Color::White))
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .padding(Padding::uniform(1)),
-    );
-
-    frame.render_widget(new_note_entry, create_popup((50, 20), rect));
-}
-
-fn draw_viewed_note(
-    frame: &mut Frame,
-    main_rect: Rect,
-    note_title: &str,
-    note_tags: &[String],
-    note_content: Paragraph,
-) {
-    let vertical_layout = Layout::new(
-        Direction::Vertical,
-        [Constraint::Length(5), Constraint::Min(0)],
-    )
-    .split(main_rect);
-    let horizontal_layout = Layout::new(
-        Direction::Horizontal,
-        [Constraint::Percentage(40), Constraint::Min(0)],
-    )
-    .split(vertical_layout[0]);
-
-    let note_title = Paragraph::new(note_title)
-        .style(Style::default().add_modifier(Modifier::BOLD))
-        .alignment(Alignment::Left)
-        .block(
-            Block::default()
-                .title("Title")
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::White))
-                .border_type(BorderType::Rounded)
-                .padding(Padding::uniform(1)),
-        );
-    let note_tags = Table::default()
-        .rows([Row::new(note_tags.iter().map(Text::raw))])
-        .block(
-            Block::default()
-                .title("Tags")
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::White))
-                .border_type(BorderType::Rounded),
-        );
-    let note_content = note_content.block(
-        Block::default()
-            .title("Content")
-            .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::White))
-            .border_type(BorderType::Rounded)
-            .padding(Padding::uniform(1)),
-    );
-
-    frame.render_widget(note_title, horizontal_layout[0]);
-    frame.render_widget(note_tags, horizontal_layout[1]);
-    frame.render_widget(note_content, vertical_layout[1]);
 }
