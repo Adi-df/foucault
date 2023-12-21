@@ -37,6 +37,8 @@ enum State {
 pub enum ExplorerError {
     #[error("No note openend. Should be unreachable.")]
     NoNoteOpened,
+    #[error("No note selected. Should be unreachable.")]
+    NoNoteSelected,
 }
 
 pub fn explore(notebook: Notebook) -> Result<()> {
@@ -151,6 +153,20 @@ pub fn explore(notebook: Notebook) -> Result<()> {
                                     if search_note_selected < search_note_result.len() - 1 =>
                                 {
                                     search_note_selected += 1;
+                                }
+                                KeyCode::Enter if search_note_result.len() > 0 => {
+                                    let note_summary = search_note_result
+                                        .get(search_note_selected)
+                                        .ok_or(ExplorerError::NoNoteSelected)?;
+
+                                    info!("Open note {}", note_summary.name);
+
+                                    state = State::NoteViewing;
+                                    openened_note
+                                        .set(Some(Note::load(note_summary.id, notebook.db())?));
+                                    search_note_selected = 0;
+                                    search_note_name = String::new();
+                                    search_note_result = Vec::new();
                                 }
                                 KeyCode::Backspace => {
                                     search_note_selected = 0;
