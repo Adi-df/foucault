@@ -17,7 +17,7 @@ use ratatui::text::Text;
 use ratatui::widgets::{Block, BorderType, Borders, Padding, Paragraph, Row, Table};
 use ratatui::{Frame, Terminal};
 
-use crate::helpers::create_popup;
+use crate::helpers::{create_popup, OptionalValue};
 use crate::note::Note;
 use crate::notebook::Notebook;
 
@@ -54,8 +54,10 @@ pub fn explore(notebook: Notebook) -> Result<()> {
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
 
     let mut state = State::Nothing;
-    let mut openened_note: Option<Note> = None;
-    let mut new_note_name: Option<String> = None;
+    let mut openened_note: OptionalValue<Note, ExplorerError> =
+        OptionalValue::new(None, ExplorerError::NoNoteOpened);
+    let mut new_note_name: OptionalValue<String, ExplorerError> =
+        OptionalValue::new(None, ExplorerError::NoNewNoteName);
 
     loop {
         {
@@ -71,24 +73,16 @@ pub fn explore(notebook: Notebook) -> Result<()> {
                                 KeyCode::Char('c') => {
                                     info!("Create new note.");
                                     state = State::NoteCreating;
-                                    new_note_name = Some(String::new());
+                                    new_note_name.set(Some(String::new()));
                                 }
                                 _ => {}
                             },
                             State::NoteCreating => match key.code {
                                 KeyCode::Enter => {
-                                    info!(
-                                        "Complete note creation : {}.",
-                                        new_note_name
-                                            .as_ref()
-                                            .ok_or(ExplorerError::NoNewNoteName)?
-                                    );
+                                    info!("Complete note creation : {}.", new_note_name.by_ref()?);
 
                                     let new_note = Note::new(
-                                        new_note_name
-                                            .as_ref()
-                                            .ok_or(ExplorerError::NoNewNoteName)?
-                                            .clone(),
+                                        new_note_name.by_ref()?.clone(),
                                         Vec::new(),
                                         Vec::new(),
                                         String::new(),
@@ -96,24 +90,18 @@ pub fn explore(notebook: Notebook) -> Result<()> {
                                     new_note.insert(notebook.db())?;
 
                                     state = State::NoteViewing;
-                                    openened_note = Some(new_note);
+                                    openened_note.set(Some(new_note));
                                 }
                                 KeyCode::Esc => {
                                     info!("Cancel new note.");
                                     state = State::Nothing;
-                                    new_note_name = None;
+                                    new_note_name.set(None);
                                 }
                                 KeyCode::Backspace => {
-                                    new_note_name
-                                        .as_mut()
-                                        .ok_or(ExplorerError::NoNewNoteName)?
-                                        .pop();
+                                    new_note_name.by_ref_mut()?.pop();
                                 }
                                 KeyCode::Char(c) => {
-                                    new_note_name
-                                        .as_mut()
-                                        .ok_or(ExplorerError::NoNewNoteName)?
-                                        .push(c);
+                                    new_note_name.by_ref_mut()?.push(c);
                                 }
                                 _ => {}
                             },
@@ -121,7 +109,7 @@ pub fn explore(notebook: Notebook) -> Result<()> {
                                 KeyCode::Esc => {
                                     info!("Stop note viewing.");
                                     state = State::Nothing;
-                                    openened_note = None;
+                                    openened_note.set(None);
                                 }
                                 KeyCode::Char('q') => {
                                     info!("Quit notebook.");
@@ -153,7 +141,7 @@ pub fn explore(notebook: Notebook) -> Result<()> {
                     })?;
                 }
                 State::NoteCreating => {
-                    let entry_name = new_note_name.as_ref().ok_or(ExplorerError::NoNewNoteName)?;
+                    let entry_name = new_note_name.by_ref()?;
 
                     terminal.draw(|mut frame| {
                         let main_rect = main_frame.inner(frame.size());
@@ -162,20 +150,9 @@ pub fn explore(notebook: Notebook) -> Result<()> {
                     })?;
                 }
                 State::NoteViewing => {
-                    let note_name = openened_note
-                        .as_ref()
-                        .ok_or(ExplorerError::NoNoteOpened)?
-                        .name
-                        .as_str();
-                    let note_content = openened_note
-                        .as_ref()
-                        .ok_or(ExplorerError::NoNoteOpened)?
-                        .content
-                        .as_str();
-                    let note_tags = &openened_note
-                        .as_ref()
-                        .ok_or(ExplorerError::NoNoteOpened)?
-                        .tags;
+                    let note_name = openened_note.by_ref()?.name.as_str();
+                    let note_content = openened_note.by_ref()?.content.as_str();
+                    let note_tags = &openened_note.by_ref()?.tags;
 
                     terminal.draw(|mut frame| {
                         let main_rect = main_frame.inner(frame.size());
