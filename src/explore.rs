@@ -14,10 +14,10 @@ use crossterm::terminal::{
 };
 use crossterm::{event, ExecutableCommand};
 use ratatui::prelude::{Alignment, Constraint, CrosstermBackend, Direction, Layout, Rect};
-use ratatui::style::{Color, Modifier, Style};
+use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span, Text};
 use ratatui::widgets::{
-    Block, BorderType, Borders, Clear, List, ListState, Padding, Paragraph, Row, Table,
+    Block, BorderType, Borders, Clear, List, ListState, Padding, Paragraph, Row, Table, Wrap,
 };
 use ratatui::{Frame, Terminal};
 
@@ -31,6 +31,7 @@ enum State {
     NoteListing,
     NoteViewing,
     NoteCreating,
+    NoteDeleting,
 }
 
 #[derive(Clone, Debug, Error)]
@@ -63,6 +64,7 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
     let mut search_note_name = String::new();
     let mut search_note_selected: usize = 0;
     let mut search_note_result: Vec<NoteSummary> = Vec::new();
+    let mut note_delete_selected: bool = false;
 
     loop {
         {
@@ -122,6 +124,24 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                                 }
                                 _ => {}
                             },
+                            State::NoteDeleting => match key.code {
+                                KeyCode::Esc => {
+                                    info!("Cancel deleting");
+                                    state = State::NoteViewing;
+                                }
+                                KeyCode::Tab => {
+                                    note_delete_selected = !note_delete_selected;
+                                }
+                                KeyCode::Enter => {
+                                    if note_delete_selected {
+                                        state = State::Nothing;
+                                        openened_note.steal()?.delete(notebook.db())?;
+                                    } else {
+                                        state = State::NoteViewing;
+                                    }
+                                }
+                                _ => {}
+                            },
                             State::NoteViewing => match key.code {
                                 KeyCode::Esc => {
                                     info!("Stop note viewing.");
@@ -138,12 +158,16 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                                     forced_redraw = true;
                                 }
                                 KeyCode::Char('s') => {
-                                    info!("List notes");
+                                    info!("List notes.");
                                     openened_note.set(None);
                                     state = State::NoteListing;
                                     search_note_name = String::new();
                                     search_note_selected = 0;
                                     search_note_result = notebook.search_name("")?;
+                                }
+                                KeyCode::Char('d') => {
+                                    info!("Not deleting prompt.");
+                                    state = State::NoteDeleting;
                                 }
                                 _ => {}
                             },
@@ -237,8 +261,28 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                             main_rect,
                             note_name,
                             note_tags,
+                            Paragraph::new(note_content).wrap(Wrap { trim: true }),
+                        );
+                        frame.render_widget(main_frame, frame.size());
+                    })?;
+                }
+                State::NoteDeleting => {
+                    let note_name = openened_note.by_ref()?.name.as_str();
+                    let note_content = openened_note.by_ref()?.content.as_str();
+                    let note_tags = &openened_note.by_ref()?.tags;
+
+                    terminal.draw(|frame| {
+                        let main_rect = main_frame.inner(frame.size());
+                        // TODO : Render Markdown
+                        draw_viewed_note(
+                            frame,
+                            main_rect,
+                            note_name,
+                            note_tags,
                             Paragraph::new(note_content),
                         );
+                        draw_deleting_popup(frame, main_rect, note_delete_selected);
+
                         frame.render_widget(main_frame, frame.size());
                     })?;
                 }
@@ -260,6 +304,52 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
     }
 
     Ok(())
+}
+
+fn draw_deleting_popup(frame: &mut Frame, main_rect: Rect, note_delete_selected: bool) {
+    let popup_area = create_popup_size((50, 5), main_rect);
+    let block = Block::new()
+        .title("Delete note ?")
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .border_style(Style::default().fg(Color::Blue));
+
+    let layout = Layout::new(
+        Direction::Horizontal,
+        [Constraint::Percentage(50), Constraint::Percentage(50)],
+    )
+    .split(block.inner(popup_area));
+
+    let yes = Paragraph::new(Line::from(vec![if note_delete_selected {
+        Span::raw("Yes").add_modifier(Modifier::UNDERLINED)
+    } else {
+        Span::raw("Yes")
+    }]))
+    .style(Style::default().fg(Color::Green))
+    .alignment(Alignment::Center)
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Plain)
+            .border_style(Style::default().fg(Color::Green)),
+    );
+    let no = Paragraph::new(Line::from(vec![if note_delete_selected {
+        Span::raw("No")
+    } else {
+        Span::raw("No").add_modifier(Modifier::UNDERLINED)
+    }]))
+    .style(Style::default().fg(Color::Red))
+    .alignment(Alignment::Center)
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Plain)
+            .border_style(Style::default().fg(Color::Red)),
+    );
+
+    frame.render_widget(yes, layout[0]);
+    frame.render_widget(no, layout[1]);
+    frame.render_widget(block, popup_area);
 }
 
 fn draw_nothing(frame: &mut Frame, rect: Rect, name: &str) {

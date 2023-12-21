@@ -68,6 +68,10 @@ where
     pub fn by_ref_mut(&mut self) -> Result<&mut T> {
         self.0.as_mut().ok_or_else(|| self.1.clone().into())
     }
+
+    pub fn steal(&mut self) -> Result<T> {
+        self.0.take().ok_or_else(|| self.1.clone().into())
+    }
 }
 
 impl<'a, T, E> From<&'a OptionalValue<T, E>> for Result<&'a T>

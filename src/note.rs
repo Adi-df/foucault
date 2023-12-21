@@ -157,6 +157,17 @@ impl Note {
         self.content = String::from_utf8(fs::read(file)?)?;
         Ok(())
     }
+
+    pub fn delete(self, db: &Connection) -> Result<()> {
+        db.execute_batch(
+            Query::delete()
+                .from_table(NoteTable)
+                .and_where(Expr::col(NoteCharacters::Id).eq(self.id.to_string()))
+                .to_string(SqliteQueryBuilder)
+                .as_str(),
+        )?;
+        Ok(())
+    }
 }
 
 pub fn decode_links(raw_links: &str) -> Result<Vec<Uuid>> {
