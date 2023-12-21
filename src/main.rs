@@ -18,8 +18,6 @@ use crate::explore::explore;
 use crate::notebook::Notebook;
 use crate::notebook_selector::open_selector;
 
-static LOGGER: SimpleLogger = SimpleLogger;
-
 #[derive(Parser)]
 #[command(
     author = "Adrien Degliame <adidf-web@laposte.net>",
@@ -39,8 +37,8 @@ enum Commands {
 }
 
 fn main() -> Result<()> {
-    log::set_logger(&LOGGER).unwrap();
-    // log::set_max_level(log::LevelFilter::Info);
+    log::set_boxed_logger(Box::new(SimpleLogger::new(true)))?;
+    log::set_max_level(log::LevelFilter::Info);
 
     info!("Start foucault");
 
