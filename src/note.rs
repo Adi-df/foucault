@@ -1,3 +1,6 @@
+use std::fs;
+use std::path::Path;
+
 use anyhow::Result;
 use json::JsonValue;
 use thiserror::Error;
@@ -131,5 +134,50 @@ impl Note {
             links,
             content,
         })
+    }
+
+    pub fn update(&self, db: &Connection) -> Result<()> {
+        db.execute_batch(
+            Query::update()
+                .table(NoteTable)
+                .values([
+                    (NoteCharacters::Name, self.name.as_str().into()),
+                    (
+                        NoteCharacters::Tags,
+                        json::stringify(JsonValue::Array(
+                            self.tags
+                                .iter()
+                                .map(|tag| JsonValue::String(tag.to_string()))
+                                .collect::<Vec<JsonValue>>(),
+                        ))
+                        .into(),
+                    ),
+                    (
+                        NoteCharacters::Links,
+                        json::stringify(JsonValue::Array(
+                            self.links
+                                .iter()
+                                .map(|link| JsonValue::String(link.to_string()))
+                                .collect::<Vec<JsonValue>>(),
+                        ))
+                        .into(),
+                    ),
+                    (NoteCharacters::Content, self.content.as_str().into()),
+                ])
+                .and_where(Expr::col(NoteCharacters::Id).eq(self.id.to_string()))
+                .to_string(SqliteQueryBuilder)
+                .as_str(),
+        )?;
+        Ok(())
+    }
+
+    pub fn export_content(&self, file: &Path) -> Result<()> {
+        fs::write(file, self.content.as_bytes())?;
+        Ok(())
+    }
+
+    pub fn import_content(&mut self, file: &Path) -> Result<()> {
+        self.content = String::from_utf8(fs::read(file)?)?;
+        Ok(())
     }
 }

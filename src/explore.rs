@@ -1,5 +1,7 @@
 use std::io::stdout;
+use std::process::Command;
 use std::time::Duration;
+use std::{env, fs};
 
 use anyhow::Result;
 use log::info;
@@ -14,7 +16,7 @@ use crossterm::{event, ExecutableCommand};
 use ratatui::prelude::{Alignment, Constraint, CrosstermBackend, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::Text;
-use ratatui::widgets::{Block, BorderType, Borders, Padding, Paragraph, Row, Table};
+use ratatui::widgets::{Block, BorderType, Borders, Clear, Padding, Paragraph, Row, Table};
 use ratatui::{Frame, Terminal};
 
 use crate::helpers::{create_popup, OptionalValue};
@@ -27,7 +29,6 @@ enum State {
     NoteListing,
     NoteViewing,
     NoteCreating,
-    NoteEditing,
 }
 
 #[derive(Clone, Debug, Error)]
@@ -52,6 +53,7 @@ pub fn explore(notebook: Notebook) -> Result<()> {
     }
 
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
+    let mut forced_redraw = false;
 
     let mut state = State::Nothing;
     let mut openened_note: OptionalValue<Note, ExplorerError> =
@@ -115,6 +117,11 @@ pub fn explore(notebook: Notebook) -> Result<()> {
                                     info!("Quit notebook.");
                                     break;
                                 }
+                                KeyCode::Char('e') => {
+                                    info!("Edit note {}", openened_note.by_ref()?.name);
+                                    edit_note(openened_note.by_ref_mut()?, &notebook)?;
+                                    forced_redraw = true;
+                                }
                                 _ => {}
                             },
                             _ => {}
@@ -125,6 +132,11 @@ pub fn explore(notebook: Notebook) -> Result<()> {
         }
 
         {
+            if forced_redraw {
+                terminal.draw(|frame| frame.render_widget(Clear, frame.size()))?;
+            }
+            forced_redraw = false;
+
             let main_frame = Block::default()
                 .title(notebook.name.as_str())
                 .padding(Padding::uniform(1))
@@ -175,22 +187,41 @@ pub fn explore(notebook: Notebook) -> Result<()> {
     Ok(())
 }
 
-fn draw_nothing(frame: &mut Frame, rect: Rect, name: &str) {
-    let vertical_layout = Layout::new(
-        Direction::Vertical,
-        [
-            Constraint::Percentage(45),
-            Constraint::Length(1),
-            Constraint::Percentage(45),
-        ],
-    )
-    .split(rect);
+fn edit_note(note: &mut Note, notebook: &Notebook) -> Result<()> {
+    let tmp_file_path = notebook
+        .dir()
+        .unwrap()
+        .join(format!("{}.tmp.md", note.name));
+    note.export_content(tmp_file_path.as_path())?;
 
+    let editor = env::var("EDITOR")?;
+
+    stdout()
+        .execute(LeaveAlternateScreen)
+        .expect("Leave foucault screen");
+
+    defer! {
+        stdout().execute(EnterAlternateScreen).expect("Return to foucault");
+    }
+
+    Command::new(editor)
+        .args([&tmp_file_path])
+        .current_dir(notebook.dir().unwrap())
+        .status()?;
+
+    note.import_content(tmp_file_path.as_path())?;
+    note.update(notebook.db())?;
+
+    fs::remove_file(&tmp_file_path)?;
+    Ok(())
+}
+
+fn draw_nothing(frame: &mut Frame, rect: Rect, name: &str) {
     let title = Paragraph::new(name)
         .style(Style::default().add_modifier(Modifier::UNDERLINED | Modifier::BOLD))
         .alignment(Alignment::Center);
 
-    frame.render_widget(title, vertical_layout[1]);
+    frame.render_widget(title, create_popup((40, 10), rect));
 }
 
 fn draw_new_note(frame: &mut Frame, rect: Rect, entry: &str) {

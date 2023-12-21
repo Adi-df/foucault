@@ -1,5 +1,5 @@
-use std::fs;
 use std::path::Path;
+use std::{fs, path::PathBuf};
 
 use anyhow::Result;
 use log::error;
@@ -12,6 +12,7 @@ use crate::note::{Note, NoteCharacters};
 
 pub struct Notebook {
     pub name: String,
+    file: PathBuf,
     database: Connection,
 }
 
@@ -41,6 +42,14 @@ impl Notebook {
         &self.database
     }
 
+    pub fn file(&self) -> &Path {
+        &self.file
+    }
+
+    pub fn dir(&self) -> Option<&Path> {
+        self.file.parent()
+    }
+
     pub fn open_notebook(name: &str, dir: &Path) -> Result<Self> {
         let notebook_path = dir.join(name);
 
@@ -52,13 +61,14 @@ impl Notebook {
             .into());
         }
 
-        let database = Connection::open(notebook_path).unwrap_or_else(|_| {
+        let database = Connection::open(&notebook_path).unwrap_or_else(|_| {
             error!("Unable to open the notebook \"{name}\".");
             todo!();
         });
 
         Ok(Notebook {
             name: name.to_owned(),
+            file: notebook_path,
             database,
         })
     }
@@ -74,7 +84,7 @@ impl Notebook {
             .into());
         }
 
-        let database = Connection::open(notebook_path).unwrap_or_else(|_| {
+        let database = Connection::open(&notebook_path).unwrap_or_else(|_| {
             error!("Unable to open the notebook \"{name}\".");
             todo!();
         });
@@ -99,6 +109,7 @@ impl Notebook {
 
         Ok(Notebook {
             name: name.to_owned(),
+            file: notebook_path,
             database,
         })
     }
