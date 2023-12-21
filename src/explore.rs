@@ -21,7 +21,7 @@ use ratatui::widgets::{
 };
 use ratatui::{Frame, Terminal};
 
-use crate::helpers::{create_popup, OptionalValue};
+use crate::helpers::{create_popup, Capitalize, OptionalValue};
 use crate::note::{Note, NoteSummary};
 use crate::notebook::Notebook;
 
@@ -331,7 +331,7 @@ fn edit_note(note: &mut Note, notebook: &Notebook) -> Result<()> {
 }
 
 fn draw_nothing(frame: &mut Frame, rect: Rect, name: &str) {
-    let title = Paragraph::new(name)
+    let title = Paragraph::new(name.capitalize())
         .style(Style::default().add_modifier(Modifier::UNDERLINED | Modifier::BOLD))
         .alignment(Alignment::Center);
 

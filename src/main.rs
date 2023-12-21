@@ -67,7 +67,7 @@ fn main() -> Result<()> {
         match command {
             Commands::Create { name } => {
                 info!("Create notebook {name}.");
-                Notebook::new_notebook(name, &app_dir_path)?;
+                Notebook::new_notebook(name.trim(), &app_dir_path)?;
             }
             Commands::Open { name } => {
                 info!("Open notebook {name}.");

@@ -65,3 +65,19 @@ where
         value.0.as_mut().ok_or_else(|| value.1.clone().into())
     }
 }
+
+pub trait Capitalize<'a> {
+    fn capitalize(&'a self) -> String;
+}
+
+impl<'a, T: 'a + ?Sized> Capitalize<'a> for T
+where
+    &'a T: Into<&'a str>,
+{
+    fn capitalize(&'a self) -> String {
+        let inner_str: &'a str = self.into();
+        let mut formated_string = inner_str[0..1].to_uppercase();
+        formated_string.push_str(&inner_str[1..]);
+        formated_string
+    }
+}

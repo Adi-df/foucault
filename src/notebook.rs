@@ -14,7 +14,7 @@ use sea_query::{ColumnDef, Expr, Iden, Query, SqliteQueryBuilder, Table};
 
 use crate::note::decode_links;
 use crate::note::decode_tags;
-use crate::note::{Note, NoteCharacters, NoteSummary};
+use crate::note::{NoteCharacters, NoteSummary};
 
 pub struct Notebook {
     pub name: String,
@@ -108,10 +108,6 @@ impl Notebook {
                 .col(ColumnDef::new(NoteCharacters::Content).text())
                 .build(SqliteQueryBuilder),
         )?;
-
-        // Add an initial note
-
-        (Note::new(name.to_owned(), Vec::new(), Vec::new(), String::new())).insert(&database)?;
 
         Ok(Notebook {
             name: name.to_owned(),
