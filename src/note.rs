@@ -66,7 +66,7 @@ impl Note {
                     NoteCharacters::Links,
                     NoteCharacters::Content,
                 ])
-                .values_panic([
+                .values([
                     self.id.into(),
                     self.name.as_str().into(),
                     json::stringify(&self.tags[..]).into(),
@@ -78,7 +78,7 @@ impl Note {
                     )
                     .into(),
                     self.content.as_str().into(),
-                ])
+                ])?
                 .to_string(SqliteQueryBuilder),
         )?;
 
@@ -160,7 +160,7 @@ impl Note {
 }
 
 pub fn decode_links(raw_links: &str) -> Result<Vec<Uuid>> {
-    let links = json::parse(&raw_links)?;
+    let links = json::parse(raw_links)?;
     if links.is_array() {
         links
             .members()
@@ -185,7 +185,7 @@ pub fn decode_links(raw_links: &str) -> Result<Vec<Uuid>> {
 }
 
 pub fn decode_tags(raw_tags: &str) -> Result<Vec<String>> {
-    let mut tags = json::parse(&raw_tags)?;
+    let mut tags = json::parse(raw_tags)?;
     if tags.is_array() {
         tags.members_mut()
             .map(JsonValue::take_string)

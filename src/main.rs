@@ -71,7 +71,7 @@ fn main() -> Result<()> {
             }
             Commands::Open { name } => {
                 info!("Open notebook {name}.");
-                explore(Notebook::open_notebook(name, &app_dir_path)?)?;
+                explore(&Notebook::open_notebook(name, &app_dir_path)?)?;
             }
             Commands::Delete { name } => {
                 info!("Delete notebook {name}.");
@@ -83,7 +83,7 @@ fn main() -> Result<()> {
 
         if let Some(name) = open_selector(&app_dir_path)? {
             info!("Open notebook selected : {name}.");
-            explore(Notebook::open_notebook(name.as_str(), &app_dir_path)?)?;
+            explore(&Notebook::open_notebook(name.as_str(), &app_dir_path)?)?;
         }
     }
 

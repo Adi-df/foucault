@@ -5,6 +5,7 @@ use std::str::FromStr;
 
 use anyhow::Result;
 use log::error;
+use sea_query::Order;
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -134,7 +135,7 @@ impl Notebook {
         Ok(())
     }
 
-    pub fn search_name(&self, name: &str) -> Result<Vec<NoteSummary>> {
+    pub fn search_name(&self, pattern: &str) -> Result<Vec<NoteSummary>> {
         self.database
             .prepare(
                 Query::select()
@@ -145,18 +146,14 @@ impl Notebook {
                         NoteCharacters::Tags,
                         NoteCharacters::Links,
                     ])
-                    .and_where(
-                        Expr::col(NoteCharacters::Name)
-                            .like(&format!("{}%", name))
-                            .into(),
-                    )
+                    .order_by(NoteCharacters::Name, Order::Asc)
+                    .and_where(Expr::col(NoteCharacters::Name).like(format!("{pattern}%")))
                     .to_string(SqliteQueryBuilder)
                     .as_str(),
             )?
             .query_map([], |row| {
                 Ok([row.get(0)?, row.get(1)?, row.get(2)?, row.get(2)?])
             })?
-            .into_iter()
             .map(|row| -> Result<[String; 4]> { row.map_err(anyhow::Error::from) })
             .map(|row| {
                 row.and_then(|[raw_id, name, raw_tags, raw_links]| {

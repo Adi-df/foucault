@@ -41,7 +41,7 @@ pub enum ExplorerError {
     NoNoteSelected,
 }
 
-pub fn explore(notebook: Notebook) -> Result<()> {
+pub fn explore(notebook: &Notebook) -> Result<()> {
     info!("Explore notebook : {}", notebook.name);
 
     enable_raw_mode().expect("Prepare terminal");
@@ -134,7 +134,7 @@ pub fn explore(notebook: Notebook) -> Result<()> {
                                 }
                                 KeyCode::Char('e') => {
                                     info!("Edit note {}", openened_note.by_ref()?.name);
-                                    edit_note(openened_note.by_ref_mut()?, &notebook)?;
+                                    edit_note(openened_note.by_ref_mut()?, notebook)?;
                                     forced_redraw = true;
                                 }
                                 _ => {}
@@ -154,7 +154,7 @@ pub fn explore(notebook: Notebook) -> Result<()> {
                                 {
                                     search_note_selected += 1;
                                 }
-                                KeyCode::Enter if search_note_result.len() > 0 => {
+                                KeyCode::Enter if !search_note_result.is_empty() => {
                                     let note_summary = search_note_result
                                         .get(search_note_selected)
                                         .ok_or(ExplorerError::NoNoteSelected)?;
@@ -203,16 +203,16 @@ pub fn explore(notebook: Notebook) -> Result<()> {
 
             match state {
                 State::Nothing => {
-                    terminal.draw(|mut frame| {
+                    terminal.draw(|frame| {
                         let main_rect = main_frame.inner(frame.size());
-                        draw_nothing(&mut frame, main_rect, notebook.name.as_str());
+                        draw_nothing(frame, main_rect, notebook.name.as_str());
                         frame.render_widget(main_frame, frame.size());
                     })?;
                 }
                 State::NoteCreating => {
-                    terminal.draw(|mut frame| {
+                    terminal.draw(|frame| {
                         let main_rect = main_frame.inner(frame.size());
-                        draw_new_note(&mut frame, main_rect, new_note_name.as_str());
+                        draw_new_note(frame, main_rect, new_note_name.as_str());
                         frame.render_widget(main_frame, frame.size());
                     })?;
                 }
@@ -221,11 +221,11 @@ pub fn explore(notebook: Notebook) -> Result<()> {
                     let note_content = openened_note.by_ref()?.content.as_str();
                     let note_tags = &openened_note.by_ref()?.tags;
 
-                    terminal.draw(|mut frame| {
+                    terminal.draw(|frame| {
                         let main_rect = main_frame.inner(frame.size());
                         // TODO : Render Markdown
                         draw_viewed_note(
-                            &mut frame,
+                            frame,
                             main_rect,
                             note_name,
                             note_tags,
@@ -235,10 +235,10 @@ pub fn explore(notebook: Notebook) -> Result<()> {
                     })?;
                 }
                 State::NoteListing => {
-                    terminal.draw(|mut frame| {
+                    terminal.draw(|frame| {
                         let main_rect = main_frame.inner(frame.size());
                         draw_note_listing(
-                            &mut frame,
+                            frame,
                             main_rect,
                             &search_note_name,
                             &search_note_result,
@@ -280,7 +280,7 @@ fn draw_note_listing(
 
     let list_results = List::new(
         search_note_result
-            .into_iter()
+            .iter()
             .map(|note| Span::raw(note.name.as_str())),
     )
     .highlight_symbol(">> ")
@@ -381,7 +381,7 @@ fn draw_viewed_note(
                 .padding(Padding::uniform(1)),
         );
     let note_tags = Table::default()
-        .rows([Row::new(note_tags.into_iter().map(|tag| Text::raw(tag)))])
+        .rows([Row::new(note_tags.iter().map(Text::raw))])
         .block(
             Block::default()
                 .title("Tags")
