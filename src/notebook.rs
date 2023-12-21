@@ -8,7 +8,7 @@ use thiserror::Error;
 use rusqlite::Connection;
 use sea_query::{ColumnDef, Iden, SqliteQueryBuilder, Table};
 
-use crate::note::{Note, NoteCharacters};
+use crate::note::{Note, NoteCharacters, NoteSummary};
 
 pub struct Notebook {
     pub name: String,
@@ -127,5 +127,9 @@ impl Notebook {
 
         fs::remove_file(notebook_path)?;
         Ok(())
+    }
+
+    pub fn search_name(&self, name: &str) -> Vec<NoteSummary> {
+        Vec::new()
     }
 }

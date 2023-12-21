@@ -37,6 +37,13 @@ pub struct Note {
     pub content: String,
 }
 
+pub struct NoteSummary {
+    pub id: Uuid,
+    pub name: String,
+    pub tags: Vec<String>,
+    pub links: Vec<Uuid>,
+}
+
 impl Note {
     pub fn new(name: String, tags: Vec<String>, links: Vec<Uuid>, content: String) -> Self {
         Self {

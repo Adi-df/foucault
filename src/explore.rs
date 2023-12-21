@@ -15,12 +15,14 @@ use crossterm::terminal::{
 use crossterm::{event, ExecutableCommand};
 use ratatui::prelude::{Alignment, Constraint, CrosstermBackend, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
-use ratatui::text::Text;
-use ratatui::widgets::{Block, BorderType, Borders, Clear, Padding, Paragraph, Row, Table};
+use ratatui::text::{Line, Span, Text};
+use ratatui::widgets::{
+    Block, BorderType, Borders, Clear, List, ListState, Padding, Paragraph, Row, Table,
+};
 use ratatui::{Frame, Terminal};
 
 use crate::helpers::{create_popup, OptionalValue};
-use crate::note::Note;
+use crate::note::{Note, NoteSummary};
 use crate::notebook::Notebook;
 
 #[derive(Clone, Copy, Debug)]
@@ -33,8 +35,6 @@ enum State {
 
 #[derive(Clone, Debug, Error)]
 pub enum ExplorerError {
-    #[error("No new note name. Should be unreachable.")]
-    NoNewNoteName,
     #[error("No note openend. Should be unreachable.")]
     NoNoteOpened,
 }
@@ -56,10 +56,11 @@ pub fn explore(notebook: Notebook) -> Result<()> {
     let mut forced_redraw = false;
 
     let mut state = State::Nothing;
-    let mut openened_note: OptionalValue<Note, ExplorerError> =
-        OptionalValue::new(None, ExplorerError::NoNoteOpened);
-    let mut new_note_name: OptionalValue<String, ExplorerError> =
-        OptionalValue::new(None, ExplorerError::NoNewNoteName);
+    let mut openened_note = OptionalValue::new(None, ExplorerError::NoNoteOpened);
+    let mut new_note_name = String::new();
+    let mut search_note_name = String::new();
+    let mut search_note_selected: usize = 0;
+    let mut search_note_result: Vec<NoteSummary> = Vec::new();
 
     loop {
         {
@@ -75,16 +76,23 @@ pub fn explore(notebook: Notebook) -> Result<()> {
                                 KeyCode::Char('c') => {
                                     info!("Create new note.");
                                     state = State::NoteCreating;
-                                    new_note_name.set(Some(String::new()));
+                                    new_note_name = String::new();
+                                }
+                                KeyCode::Char('s') => {
+                                    info!("List notes.");
+                                    state = State::NoteListing;
+                                    search_note_name = String::new();
+                                    search_note_selected = 0;
+                                    search_note_result = Vec::new();
                                 }
                                 _ => {}
                             },
                             State::NoteCreating => match key.code {
                                 KeyCode::Enter => {
-                                    info!("Complete note creation : {}.", new_note_name.by_ref()?);
+                                    info!("Complete note creation : {}.", new_note_name.as_str());
 
                                     let new_note = Note::new(
-                                        new_note_name.by_ref()?.clone(),
+                                        new_note_name.clone(),
                                         Vec::new(),
                                         Vec::new(),
                                         String::new(),
@@ -97,13 +105,13 @@ pub fn explore(notebook: Notebook) -> Result<()> {
                                 KeyCode::Esc => {
                                     info!("Cancel new note.");
                                     state = State::Nothing;
-                                    new_note_name.set(None);
+                                    new_note_name = String::new();
                                 }
                                 KeyCode::Backspace => {
-                                    new_note_name.by_ref_mut()?.pop();
+                                    new_note_name.pop();
                                 }
                                 KeyCode::Char(c) => {
-                                    new_note_name.by_ref_mut()?.push(c);
+                                    new_note_name.push(c);
                                 }
                                 _ => {}
                             },
@@ -124,7 +132,34 @@ pub fn explore(notebook: Notebook) -> Result<()> {
                                 }
                                 _ => {}
                             },
-                            _ => {}
+                            State::NoteListing => match key.code {
+                                KeyCode::Esc => {
+                                    info!("Stop note searching.");
+                                    state = State::Nothing;
+                                    search_note_name = String::new();
+                                    search_note_selected = 0;
+                                }
+                                KeyCode::Up if search_note_selected > 0 => {
+                                    search_note_selected -= 1
+                                }
+                                KeyCode::Down
+                                    if search_note_selected < search_note_result.len() - 1 =>
+                                {
+                                    search_note_selected += 1
+                                }
+                                KeyCode::Backspace => {
+                                    search_note_selected = 0;
+                                    search_note_name.pop();
+
+                                    search_note_result =
+                                        notebook.search_name(search_note_name.as_str());
+                                }
+                                KeyCode::Char(c) => {
+                                    search_note_selected = 0;
+                                    search_note_name.push(c);
+                                }
+                                _ => {}
+                            },
                         }
                     }
                 }
@@ -153,11 +188,9 @@ pub fn explore(notebook: Notebook) -> Result<()> {
                     })?;
                 }
                 State::NoteCreating => {
-                    let entry_name = new_note_name.by_ref()?;
-
                     terminal.draw(|mut frame| {
                         let main_rect = main_frame.inner(frame.size());
-                        draw_new_note(&mut frame, main_rect, entry_name.as_str());
+                        draw_new_note(&mut frame, main_rect, new_note_name.as_str());
                         frame.render_widget(main_frame, frame.size());
                     })?;
                 }
@@ -179,12 +212,68 @@ pub fn explore(notebook: Notebook) -> Result<()> {
                         frame.render_widget(main_frame, frame.size());
                     })?;
                 }
+                State::NoteListing => {
+                    terminal.draw(|mut frame| {
+                        let main_rect = main_frame.inner(frame.size());
+                        draw_note_listing(
+                            &mut frame,
+                            main_rect,
+                            &search_note_name,
+                            &search_note_result,
+                            search_note_selected,
+                        );
+                        frame.render_widget(main_frame, frame.size());
+                    })?;
+                }
                 _ => {}
             }
         }
     }
 
     Ok(())
+}
+
+fn draw_note_listing(
+    frame: &mut Frame,
+    main_rect: Rect,
+    search_note_name: &str,
+    search_note_result: &[NoteSummary],
+    search_note_selected: usize,
+) {
+    let layout = Layout::new(
+        Direction::Vertical,
+        [Constraint::Length(5), Constraint::Min(0)],
+    )
+    .split(main_rect);
+
+    let search_bar = Paragraph::new(Line::from(vec![
+        Span::raw(search_note_name).style(Style::default().add_modifier(Modifier::UNDERLINED))
+    ]))
+    .block(
+        Block::new()
+            .title("Searching")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded),
+    );
+
+    let list_results = List::new(
+        search_note_result
+            .into_iter()
+            .map(|note| Span::raw(note.name.as_str())),
+    )
+    .block(
+        Block::new()
+            .title("Results")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded),
+    );
+
+    frame.render_widget(search_bar, layout[0]);
+    frame.render_stateful_widget(
+        list_results,
+        layout[1],
+        &mut ListState::with_selected(ListState::default(), Some(search_note_selected)),
+    );
 }
 
 fn edit_note(note: &mut Note, notebook: &Notebook) -> Result<()> {
