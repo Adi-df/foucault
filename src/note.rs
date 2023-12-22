@@ -29,6 +29,7 @@ pub enum FormatError {
     UnknownFormatForLinks { links: String },
 }
 
+#[derive(Debug)]
 pub struct Note {
     pub id: Uuid,
     pub name: String,
@@ -37,6 +38,7 @@ pub struct Note {
     pub content: String,
 }
 
+#[derive(Debug)]
 pub struct NoteSummary {
     pub id: Uuid,
     pub name: String,

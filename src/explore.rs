@@ -21,23 +21,32 @@ use ratatui::widgets::{
 };
 use ratatui::{Frame, Terminal};
 
-use crate::helpers::{create_popup_proportion, create_popup_size, Capitalize, OptionalValue};
+use crate::helpers::{create_popup_proportion, create_popup_size, Capitalize};
 use crate::note::{Note, NoteSummary};
 use crate::notebook::Notebook;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug)]
 enum State {
     Nothing,
-    NoteListing,
-    NoteViewing,
-    NoteCreating,
-    NoteDeleting,
+    NoteListing {
+        pattern: String,
+        selected: usize,
+        results: Vec<NoteSummary>,
+    },
+    NoteViewing {
+        note: Note,
+    },
+    NoteCreating {
+        name: String,
+    },
+    NoteDeleting {
+        note: Note,
+        delete: bool,
+    },
 }
 
 #[derive(Clone, Debug, Error)]
 pub enum ExplorerError {
-    #[error("No note openend. Should be unreachable.")]
-    NoNoteOpened,
     #[error("No note selected. Should be unreachable.")]
     NoNoteSelected,
 }
@@ -59,24 +68,13 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
     let mut forced_redraw = false;
 
     let mut state = State::Nothing;
-    let mut openened_note = OptionalValue::new(None, ExplorerError::NoNoteOpened);
-    let mut new_note_name = String::new();
-    let mut search_note_name = String::new();
-    let mut search_note_selected: usize = 0;
-    let mut search_note_result: Vec<NoteSummary> = Vec::new();
-    let mut note_delete_selected: bool = false;
 
     loop {
         {
             if event::poll(Duration::from_millis(50))? {
                 if let Event::Key(key) = event::read()? {
                     if key.kind == KeyEventKind::Press {
-                        info!(
-                            "Available rows {}, selected {}",
-                            search_note_result.len(),
-                            search_note_selected
-                        );
-                        match state {
+                        state = match state {
                             State::Nothing => match key.code {
                                 KeyCode::Esc | KeyCode::Char('q') => {
                                     info!("Quit notebook.");
@@ -84,135 +82,154 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                                 }
                                 KeyCode::Char('c') => {
                                     info!("Create new note.");
-                                    state = State::NoteCreating;
-                                    new_note_name = String::new();
+                                    State::NoteCreating {
+                                        name: String::new(),
+                                    }
                                 }
                                 KeyCode::Char('s') => {
                                     info!("List notes.");
-                                    state = State::NoteListing;
-                                    search_note_name = String::new();
-                                    search_note_selected = 0;
-                                    search_note_result = notebook.search_name("")?;
+                                    State::NoteListing {
+                                        pattern: String::new(),
+                                        selected: 0,
+                                        results: notebook.search_name("")?,
+                                    }
                                 }
-                                _ => {}
+                                _ => state,
                             },
-                            State::NoteCreating => match key.code {
+                            State::NoteCreating { mut name } => match key.code {
                                 KeyCode::Enter => {
-                                    info!("Complete note creation : {}.", new_note_name.as_str());
+                                    info!("Complete note creation : {}.", name.as_str());
 
                                     let new_note = Note::new(
-                                        new_note_name.clone(),
+                                        name.clone(),
                                         Vec::new(),
                                         Vec::new(),
                                         String::new(),
                                     );
                                     new_note.insert(notebook.db())?;
 
-                                    state = State::NoteViewing;
-                                    openened_note.set(Some(new_note));
+                                    State::NoteViewing { note: new_note }
                                 }
                                 KeyCode::Esc => {
                                     info!("Cancel new note.");
-                                    state = State::Nothing;
-                                    new_note_name = String::new();
+                                    State::Nothing
                                 }
                                 KeyCode::Backspace => {
-                                    new_note_name.pop();
+                                    name.pop();
+                                    State::NoteCreating { name }
                                 }
                                 KeyCode::Char(c) => {
-                                    new_note_name.push(c);
+                                    name.push(c);
+                                    State::NoteCreating { name }
                                 }
-                                _ => {}
+                                _ => State::NoteCreating { name },
                             },
-                            State::NoteDeleting => match key.code {
+                            State::NoteDeleting { note, delete } => match key.code {
                                 KeyCode::Esc => {
                                     info!("Cancel deleting");
-                                    state = State::NoteViewing;
+                                    State::NoteViewing { note }
                                 }
-                                KeyCode::Tab => {
-                                    note_delete_selected = !note_delete_selected;
-                                }
+                                KeyCode::Tab => State::NoteDeleting {
+                                    note,
+                                    delete: !delete,
+                                },
                                 KeyCode::Enter => {
-                                    if note_delete_selected {
-                                        state = State::Nothing;
-                                        openened_note.steal()?.delete(notebook.db())?;
+                                    if delete {
+                                        note.delete(notebook.db())?;
+                                        State::Nothing
                                     } else {
-                                        state = State::NoteViewing;
+                                        State::NoteViewing { note }
                                     }
                                 }
-                                _ => {}
+                                _ => State::NoteDeleting { note, delete },
                             },
-                            State::NoteViewing => match key.code {
+                            State::NoteViewing { mut note } => match key.code {
                                 KeyCode::Esc => {
                                     info!("Stop note viewing.");
-                                    state = State::Nothing;
-                                    openened_note.set(None);
+                                    State::Nothing
                                 }
                                 KeyCode::Char('q') => {
                                     info!("Quit notebook.");
                                     break;
                                 }
                                 KeyCode::Char('e') => {
-                                    info!("Edit note {}", openened_note.by_ref()?.name);
-                                    edit_note(openened_note.by_ref_mut()?, notebook)?;
+                                    info!("Edit note {}", note.name);
+                                    edit_note(&mut note, notebook)?;
                                     forced_redraw = true;
+                                    State::NoteViewing { note }
                                 }
                                 KeyCode::Char('s') => {
                                     info!("List notes.");
-                                    openened_note.set(None);
-                                    state = State::NoteListing;
-                                    search_note_name = String::new();
-                                    search_note_selected = 0;
-                                    search_note_result = notebook.search_name("")?;
+                                    State::NoteListing {
+                                        pattern: String::new(),
+                                        selected: 0,
+                                        results: notebook.search_name("")?,
+                                    }
                                 }
                                 KeyCode::Char('d') => {
                                     info!("Not deleting prompt.");
-                                    state = State::NoteDeleting;
+                                    State::NoteDeleting {
+                                        note,
+                                        delete: false,
+                                    }
                                 }
-                                _ => {}
+                                _ => State::NoteViewing { note },
                             },
-                            State::NoteListing => match key.code {
+                            State::NoteListing {
+                                pattern: mut search,
+                                mut selected,
+                                mut results,
+                            } => match key.code {
                                 KeyCode::Esc => {
                                     info!("Stop note searching.");
-                                    state = State::Nothing;
-                                    search_note_name = String::new();
-                                    search_note_selected = 0;
+                                    State::Nothing
                                 }
-                                KeyCode::Up if search_note_selected > 0 => {
-                                    search_note_selected -= 1;
+                                KeyCode::Up if selected > 0 => State::NoteListing {
+                                    pattern: search,
+                                    selected: selected - 1,
+                                    results,
+                                },
+                                KeyCode::Down if selected < results.len() - 1 => {
+                                    State::NoteListing {
+                                        pattern: search,
+                                        selected: selected + 1,
+                                        results,
+                                    }
                                 }
-                                KeyCode::Down
-                                    if search_note_selected < search_note_result.len() - 1 =>
-                                {
-                                    search_note_selected += 1;
-                                }
-                                KeyCode::Enter if !search_note_result.is_empty() => {
-                                    let note_summary = search_note_result
-                                        .get(search_note_selected)
+                                KeyCode::Enter if !results.is_empty() => {
+                                    let note_summary = results
+                                        .get(selected)
                                         .ok_or(ExplorerError::NoNoteSelected)?;
 
                                     info!("Open note {}", note_summary.name);
 
-                                    state = State::NoteViewing;
-                                    openened_note
-                                        .set(Some(Note::load(note_summary.id, notebook.db())?));
-                                    search_note_selected = 0;
-                                    search_note_name = String::new();
-                                    search_note_result = Vec::new();
+                                    State::NoteViewing {
+                                        note: Note::load(note_summary.id, notebook.db())?,
+                                    }
                                 }
                                 KeyCode::Backspace => {
-                                    search_note_selected = 0;
-                                    search_note_name.pop();
-                                    search_note_result =
-                                        notebook.search_name(search_note_name.as_str())?;
+                                    search.pop();
+                                    State::NoteListing {
+                                        pattern: search,
+                                        selected,
+                                        results,
+                                    }
                                 }
                                 KeyCode::Char(c) => {
-                                    search_note_selected = 0;
-                                    search_note_name.push(c);
-                                    search_note_result =
-                                        notebook.search_name(search_note_name.as_str())?;
+                                    search.push(c);
+                                    selected = 0;
+                                    results = notebook.search_name(search.as_str())?;
+                                    State::NoteListing {
+                                        pattern: search,
+                                        selected,
+                                        results,
+                                    }
                                 }
-                                _ => {}
+                                _ => State::NoteListing {
+                                    pattern: search,
+                                    selected,
+                                    results,
+                                },
                             },
                         }
                     }
@@ -241,60 +258,56 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                         frame.render_widget(main_frame, frame.size());
                     })?;
                 }
-                State::NoteCreating => {
+                State::NoteCreating { ref name } => {
                     terminal.draw(|frame| {
                         let main_rect = main_frame.inner(frame.size());
-                        draw_new_note(frame, main_rect, new_note_name.as_str());
+                        draw_new_note(frame, main_rect, name.as_str());
                         frame.render_widget(main_frame, frame.size());
                     })?;
                 }
-                State::NoteViewing => {
-                    let note_name = openened_note.by_ref()?.name.as_str();
-                    let note_content = openened_note.by_ref()?.content.as_str();
-                    let note_tags = &openened_note.by_ref()?.tags;
-
+                State::NoteViewing { ref note } => {
                     terminal.draw(|frame| {
                         let main_rect = main_frame.inner(frame.size());
                         // TODO : Render Markdown
                         draw_viewed_note(
                             frame,
                             main_rect,
-                            note_name,
-                            note_tags,
-                            Paragraph::new(note_content).wrap(Wrap { trim: true }),
+                            note.name.as_str(),
+                            note.tags.as_slice(),
+                            Paragraph::new(note.content.as_str()).wrap(Wrap { trim: true }),
                         );
                         frame.render_widget(main_frame, frame.size());
                     })?;
                 }
-                State::NoteDeleting => {
-                    let note_name = openened_note.by_ref()?.name.as_str();
-                    let note_content = openened_note.by_ref()?.content.as_str();
-                    let note_tags = &openened_note.by_ref()?.tags;
-
+                State::NoteDeleting { ref note, delete } => {
                     terminal.draw(|frame| {
                         let main_rect = main_frame.inner(frame.size());
                         // TODO : Render Markdown
                         draw_viewed_note(
                             frame,
                             main_rect,
-                            note_name,
-                            note_tags,
-                            Paragraph::new(note_content),
+                            note.name.as_str(),
+                            note.tags.as_slice(),
+                            Paragraph::new(note.content.as_str()).wrap(Wrap { trim: true }),
                         );
-                        draw_deleting_popup(frame, main_rect, note_delete_selected);
+                        draw_deleting_popup(frame, main_rect, delete);
 
                         frame.render_widget(main_frame, frame.size());
                     })?;
                 }
-                State::NoteListing => {
+                State::NoteListing {
+                    pattern: ref search,
+                    selected,
+                    ref results,
+                } => {
                     terminal.draw(|frame| {
                         let main_rect = main_frame.inner(frame.size());
                         draw_note_listing(
                             frame,
                             main_rect,
-                            &search_note_name,
-                            &search_note_result,
-                            search_note_selected,
+                            search.as_str(),
+                            results.as_slice(),
+                            selected,
                         );
                         frame.render_widget(main_frame, frame.size());
                     })?;
@@ -304,52 +317,6 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
     }
 
     Ok(())
-}
-
-fn draw_deleting_popup(frame: &mut Frame, main_rect: Rect, note_delete_selected: bool) {
-    let popup_area = create_popup_size((50, 5), main_rect);
-    let block = Block::new()
-        .title("Delete note ?")
-        .borders(Borders::ALL)
-        .border_type(BorderType::Rounded)
-        .border_style(Style::default().fg(Color::Blue));
-
-    let layout = Layout::new(
-        Direction::Horizontal,
-        [Constraint::Percentage(50), Constraint::Percentage(50)],
-    )
-    .split(block.inner(popup_area));
-
-    let yes = Paragraph::new(Line::from(vec![if note_delete_selected {
-        Span::raw("Yes").add_modifier(Modifier::UNDERLINED)
-    } else {
-        Span::raw("Yes")
-    }]))
-    .style(Style::default().fg(Color::Green))
-    .alignment(Alignment::Center)
-    .block(
-        Block::default()
-            .borders(Borders::ALL)
-            .border_type(BorderType::Plain)
-            .border_style(Style::default().fg(Color::Green)),
-    );
-    let no = Paragraph::new(Line::from(vec![if note_delete_selected {
-        Span::raw("No")
-    } else {
-        Span::raw("No").add_modifier(Modifier::UNDERLINED)
-    }]))
-    .style(Style::default().fg(Color::Red))
-    .alignment(Alignment::Center)
-    .block(
-        Block::default()
-            .borders(Borders::ALL)
-            .border_type(BorderType::Plain)
-            .border_style(Style::default().fg(Color::Red)),
-    );
-
-    frame.render_widget(yes, layout[0]);
-    frame.render_widget(no, layout[1]);
-    frame.render_widget(block, popup_area);
 }
 
 fn draw_nothing(frame: &mut Frame, rect: Rect, name: &str) {
@@ -512,4 +479,51 @@ fn edit_note(note: &mut Note, notebook: &Notebook) -> Result<()> {
 
     fs::remove_file(&tmp_file_path)?;
     Ok(())
+}
+
+fn draw_deleting_popup(frame: &mut Frame, main_rect: Rect, note_delete_selected: bool) {
+    let popup_area = create_popup_size((50, 5), main_rect);
+    let block = Block::new()
+        .title("Delete note ?")
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .border_style(Style::default().fg(Color::Blue));
+
+    let layout = Layout::new(
+        Direction::Horizontal,
+        [Constraint::Percentage(50), Constraint::Percentage(50)],
+    )
+    .split(block.inner(popup_area));
+
+    let yes = Paragraph::new(Line::from(vec![if note_delete_selected {
+        Span::raw("Yes").add_modifier(Modifier::UNDERLINED)
+    } else {
+        Span::raw("Yes")
+    }]))
+    .style(Style::default().fg(Color::Green))
+    .alignment(Alignment::Center)
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Plain)
+            .border_style(Style::default().fg(Color::Green)),
+    );
+    let no = Paragraph::new(Line::from(vec![if note_delete_selected {
+        Span::raw("No")
+    } else {
+        Span::raw("No").add_modifier(Modifier::UNDERLINED)
+    }]))
+    .style(Style::default().fg(Color::Red))
+    .alignment(Alignment::Center)
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Plain)
+            .border_style(Style::default().fg(Color::Red)),
+    );
+
+    frame.render_widget(Clear, popup_area);
+    frame.render_widget(yes, layout[0]);
+    frame.render_widget(no, layout[1]);
+    frame.render_widget(block, popup_area);
 }
