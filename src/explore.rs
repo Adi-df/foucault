@@ -43,6 +43,10 @@ enum State {
         note: Note,
         delete: bool,
     },
+    NoteRenaming {
+        note: Note,
+        new_name: String,
+    },
 }
 
 #[derive(Clone, Debug, Error)]
@@ -124,25 +128,6 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                                 }
                                 _ => State::NoteCreating { name },
                             },
-                            State::NoteDeleting { note, delete } => match key.code {
-                                KeyCode::Esc => {
-                                    info!("Cancel deleting");
-                                    State::NoteViewing { note }
-                                }
-                                KeyCode::Tab => State::NoteDeleting {
-                                    note,
-                                    delete: !delete,
-                                },
-                                KeyCode::Enter => {
-                                    if delete {
-                                        note.delete(notebook.db())?;
-                                        State::Nothing
-                                    } else {
-                                        State::NoteViewing { note }
-                                    }
-                                }
-                                _ => State::NoteDeleting { note, delete },
-                            },
                             State::NoteViewing { mut note } => match key.code {
                                 KeyCode::Esc => {
                                     info!("Stop note viewing.");
@@ -173,10 +158,60 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                                         delete: false,
                                     }
                                 }
+                                KeyCode::Char('r') => {
+                                    info!("Prompt note new name");
+                                    State::NoteRenaming {
+                                        note,
+                                        new_name: String::new(),
+                                    }
+                                }
                                 _ => State::NoteViewing { note },
                             },
+                            State::NoteDeleting { note, delete } => match key.code {
+                                KeyCode::Esc => {
+                                    info!("Cancel deleting");
+                                    State::NoteViewing { note }
+                                }
+                                KeyCode::Tab => State::NoteDeleting {
+                                    note,
+                                    delete: !delete,
+                                },
+                                KeyCode::Enter => {
+                                    if delete {
+                                        note.delete(notebook.db())?;
+                                        State::Nothing
+                                    } else {
+                                        State::NoteViewing { note }
+                                    }
+                                }
+                                _ => State::NoteDeleting { note, delete },
+                            },
+                            State::NoteRenaming {
+                                mut note,
+                                mut new_name,
+                            } => match key.code {
+                                KeyCode::Esc => {
+                                    info!("Cancel renaming");
+                                    State::NoteViewing { note }
+                                }
+                                KeyCode::Enter => {
+                                    note.name = new_name;
+                                    note.update(notebook.db())?;
+                                    State::NoteViewing { note }
+                                }
+
+                                KeyCode::Backspace => {
+                                    new_name.pop();
+                                    State::NoteRenaming { note, new_name }
+                                }
+                                KeyCode::Char(c) => {
+                                    new_name.push(c);
+                                    State::NoteRenaming { note, new_name }
+                                }
+                                _ => State::NoteRenaming { note, new_name },
+                            },
                             State::NoteListing {
-                                pattern: mut search,
+                                mut pattern,
                                 mut selected,
                                 mut results,
                             } => match key.code {
@@ -185,13 +220,13 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                                     State::Nothing
                                 }
                                 KeyCode::Up if selected > 0 => State::NoteListing {
-                                    pattern: search,
+                                    pattern,
                                     selected: selected - 1,
                                     results,
                                 },
                                 KeyCode::Down if selected < results.len() - 1 => {
                                     State::NoteListing {
-                                        pattern: search,
+                                        pattern,
                                         selected: selected + 1,
                                         results,
                                     }
@@ -208,25 +243,25 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                                     }
                                 }
                                 KeyCode::Backspace => {
-                                    search.pop();
+                                    pattern.pop();
                                     State::NoteListing {
-                                        pattern: search,
+                                        pattern,
                                         selected,
                                         results,
                                     }
                                 }
                                 KeyCode::Char(c) => {
-                                    search.push(c);
+                                    pattern.push(c);
                                     selected = 0;
-                                    results = notebook.search_name(search.as_str())?;
+                                    results = notebook.search_name(pattern.as_str())?;
                                     State::NoteListing {
-                                        pattern: search,
+                                        pattern,
                                         selected,
                                         results,
                                     }
                                 }
                                 _ => State::NoteListing {
-                                    pattern: search,
+                                    pattern,
                                     selected,
                                     results,
                                 },
@@ -295,6 +330,25 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                         frame.render_widget(main_frame, frame.size());
                     })?;
                 }
+                State::NoteRenaming {
+                    ref note,
+                    ref new_name,
+                } => {
+                    terminal.draw(|frame| {
+                        let main_rect = main_frame.inner(frame.size());
+                        // TODO : Render Markdown
+                        draw_viewed_note(
+                            frame,
+                            main_rect,
+                            note.name.as_str(),
+                            note.tags.as_slice(),
+                            Paragraph::new(note.content.as_str()).wrap(Wrap { trim: true }),
+                        );
+                        draw_renaming_popup(frame, main_rect, new_name.as_str());
+
+                        frame.render_widget(main_frame, frame.size());
+                    })?;
+                }
                 State::NoteListing {
                     pattern: ref search,
                     selected,
@@ -319,7 +373,7 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
     Ok(())
 }
 
-fn draw_nothing(frame: &mut Frame, rect: Rect, name: &str) {
+fn draw_nothing(frame: &mut Frame, main_rect: Rect, name: &str) {
     let title = Paragraph::new(Line::from(vec![Span::raw(name.capitalize()).style(
         Style::default()
             .fg(Color::Blue)
@@ -327,10 +381,10 @@ fn draw_nothing(frame: &mut Frame, rect: Rect, name: &str) {
     )]))
     .alignment(Alignment::Center);
 
-    frame.render_widget(title, create_popup_proportion((40, 10), rect));
+    frame.render_widget(title, create_popup_proportion((40, 10), main_rect));
 }
 
-fn draw_new_note(frame: &mut Frame, rect: Rect, entry: &str) {
+fn draw_new_note(frame: &mut Frame, main_rect: Rect, entry: &str) {
     let new_note_entry = Paragraph::new(Line::from(vec![
         Span::raw(entry).style(Style::default().add_modifier(Modifier::UNDERLINED))
     ]))
@@ -343,15 +397,15 @@ fn draw_new_note(frame: &mut Frame, rect: Rect, entry: &str) {
             .padding(Padding::uniform(1)),
     );
 
-    frame.render_widget(new_note_entry, create_popup_size((30, 5), rect));
+    frame.render_widget(new_note_entry, create_popup_size((30, 5), main_rect));
 }
 
 fn draw_viewed_note(
     frame: &mut Frame,
     main_rect: Rect,
-    note_title: &str,
-    note_tags: &[String],
-    note_content: Paragraph,
+    title: &str,
+    tags: &[String],
+    content: Paragraph,
 ) {
     let vertical_layout = Layout::new(
         Direction::Vertical,
@@ -364,7 +418,7 @@ fn draw_viewed_note(
     )
     .split(vertical_layout[0]);
 
-    let note_title = Paragraph::new(note_title)
+    let note_title = Paragraph::new(title)
         .style(Style::default().add_modifier(Modifier::BOLD))
         .alignment(Alignment::Left)
         .block(
@@ -377,7 +431,7 @@ fn draw_viewed_note(
                 .padding(Padding::uniform(1)),
         );
     let note_tags = Table::default()
-        .rows([Row::new(note_tags.iter().map(Text::raw))])
+        .rows([Row::new(tags.iter().map(Text::raw))])
         .block(
             Block::default()
                 .title("Tags")
@@ -385,7 +439,7 @@ fn draw_viewed_note(
                 .border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(Color::Red)),
         );
-    let note_content = note_content.block(
+    let note_content = content.block(
         Block::default()
             .title("Content")
             .borders(Borders::ALL)
@@ -402,9 +456,9 @@ fn draw_viewed_note(
 fn draw_note_listing(
     frame: &mut Frame,
     main_rect: Rect,
-    search_note_name: &str,
-    search_note_result: &[NoteSummary],
-    search_note_selected: usize,
+    pattern: &str,
+    results: &[NoteSummary],
+    selected: usize,
 ) {
     let layout = Layout::new(
         Direction::Vertical,
@@ -413,14 +467,14 @@ fn draw_note_listing(
     .split(main_rect);
 
     let search_bar = Paragraph::new(Line::from(vec![
-        Span::raw(search_note_name).style(Style::default().add_modifier(Modifier::UNDERLINED))
+        Span::raw(pattern).style(Style::default().add_modifier(Modifier::UNDERLINED))
     ]))
     .block(
         Block::new()
             .title("Searching")
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(if search_note_result.is_empty() {
+            .border_style(Style::default().fg(if results.is_empty() {
                 Color::Red
             } else {
                 Color::Green
@@ -428,57 +482,24 @@ fn draw_note_listing(
             .padding(Padding::uniform(1)),
     );
 
-    let list_results = List::new(
-        search_note_result
-            .iter()
-            .map(|note| Span::raw(note.name.as_str())),
-    )
-    .highlight_symbol(">> ")
-    .highlight_style(Style::default().bg(Color::White).fg(Color::Black))
-    .block(
-        Block::new()
-            .title("Results")
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(Color::Yellow))
-            .padding(Padding::uniform(2)),
-    );
+    let list_results = List::new(results.iter().map(|note| Span::raw(note.name.as_str())))
+        .highlight_symbol(">> ")
+        .highlight_style(Style::default().bg(Color::White).fg(Color::Black))
+        .block(
+            Block::new()
+                .title("Results")
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(Color::Yellow))
+                .padding(Padding::uniform(2)),
+        );
 
     frame.render_widget(search_bar, layout[0]);
     frame.render_stateful_widget(
         list_results,
         layout[1],
-        &mut ListState::with_selected(ListState::default(), Some(search_note_selected)),
+        &mut ListState::with_selected(ListState::default(), Some(selected)),
     );
-}
-
-fn edit_note(note: &mut Note, notebook: &Notebook) -> Result<()> {
-    let tmp_file_path = notebook
-        .dir()
-        .unwrap()
-        .join(format!("{}.tmp.md", note.name));
-    note.export_content(tmp_file_path.as_path())?;
-
-    let editor = env::var("EDITOR")?;
-
-    stdout()
-        .execute(LeaveAlternateScreen)
-        .expect("Leave foucault screen");
-
-    defer! {
-        stdout().execute(EnterAlternateScreen).expect("Return to foucault");
-    }
-
-    Command::new(editor)
-        .args([&tmp_file_path])
-        .current_dir(notebook.dir().unwrap())
-        .status()?;
-
-    note.import_content(tmp_file_path.as_path())?;
-    note.update(notebook.db())?;
-
-    fs::remove_file(&tmp_file_path)?;
-    Ok(())
 }
 
 fn draw_deleting_popup(frame: &mut Frame, main_rect: Rect, note_delete_selected: bool) {
@@ -526,4 +547,52 @@ fn draw_deleting_popup(frame: &mut Frame, main_rect: Rect, note_delete_selected:
     frame.render_widget(yes, layout[0]);
     frame.render_widget(no, layout[1]);
     frame.render_widget(block, popup_area);
+}
+
+fn draw_renaming_popup(frame: &mut Frame, main_rect: Rect, new_name: &str) {
+    let popup_area = create_popup_size((30, 5), main_rect);
+
+    let new_note_entry = Paragraph::new(Line::from(vec![
+        Span::raw(new_name).style(Style::default().add_modifier(Modifier::UNDERLINED))
+    ]))
+    .block(
+        Block::default()
+            .title("Rename note")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::default().fg(Color::Green))
+            .padding(Padding::uniform(1)),
+    );
+
+    frame.render_widget(Clear, popup_area);
+    frame.render_widget(new_note_entry, create_popup_size((30, 5), main_rect));
+}
+
+fn edit_note(note: &mut Note, notebook: &Notebook) -> Result<()> {
+    let tmp_file_path = notebook
+        .dir()
+        .unwrap()
+        .join(format!("{}.tmp.md", note.name));
+    note.export_content(tmp_file_path.as_path())?;
+
+    let editor = env::var("EDITOR")?;
+
+    stdout()
+        .execute(LeaveAlternateScreen)
+        .expect("Leave foucault screen");
+
+    defer! {
+        stdout().execute(EnterAlternateScreen).expect("Return to foucault");
+    }
+
+    Command::new(editor)
+        .args([&tmp_file_path])
+        .current_dir(notebook.dir().unwrap())
+        .status()?;
+
+    note.import_content(tmp_file_path.as_path())?;
+    note.update(notebook.db())?;
+
+    fs::remove_file(&tmp_file_path)?;
+    Ok(())
 }
