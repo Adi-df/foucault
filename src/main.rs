@@ -1,6 +1,7 @@
 mod explore;
 mod helpers;
 mod logger;
+mod markdown;
 mod note;
 mod notebook;
 mod notebook_selector;

@@ -17,11 +17,12 @@ use ratatui::prelude::{Alignment, Constraint, CrosstermBackend, Direction, Layou
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span, Text};
 use ratatui::widgets::{
-    Block, BorderType, Borders, Clear, List, ListState, Padding, Paragraph, Row, Table, Wrap,
+    Block, BorderType, Borders, Clear, List, ListState, Padding, Paragraph, Row, Table,
 };
 use ratatui::{Frame, Terminal};
 
 use crate::helpers::{create_popup_proportion, create_popup_size, Capitalize};
+use crate::markdown::render;
 use crate::note::{Note, NoteSummary};
 use crate::notebook::Notebook;
 
@@ -301,29 +302,32 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                     })?;
                 }
                 State::NoteViewing { ref note } => {
+                    let content = render(note.content.as_str());
+
                     terminal.draw(|frame| {
                         let main_rect = main_frame.inner(frame.size());
-                        // TODO : Render Markdown
                         draw_viewed_note(
                             frame,
                             main_rect,
                             note.name.as_str(),
                             note.tags.as_slice(),
-                            Paragraph::new(note.content.as_str()).wrap(Wrap { trim: true }),
+                            content,
+                            // Paragraph::new("aaa"),
                         );
                         frame.render_widget(main_frame, frame.size());
                     })?;
                 }
                 State::NoteDeleting { ref note, delete } => {
+                    let content = render(note.content.as_str());
+
                     terminal.draw(|frame| {
                         let main_rect = main_frame.inner(frame.size());
-                        // TODO : Render Markdown
                         draw_viewed_note(
                             frame,
                             main_rect,
                             note.name.as_str(),
                             note.tags.as_slice(),
-                            Paragraph::new(note.content.as_str()).wrap(Wrap { trim: true }),
+                            content,
                         );
                         draw_deleting_popup(frame, main_rect, delete);
 
@@ -334,15 +338,16 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                     ref note,
                     ref new_name,
                 } => {
+                    let content = render(note.content.as_str());
+
                     terminal.draw(|frame| {
                         let main_rect = main_frame.inner(frame.size());
-                        // TODO : Render Markdown
                         draw_viewed_note(
                             frame,
                             main_rect,
                             note.name.as_str(),
                             note.tags.as_slice(),
-                            Paragraph::new(note.content.as_str()).wrap(Wrap { trim: true }),
+                            content,
                         );
                         draw_renaming_popup(frame, main_rect, new_name.as_str());
 
