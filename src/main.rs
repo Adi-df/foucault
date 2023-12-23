@@ -1,10 +1,12 @@
 mod explore;
 mod helpers;
+mod links;
 mod logger;
 mod markdown;
 mod note;
 mod notebook;
 mod notebook_selector;
+mod tags;
 
 use std::fs;
 use std::path::PathBuf;

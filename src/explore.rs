@@ -35,17 +35,17 @@ enum State {
         results: Vec<NoteSummary>,
     },
     NoteViewing {
-        note: Note,
+        note_data: NoteData,
     },
     NoteCreating {
         name: String,
     },
     NoteDeleting {
-        note: Note,
+        note_data: NoteData,
         delete: bool,
     },
     NoteRenaming {
-        note: Note,
+        note_data: NoteData,
         new_name: String,
     },
 }
@@ -54,6 +54,13 @@ enum State {
 pub enum ExplorerError {
     #[error("No note selected. Should be unreachable.")]
     NoNoteSelected,
+}
+
+#[derive(Debug)]
+pub struct NoteData {
+    note: Note,
+    tags: Vec<String>,
+    links: Vec<i64>,
 }
 
 pub fn explore(notebook: &Notebook) -> Result<()> {
@@ -105,15 +112,16 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                                 KeyCode::Enter => {
                                     info!("Complete note creation : {}.", name.as_str());
 
-                                    let new_note = Note::new(
-                                        name.clone(),
-                                        Vec::new(),
-                                        Vec::new(),
-                                        String::new(),
-                                    );
-                                    new_note.insert(notebook.db())?;
+                                    let new_note =
+                                        Note::new(name.clone(), String::new(), notebook.db())?;
 
-                                    State::NoteViewing { note: new_note }
+                                    State::NoteViewing {
+                                        note_data: NoteData {
+                                            note: new_note,
+                                            tags: Vec::new(),
+                                            links: Vec::new(),
+                                        },
+                                    }
                                 }
                                 KeyCode::Esc => {
                                     info!("Cancel new note.");
@@ -129,7 +137,7 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                                 }
                                 _ => State::NoteCreating { name },
                             },
-                            State::NoteViewing { mut note } => match key.code {
+                            State::NoteViewing { mut note_data } => match key.code {
                                 KeyCode::Esc => {
                                     info!("Stop note viewing.");
                                     State::Nothing
@@ -139,10 +147,10 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                                     break;
                                 }
                                 KeyCode::Char('e') => {
-                                    info!("Edit note {}", note.name);
-                                    edit_note(&mut note, notebook)?;
+                                    info!("Edit note {}", note_data.note.name);
+                                    edit_note(&mut note_data.note, notebook)?;
                                     forced_redraw = true;
-                                    State::NoteViewing { note }
+                                    State::NoteViewing { note_data }
                                 }
                                 KeyCode::Char('s') => {
                                     info!("List notes.");
@@ -155,61 +163,70 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                                 KeyCode::Char('d') => {
                                     info!("Not deleting prompt.");
                                     State::NoteDeleting {
-                                        note,
+                                        note_data,
                                         delete: false,
                                     }
                                 }
                                 KeyCode::Char('r') => {
                                     info!("Prompt note new name");
                                     State::NoteRenaming {
-                                        note,
+                                        note_data,
                                         new_name: String::new(),
                                     }
                                 }
-                                _ => State::NoteViewing { note },
+                                _ => State::NoteViewing { note_data },
                             },
-                            State::NoteDeleting { note, delete } => match key.code {
+                            State::NoteDeleting { note_data, delete } => match key.code {
                                 KeyCode::Esc => {
                                     info!("Cancel deleting");
-                                    State::NoteViewing { note }
+                                    State::NoteViewing { note_data }
                                 }
                                 KeyCode::Tab => State::NoteDeleting {
-                                    note,
+                                    note_data,
                                     delete: !delete,
                                 },
                                 KeyCode::Enter => {
                                     if delete {
-                                        note.delete(notebook.db())?;
+                                        note_data.note.delete(notebook.db())?;
                                         State::Nothing
                                     } else {
-                                        State::NoteViewing { note }
+                                        State::NoteViewing { note_data }
                                     }
                                 }
-                                _ => State::NoteDeleting { note, delete },
+                                _ => State::NoteDeleting { note_data, delete },
                             },
                             State::NoteRenaming {
-                                mut note,
+                                mut note_data,
                                 mut new_name,
                             } => match key.code {
                                 KeyCode::Esc => {
                                     info!("Cancel renaming");
-                                    State::NoteViewing { note }
+                                    State::NoteViewing { note_data }
                                 }
                                 KeyCode::Enter => {
-                                    note.name = new_name;
-                                    note.update(notebook.db())?;
-                                    State::NoteViewing { note }
+                                    note_data.note.name = new_name;
+                                    note_data.note.update(notebook.db())?;
+                                    State::NoteViewing { note_data }
                                 }
 
                                 KeyCode::Backspace => {
                                     new_name.pop();
-                                    State::NoteRenaming { note, new_name }
+                                    State::NoteRenaming {
+                                        note_data,
+                                        new_name,
+                                    }
                                 }
                                 KeyCode::Char(c) => {
                                     new_name.push(c);
-                                    State::NoteRenaming { note, new_name }
+                                    State::NoteRenaming {
+                                        note_data,
+                                        new_name,
+                                    }
                                 }
-                                _ => State::NoteRenaming { note, new_name },
+                                _ => State::NoteRenaming {
+                                    note_data,
+                                    new_name,
+                                },
                             },
                             State::NoteListing {
                                 mut pattern,
@@ -236,15 +253,24 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                                     let note_summary = results
                                         .get(selected)
                                         .ok_or(ExplorerError::NoNoteSelected)?;
+                                    let note = Note::load(note_summary.id, notebook.db())?;
+                                    let tags = note
+                                        .get_tags(notebook.db())?
+                                        .into_iter()
+                                        .map(|tag| tag.name.clone())
+                                        .collect();
+                                    let links = note.get_links(notebook.db())?;
 
                                     info!("Open note {}", note_summary.name);
 
                                     State::NoteViewing {
-                                        note: Note::load(note_summary.id, notebook.db())?,
+                                        note_data: NoteData { note, tags, links },
                                     }
                                 }
                                 KeyCode::Backspace => {
                                     pattern.pop();
+                                    selected = 0;
+                                    results = notebook.search_name(pattern.as_str())?;
                                     State::NoteListing {
                                         pattern,
                                         selected,
@@ -301,32 +327,34 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                         frame.render_widget(main_frame, frame.size());
                     })?;
                 }
-                State::NoteViewing { ref note } => {
-                    let content = render(note.content.as_str());
+                State::NoteViewing { ref note_data } => {
+                    let content = render(note_data.note.content.as_str());
 
                     terminal.draw(|frame| {
                         let main_rect = main_frame.inner(frame.size());
                         draw_viewed_note(
                             frame,
                             main_rect,
-                            note.name.as_str(),
-                            note.tags.as_slice(),
+                            note_data.note.name.as_str(),
+                            note_data.tags.as_slice(),
                             content,
-                            // Paragraph::new("aaa"),
                         );
                         frame.render_widget(main_frame, frame.size());
                     })?;
                 }
-                State::NoteDeleting { ref note, delete } => {
-                    let content = render(note.content.as_str());
+                State::NoteDeleting {
+                    ref note_data,
+                    delete,
+                } => {
+                    let content = render(note_data.note.content.as_str());
 
                     terminal.draw(|frame| {
                         let main_rect = main_frame.inner(frame.size());
                         draw_viewed_note(
                             frame,
                             main_rect,
-                            note.name.as_str(),
-                            note.tags.as_slice(),
+                            note_data.note.name.as_str(),
+                            note_data.tags.as_slice(),
                             content,
                         );
                         draw_deleting_popup(frame, main_rect, delete);
@@ -335,18 +363,18 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                     })?;
                 }
                 State::NoteRenaming {
-                    ref note,
+                    ref note_data,
                     ref new_name,
                 } => {
-                    let content = render(note.content.as_str());
+                    let content = render(note_data.note.content.as_str());
 
                     terminal.draw(|frame| {
                         let main_rect = main_frame.inner(frame.size());
                         draw_viewed_note(
                             frame,
                             main_rect,
-                            note.name.as_str(),
-                            note.tags.as_slice(),
+                            note_data.note.name.as_str(),
+                            note_data.tags.as_slice(),
                             content,
                         );
                         draw_renaming_popup(frame, main_rect, new_name.as_str());
@@ -355,7 +383,7 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                     })?;
                 }
                 State::NoteListing {
-                    pattern: ref search,
+                    ref pattern,
                     selected,
                     ref results,
                 } => {
@@ -364,7 +392,7 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                         draw_note_listing(
                             frame,
                             main_rect,
-                            search.as_str(),
+                            pattern.as_str(),
                             results.as_slice(),
                             selected,
                         );
