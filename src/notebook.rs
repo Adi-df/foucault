@@ -1,26 +1,18 @@
 use std::fs;
-use std::path::Path;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 use log::error;
-use sea_query::ForeignKey;
-use sea_query::ForeignKeyAction;
-use sea_query::Order;
 use thiserror::Error;
 
 use rusqlite::Connection;
-use sea_query::{ColumnDef, Expr, Query, SqliteQueryBuilder, Table};
+use sea_query::{
+    ColumnDef, Expr, ForeignKey, ForeignKeyAction, Order, Query, SqliteQueryBuilder, Table,
+};
 
-use crate::links::LinksCharacters;
-use crate::links::LinksTable;
-use crate::note::Note;
-use crate::note::NoteTable;
-use crate::note::{NoteCharacters, NoteSummary};
-use crate::tags::TagsCharacters;
-use crate::tags::TagsJoinCharacters;
-use crate::tags::TagsJoinTable;
-use crate::tags::TagsTable;
+use crate::links::{LinksCharacters, LinksTable};
+use crate::note::{Note, NoteCharacters, NoteSummary, NoteTable};
+use crate::tags::{Tag, TagsCharacters, TagsJoinCharacters, TagsJoinTable, TagsTable};
 
 pub struct Notebook {
     pub name: String,
@@ -217,7 +209,7 @@ impl Notebook {
         Ok(())
     }
 
-    pub fn search_name(&self, pattern: &str) -> Result<Vec<NoteSummary>> {
+    pub fn search_note_by_name(&self, pattern: &str) -> Result<Vec<NoteSummary>> {
         self.database
             .prepare(
                 Query::select()
@@ -239,6 +231,23 @@ impl Notebook {
                     })
                 })
             })
-            .collect::<Result<Vec<NoteSummary>>>()
+            .collect()
+    }
+
+    pub fn search_tag_by_name(&self, pattern: &str) -> Result<Vec<Tag>> {
+        self.database
+            .prepare(
+                Query::select()
+                    .from(TagsTable)
+                    .columns([TagsCharacters::Id, TagsCharacters::Name])
+                    .order_by(TagsCharacters::Id, Order::Desc)
+                    .and_where(Expr::col(TagsCharacters::Name).like(format!("{pattern}%")))
+                    .to_string(SqliteQueryBuilder)
+                    .as_str(),
+            )?
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
+            .map(|row| -> Result<(i64, String)> { row.map_err(anyhow::Error::from) })
+            .map(|row| row.and_then(|(id, name)| Ok(Tag { id, name })))
+            .collect()
     }
 }

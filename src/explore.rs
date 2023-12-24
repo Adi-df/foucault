@@ -6,7 +6,6 @@ use std::{env, fs};
 use anyhow::Result;
 use log::info;
 use scopeguard::defer;
-use thiserror::Error;
 
 use crossterm::event::{Event, KeyCode, KeyEventKind};
 use crossterm::terminal::{
@@ -25,11 +24,12 @@ use crate::helpers::{create_popup_proportion, create_popup_size, Capitalize};
 use crate::markdown::render;
 use crate::note::{Note, NoteSummary};
 use crate::notebook::Notebook;
+use crate::tags::Tag;
 
 #[derive(Debug)]
 enum State {
     Nothing,
-    NoteListing {
+    NotesManaging {
         pattern: String,
         selected: usize,
         results: Vec<NoteSummary>,
@@ -48,12 +48,19 @@ enum State {
         note_data: NoteData,
         new_name: String,
     },
-}
-
-#[derive(Clone, Debug, Error)]
-pub enum ExplorerError {
-    #[error("No note selected. Should be unreachable.")]
-    NoNoteSelected,
+    TagsManaging {
+        pattern: String,
+        pattern_editing: bool,
+        selected: usize,
+        results: Vec<Tag>,
+    },
+    TagCreating {
+        name: String,
+    },
+    TagDeleting {
+        tag: Tag,
+        delete: bool,
+    },
 }
 
 #[derive(Debug)]
@@ -100,10 +107,19 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                                 }
                                 KeyCode::Char('s') => {
                                     info!("List notes.");
-                                    State::NoteListing {
+                                    State::NotesManaging {
                                         pattern: String::new(),
                                         selected: 0,
-                                        results: notebook.search_name("")?,
+                                        results: notebook.search_note_by_name("")?,
+                                    }
+                                }
+                                KeyCode::Char('t') => {
+                                    info!("Manage tags.");
+                                    State::TagsManaging {
+                                        pattern: String::new(),
+                                        pattern_editing: false,
+                                        selected: 0,
+                                        results: notebook.search_tag_by_name("")?,
                                     }
                                 }
                                 _ => state,
@@ -154,10 +170,10 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                                 }
                                 KeyCode::Char('s') => {
                                     info!("List notes.");
-                                    State::NoteListing {
+                                    State::NotesManaging {
                                         pattern: String::new(),
                                         selected: 0,
-                                        results: notebook.search_name("")?,
+                                        results: notebook.search_note_by_name("")?,
                                     }
                                 }
                                 KeyCode::Char('d') => {
@@ -228,31 +244,29 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                                     new_name,
                                 },
                             },
-                            State::NoteListing {
+                            State::NotesManaging {
                                 mut pattern,
-                                mut selected,
+                                selected,
                                 mut results,
                             } => match key.code {
                                 KeyCode::Esc => {
                                     info!("Stop note searching.");
                                     State::Nothing
                                 }
-                                KeyCode::Up if selected > 0 => State::NoteListing {
+                                KeyCode::Up if selected > 0 => State::NotesManaging {
                                     pattern,
                                     selected: selected - 1,
                                     results,
                                 },
                                 KeyCode::Down if selected < results.len() - 1 => {
-                                    State::NoteListing {
+                                    State::NotesManaging {
                                         pattern,
                                         selected: selected + 1,
                                         results,
                                     }
                                 }
                                 KeyCode::Enter if !results.is_empty() => {
-                                    let note_summary = results
-                                        .get(selected)
-                                        .ok_or(ExplorerError::NoNoteSelected)?;
+                                    let note_summary = &results[selected];
                                     let note = Note::load(note_summary.id, notebook.db())?;
                                     let tags = note
                                         .get_tags(notebook.db())?
@@ -269,29 +283,141 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                                 }
                                 KeyCode::Backspace => {
                                     pattern.pop();
-                                    selected = 0;
-                                    results = notebook.search_name(pattern.as_str())?;
-                                    State::NoteListing {
+                                    results = notebook.search_note_by_name(pattern.as_str())?;
+                                    State::NotesManaging {
                                         pattern,
-                                        selected,
+                                        selected: 0,
                                         results,
                                     }
                                 }
                                 KeyCode::Char(c) => {
                                     pattern.push(c);
-                                    selected = 0;
-                                    results = notebook.search_name(pattern.as_str())?;
-                                    State::NoteListing {
+                                    results = notebook.search_note_by_name(pattern.as_str())?;
+                                    State::NotesManaging {
                                         pattern,
-                                        selected,
+                                        selected: 0,
                                         results,
                                     }
                                 }
-                                _ => State::NoteListing {
+                                _ => State::NotesManaging {
                                     pattern,
                                     selected,
                                     results,
                                 },
+                            },
+                            State::TagsManaging {
+                                mut pattern,
+                                pattern_editing,
+                                selected,
+                                mut results,
+                            } => match key.code {
+                                KeyCode::Esc => {
+                                    info!("Stop tags managing.");
+                                    State::Nothing
+                                }
+                                KeyCode::Up if selected > 0 => State::TagsManaging {
+                                    pattern,
+                                    pattern_editing,
+                                    selected: selected - 1,
+                                    results,
+                                },
+                                KeyCode::Down if selected < results.len() - 1 => {
+                                    State::TagsManaging {
+                                        pattern,
+                                        pattern_editing,
+                                        selected: selected + 1,
+                                        results,
+                                    }
+                                }
+                                KeyCode::Tab => State::TagsManaging {
+                                    pattern,
+                                    pattern_editing: !pattern_editing,
+                                    selected,
+                                    results,
+                                },
+                                KeyCode::Backspace if pattern_editing => {
+                                    pattern.pop();
+                                    results = notebook.search_tag_by_name(pattern.as_str())?;
+                                    State::TagsManaging {
+                                        pattern,
+                                        pattern_editing,
+                                        selected: 0,
+                                        results,
+                                    }
+                                }
+                                KeyCode::Char(c) if pattern_editing && !c.is_whitespace() => {
+                                    pattern.push(c);
+                                    results = notebook.search_tag_by_name(pattern.as_str())?;
+                                    State::TagsManaging {
+                                        pattern,
+                                        pattern_editing,
+                                        selected: 0,
+                                        results,
+                                    }
+                                }
+                                KeyCode::Char('c') if !pattern_editing => State::TagCreating {
+                                    name: String::new(),
+                                },
+                                KeyCode::Char('d') if !pattern_editing && !results.is_empty() => {
+                                    State::TagDeleting {
+                                        tag: results.swap_remove(selected),
+                                        delete: false,
+                                    }
+                                }
+                                _ => State::TagsManaging {
+                                    pattern,
+                                    pattern_editing,
+                                    selected,
+                                    results,
+                                },
+                            },
+                            State::TagCreating { mut name } => match key.code {
+                                KeyCode::Enter if !name.is_empty() => {
+                                    if !Tag::tag_exists(name.as_str(), notebook.db())? {
+                                        Tag::new(name.as_str(), notebook.db())?;
+                                        State::TagsManaging {
+                                            pattern: String::new(),
+                                            pattern_editing: false,
+                                            selected: 0,
+                                            results: notebook.search_tag_by_name("")?,
+                                        }
+                                    } else {
+                                        State::TagCreating { name }
+                                    }
+                                }
+                                KeyCode::Backspace => {
+                                    name.pop();
+                                    State::TagCreating { name }
+                                }
+                                KeyCode::Char(c) => {
+                                    name.push(c);
+                                    State::TagCreating { name }
+                                }
+                                _ => State::TagCreating { name },
+                            },
+                            State::TagDeleting { tag, delete } => match key.code {
+                                KeyCode::Esc => State::TagsManaging {
+                                    pattern: String::new(),
+                                    pattern_editing: false,
+                                    selected: 0,
+                                    results: notebook.search_tag_by_name("")?,
+                                },
+                                KeyCode::Enter => {
+                                    if delete {
+                                        tag.delete(notebook.db())?;
+                                    }
+                                    State::TagsManaging {
+                                        pattern: String::new(),
+                                        pattern_editing: false,
+                                        selected: 0,
+                                        results: notebook.search_tag_by_name("")?,
+                                    }
+                                }
+                                KeyCode::Tab => State::TagDeleting {
+                                    tag,
+                                    delete: !delete,
+                                },
+                                _ => State::TagDeleting { tag, delete },
                             },
                         }
                     }
@@ -382,7 +508,7 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                         frame.render_widget(main_frame, frame.size());
                     })?;
                 }
-                State::NoteListing {
+                State::NotesManaging {
                     ref pattern,
                     selected,
                     ref results,
@@ -396,6 +522,41 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                             results.as_slice(),
                             selected,
                         );
+                        frame.render_widget(main_frame, frame.size());
+                    })?;
+                }
+                State::TagsManaging {
+                    ref pattern,
+                    pattern_editing,
+                    selected,
+                    ref results,
+                } => {
+                    terminal.draw(|frame| {
+                        let main_rect = main_frame.inner(frame.size());
+                        draw_tag_managing(
+                            frame,
+                            main_rect,
+                            pattern.as_str(),
+                            results.as_slice(),
+                            selected,
+                            pattern_editing,
+                        );
+                        frame.render_widget(main_frame, frame.size());
+                    })?;
+                }
+                State::TagCreating { ref name } => {
+                    let taken = Tag::tag_exists(name, notebook.db())?;
+
+                    terminal.draw(|frame| {
+                        let main_rect = main_frame.inner(frame.size());
+                        draw_new_tag(frame, main_rect, name.as_str(), taken);
+                        frame.render_widget(main_frame, frame.size());
+                    })?;
+                }
+                State::TagDeleting { delete, .. } => {
+                    terminal.draw(|frame| {
+                        let main_rect = main_frame.inner(frame.size());
+                        draw_delete_tag(frame, main_rect, delete);
                         frame.render_widget(main_frame, frame.size());
                     })?;
                 }
@@ -628,4 +789,146 @@ fn edit_note(note: &mut Note, notebook: &Notebook) -> Result<()> {
 
     fs::remove_file(&tmp_file_path)?;
     Ok(())
+}
+
+fn draw_tag_managing(
+    frame: &mut Frame,
+    main_rect: Rect,
+    pattern: &str,
+    results: &[Tag],
+    selected: usize,
+    pattern_editing: bool,
+) {
+    let vertical_layout = Layout::new(
+        Direction::Vertical,
+        [Constraint::Length(5), Constraint::Min(0)],
+    )
+    .split(main_rect);
+
+    let filter_bar_layout = Layout::new(
+        Direction::Horizontal,
+        [Constraint::Length(10), Constraint::Min(0)],
+    )
+    .split(vertical_layout[0]);
+
+    let filter_editing_active = Paragraph::new(Line::from(vec![Span::raw(if pattern_editing {
+        "Yes"
+    } else {
+        "No"
+    })
+    .style(
+        Style::default()
+            .fg(if pattern_editing {
+                Color::Green
+            } else {
+                Color::Red
+            })
+            .add_modifier(Modifier::BOLD),
+    )]))
+    .block(
+        Block::new()
+            .title("Editing")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::default().fg(Color::Blue))
+            .padding(Padding::uniform(1)),
+    );
+
+    let filter_bar = Paragraph::new(Line::from(vec![
+        Span::raw(pattern).style(Style::default().add_modifier(Modifier::UNDERLINED))
+    ]))
+    .block(
+        Block::new()
+            .title("Filter")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::default().fg(if results.is_empty() {
+                Color::Red
+            } else {
+                Color::Green
+            }))
+            .padding(Padding::uniform(1)),
+    );
+
+    let list_results = List::new(results.iter().map(|tag| Span::raw(tag.name.as_str())))
+        .highlight_symbol(">> ")
+        .highlight_style(Style::default().bg(Color::White).fg(Color::Black))
+        .block(
+            Block::new()
+                .title("Tags")
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(Color::Yellow))
+                .padding(Padding::uniform(2)),
+        );
+
+    frame.render_widget(filter_editing_active, filter_bar_layout[0]);
+    frame.render_widget(filter_bar, filter_bar_layout[1]);
+    frame.render_stateful_widget(
+        list_results,
+        vertical_layout[1],
+        &mut ListState::with_selected(ListState::default(), Some(selected)),
+    );
+}
+
+fn draw_new_tag(frame: &mut Frame, main_rect: Rect, name: &str, taken: bool) {
+    let new_tag_entry = Paragraph::new(Line::from(vec![
+        Span::raw(name).style(Style::default().add_modifier(Modifier::UNDERLINED))
+    ]))
+    .block(
+        Block::default()
+            .title("New tag name")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::default().fg(if taken { Color::Red } else { Color::Green }))
+            .padding(Padding::uniform(1)),
+    );
+
+    frame.render_widget(new_tag_entry, create_popup_size((30, 5), main_rect));
+}
+
+fn draw_delete_tag(frame: &mut Frame, main_rect: Rect, delete: bool) {
+    let popup_area = create_popup_size((50, 5), main_rect);
+    let block = Block::new()
+        .title("Delete tag ?")
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .border_style(Style::default().fg(Color::Blue));
+
+    let layout = Layout::new(
+        Direction::Horizontal,
+        [Constraint::Percentage(50), Constraint::Percentage(50)],
+    )
+    .split(block.inner(popup_area));
+
+    let yes = Paragraph::new(Line::from(vec![if delete {
+        Span::raw("Yes").add_modifier(Modifier::UNDERLINED)
+    } else {
+        Span::raw("Yes")
+    }]))
+    .style(Style::default().fg(Color::Green))
+    .alignment(Alignment::Center)
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Plain)
+            .border_style(Style::default().fg(Color::Green)),
+    );
+    let no = Paragraph::new(Line::from(vec![if delete {
+        Span::raw("No")
+    } else {
+        Span::raw("No").add_modifier(Modifier::UNDERLINED)
+    }]))
+    .style(Style::default().fg(Color::Red))
+    .alignment(Alignment::Center)
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Plain)
+            .border_style(Style::default().fg(Color::Red)),
+    );
+
+    frame.render_widget(yes, layout[0]);
+    frame.render_widget(no, layout[1]);
+    frame.render_widget(block, popup_area);
 }
