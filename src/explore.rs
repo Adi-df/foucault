@@ -27,13 +27,24 @@ use crate::notebook::Notebook;
 use crate::tags::Tag;
 
 #[derive(Debug)]
+struct NotesManagingSearchData {
+    pattern: String,
+    selected: usize,
+    notes: Vec<NoteSummary>,
+}
+
+#[derive(Debug)]
+struct TagsManagingFilterData {
+    pattern: String,
+    pattern_editing: bool,
+    selected: usize,
+    tags: Vec<Tag>,
+}
+
+#[derive(Debug)]
 enum State {
     Nothing,
-    NotesManaging {
-        pattern: String,
-        selected: usize,
-        results: Vec<NoteSummary>,
-    },
+    NotesManaging(NotesManagingSearchData),
     NoteViewing {
         note_data: NoteData,
     },
@@ -48,17 +59,14 @@ enum State {
         note_data: NoteData,
         new_name: String,
     },
-    TagsManaging {
-        pattern: String,
-        pattern_editing: bool,
-        selected: usize,
-        results: Vec<Tag>,
-    },
+    TagsManaging(TagsManagingFilterData),
     TagCreating {
+        tags_search: TagsManagingFilterData,
         name: String,
     },
     TagDeleting {
-        tag: Tag,
+        tags_search: TagsManagingFilterData,
+        selected: usize,
         delete: bool,
     },
 }
@@ -107,20 +115,20 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                                 }
                                 KeyCode::Char('s') => {
                                     info!("List notes.");
-                                    State::NotesManaging {
+                                    State::NotesManaging(NotesManagingSearchData {
                                         pattern: String::new(),
                                         selected: 0,
-                                        results: notebook.search_note_by_name("")?,
-                                    }
+                                        notes: notebook.search_note_by_name("")?,
+                                    })
                                 }
                                 KeyCode::Char('t') => {
                                     info!("Manage tags.");
-                                    State::TagsManaging {
+                                    State::TagsManaging(TagsManagingFilterData {
                                         pattern: String::new(),
                                         pattern_editing: false,
                                         selected: 0,
-                                        results: notebook.search_tag_by_name("")?,
-                                    }
+                                        tags: notebook.search_tag_by_name("")?,
+                                    })
                                 }
                                 _ => state,
                             },
@@ -170,11 +178,11 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                                 }
                                 KeyCode::Char('s') => {
                                     info!("List notes.");
-                                    State::NotesManaging {
+                                    State::NotesManaging(NotesManagingSearchData {
                                         pattern: String::new(),
                                         selected: 0,
-                                        results: notebook.search_note_by_name("")?,
-                                    }
+                                        notes: notebook.search_note_by_name("")?,
+                                    })
                                 }
                                 KeyCode::Char('d') => {
                                     info!("Not deleting prompt.");
@@ -244,29 +252,31 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                                     new_name,
                                 },
                             },
-                            State::NotesManaging {
+                            State::NotesManaging(NotesManagingSearchData {
                                 mut pattern,
                                 selected,
-                                mut results,
-                            } => match key.code {
+                                mut notes,
+                            }) => match key.code {
                                 KeyCode::Esc => {
                                     info!("Stop note searching.");
                                     State::Nothing
                                 }
-                                KeyCode::Up if selected > 0 => State::NotesManaging {
-                                    pattern,
-                                    selected: selected - 1,
-                                    results,
-                                },
-                                KeyCode::Down if selected < results.len() - 1 => {
-                                    State::NotesManaging {
+                                KeyCode::Up if selected > 0 => {
+                                    State::NotesManaging(NotesManagingSearchData {
+                                        pattern,
+                                        selected: selected - 1,
+                                        notes,
+                                    })
+                                }
+                                KeyCode::Down if selected < notes.len() - 1 => {
+                                    State::NotesManaging(NotesManagingSearchData {
                                         pattern,
                                         selected: selected + 1,
-                                        results,
-                                    }
+                                        notes,
+                                    })
                                 }
-                                KeyCode::Enter if !results.is_empty() => {
-                                    let note_summary = &results[selected];
+                                KeyCode::Enter if !notes.is_empty() => {
+                                    let note_summary = &notes[selected];
                                     let note = Note::load(note_summary.id, notebook.db())?;
                                     let tags = note
                                         .get_tags(notebook.db())?
@@ -283,141 +293,144 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                                 }
                                 KeyCode::Backspace => {
                                     pattern.pop();
-                                    results = notebook.search_note_by_name(pattern.as_str())?;
-                                    State::NotesManaging {
+                                    notes = notebook.search_note_by_name(pattern.as_str())?;
+                                    State::NotesManaging(NotesManagingSearchData {
                                         pattern,
                                         selected: 0,
-                                        results,
-                                    }
+                                        notes,
+                                    })
                                 }
                                 KeyCode::Char(c) => {
                                     pattern.push(c);
-                                    results = notebook.search_note_by_name(pattern.as_str())?;
-                                    State::NotesManaging {
+                                    notes = notebook.search_note_by_name(pattern.as_str())?;
+                                    State::NotesManaging(NotesManagingSearchData {
                                         pattern,
                                         selected: 0,
-                                        results,
-                                    }
+                                        notes,
+                                    })
                                 }
-                                _ => State::NotesManaging {
+                                _ => State::NotesManaging(NotesManagingSearchData {
                                     pattern,
                                     selected,
-                                    results,
-                                },
+                                    notes,
+                                }),
                             },
-                            State::TagsManaging {
-                                mut pattern,
-                                pattern_editing,
-                                selected,
-                                mut results,
-                            } => match key.code {
+                            State::TagsManaging(mut tags_search) => match key.code {
                                 KeyCode::Esc => {
                                     info!("Stop tags managing.");
                                     State::Nothing
                                 }
-                                KeyCode::Up if selected > 0 => State::TagsManaging {
-                                    pattern,
-                                    pattern_editing,
-                                    selected: selected - 1,
-                                    results,
-                                },
-                                KeyCode::Down if selected < results.len() - 1 => {
-                                    State::TagsManaging {
-                                        pattern,
-                                        pattern_editing,
-                                        selected: selected + 1,
-                                        results,
-                                    }
+                                KeyCode::Up if tags_search.selected > 0 => {
+                                    State::TagsManaging(TagsManagingFilterData {
+                                        selected: tags_search.selected - 1,
+                                        ..tags_search
+                                    })
                                 }
-                                KeyCode::Tab => State::TagsManaging {
-                                    pattern,
-                                    pattern_editing: !pattern_editing,
-                                    selected,
-                                    results,
-                                },
-                                KeyCode::Backspace if pattern_editing => {
-                                    pattern.pop();
-                                    results = notebook.search_tag_by_name(pattern.as_str())?;
-                                    State::TagsManaging {
-                                        pattern,
-                                        pattern_editing,
+                                KeyCode::Down
+                                    if tags_search.selected < tags_search.tags.len() - 1 =>
+                                {
+                                    State::TagsManaging(TagsManagingFilterData {
+                                        selected: tags_search.selected + 1,
+                                        ..tags_search
+                                    })
+                                }
+                                KeyCode::Tab => State::TagsManaging(TagsManagingFilterData {
+                                    pattern_editing: !tags_search.pattern_editing,
+                                    ..tags_search
+                                }),
+                                KeyCode::Backspace if tags_search.pattern_editing => {
+                                    tags_search.pattern.pop();
+                                    State::TagsManaging(TagsManagingFilterData {
+                                        tags: notebook
+                                            .search_tag_by_name(tags_search.pattern.as_str())?,
+                                        pattern: tags_search.pattern,
                                         selected: 0,
-                                        results,
-                                    }
+                                        ..tags_search
+                                    })
                                 }
-                                KeyCode::Char(c) if pattern_editing && !c.is_whitespace() => {
-                                    pattern.push(c);
-                                    results = notebook.search_tag_by_name(pattern.as_str())?;
-                                    State::TagsManaging {
-                                        pattern,
-                                        pattern_editing,
+                                KeyCode::Char(c)
+                                    if tags_search.pattern_editing && !c.is_whitespace() =>
+                                {
+                                    tags_search.pattern.push(c);
+                                    State::TagsManaging(TagsManagingFilterData {
                                         selected: 0,
-                                        results,
+                                        tags: notebook
+                                            .search_tag_by_name(tags_search.pattern.as_str())?,
+                                        pattern: tags_search.pattern,
+                                        ..tags_search
+                                    })
+                                }
+                                KeyCode::Char('c') if !tags_search.pattern_editing => {
+                                    State::TagCreating {
+                                        tags_search,
+                                        name: String::new(),
                                     }
                                 }
-                                KeyCode::Char('c') if !pattern_editing => State::TagCreating {
-                                    name: String::new(),
-                                },
-                                KeyCode::Char('d') if !pattern_editing && !results.is_empty() => {
+                                KeyCode::Char('d')
+                                    if !tags_search.pattern_editing
+                                        && !tags_search.tags.is_empty() =>
+                                {
                                     State::TagDeleting {
-                                        tag: results.swap_remove(selected),
+                                        selected: tags_search.selected,
                                         delete: false,
+                                        tags_search,
                                     }
                                 }
-                                _ => State::TagsManaging {
-                                    pattern,
-                                    pattern_editing,
-                                    selected,
-                                    results,
-                                },
+                                _ => State::TagsManaging(tags_search),
                             },
-                            State::TagCreating { mut name } => match key.code {
+                            State::TagCreating {
+                                tags_search,
+                                mut name,
+                            } => match key.code {
+                                KeyCode::Esc => State::TagsManaging(tags_search),
                                 KeyCode::Enter if !name.is_empty() => {
                                     if !Tag::tag_exists(name.as_str(), notebook.db())? {
                                         Tag::new(name.as_str(), notebook.db())?;
-                                        State::TagsManaging {
+                                        State::TagsManaging(TagsManagingFilterData {
                                             pattern: String::new(),
                                             pattern_editing: false,
                                             selected: 0,
-                                            results: notebook.search_tag_by_name("")?,
-                                        }
+                                            tags: notebook.search_tag_by_name("")?,
+                                        })
                                     } else {
-                                        State::TagCreating { name }
+                                        State::TagCreating { tags_search, name }
                                     }
                                 }
                                 KeyCode::Backspace => {
                                     name.pop();
-                                    State::TagCreating { name }
+                                    State::TagCreating { tags_search, name }
                                 }
                                 KeyCode::Char(c) => {
                                     name.push(c);
-                                    State::TagCreating { name }
+                                    State::TagCreating { tags_search, name }
                                 }
-                                _ => State::TagCreating { name },
+                                _ => State::TagCreating { tags_search, name },
                             },
-                            State::TagDeleting { tag, delete } => match key.code {
-                                KeyCode::Esc => State::TagsManaging {
-                                    pattern: String::new(),
-                                    pattern_editing: false,
-                                    selected: 0,
-                                    results: notebook.search_tag_by_name("")?,
-                                },
+                            State::TagDeleting {
+                                mut tags_search,
+                                selected,
+                                delete,
+                            } => match key.code {
+                                KeyCode::Esc => State::TagsManaging(tags_search),
                                 KeyCode::Enter => {
                                     if delete {
-                                        tag.delete(notebook.db())?;
+                                        tags_search
+                                            .tags
+                                            .swap_remove(selected)
+                                            .delete(notebook.db())?;
                                     }
-                                    State::TagsManaging {
-                                        pattern: String::new(),
-                                        pattern_editing: false,
-                                        selected: 0,
-                                        results: notebook.search_tag_by_name("")?,
-                                    }
+                                    State::TagsManaging(tags_search)
                                 }
                                 KeyCode::Tab => State::TagDeleting {
-                                    tag,
+                                    tags_search,
+                                    selected,
                                     delete: !delete,
                                 },
-                                _ => State::TagDeleting { tag, delete },
+                                _ => State::TagDeleting {
+                                    tags_search,
+                                    selected,
+                                    delete,
+                                },
                             },
                         }
                     }
@@ -508,54 +521,77 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
                         frame.render_widget(main_frame, frame.size());
                     })?;
                 }
-                State::NotesManaging {
+                State::NotesManaging(NotesManagingSearchData {
                     ref pattern,
                     selected,
-                    ref results,
-                } => {
+                    ref notes,
+                }) => {
                     terminal.draw(|frame| {
                         let main_rect = main_frame.inner(frame.size());
                         draw_note_listing(
                             frame,
                             main_rect,
                             pattern.as_str(),
-                            results.as_slice(),
+                            notes.as_slice(),
                             selected,
                         );
                         frame.render_widget(main_frame, frame.size());
                     })?;
                 }
-                State::TagsManaging {
+                State::TagsManaging(TagsManagingFilterData {
                     ref pattern,
                     pattern_editing,
                     selected,
-                    ref results,
-                } => {
+                    ref tags,
+                }) => {
                     terminal.draw(|frame| {
                         let main_rect = main_frame.inner(frame.size());
                         draw_tag_managing(
                             frame,
                             main_rect,
                             pattern.as_str(),
-                            results.as_slice(),
+                            tags.as_slice(),
                             selected,
                             pattern_editing,
                         );
                         frame.render_widget(main_frame, frame.size());
                     })?;
                 }
-                State::TagCreating { ref name } => {
+                State::TagCreating {
+                    ref tags_search,
+                    ref name,
+                } => {
                     let taken = Tag::tag_exists(name, notebook.db())?;
 
                     terminal.draw(|frame| {
                         let main_rect = main_frame.inner(frame.size());
+                        draw_tag_managing(
+                            frame,
+                            main_rect,
+                            tags_search.pattern.as_str(),
+                            tags_search.tags.as_slice(),
+                            tags_search.selected,
+                            tags_search.pattern_editing,
+                        );
                         draw_new_tag(frame, main_rect, name.as_str(), taken);
                         frame.render_widget(main_frame, frame.size());
                     })?;
                 }
-                State::TagDeleting { delete, .. } => {
+                State::TagDeleting {
+                    delete,
+                    ref tags_search,
+                    ..
+                } => {
                     terminal.draw(|frame| {
                         let main_rect = main_frame.inner(frame.size());
+                        draw_tag_managing(
+                            frame,
+                            main_rect,
+                            tags_search.pattern.as_str(),
+                            tags_search.tags.as_slice(),
+                            tags_search.selected,
+                            tags_search.pattern_editing,
+                        );
                         draw_delete_tag(frame, main_rect, delete);
                         frame.render_widget(main_frame, frame.size());
                     })?;
@@ -696,7 +732,7 @@ fn draw_note_listing(
     );
 }
 
-fn draw_deleting_popup(frame: &mut Frame, main_rect: Rect, note_delete_selected: bool) {
+fn draw_deleting_popup(frame: &mut Frame, main_rect: Rect, delete: bool) {
     let popup_area = create_popup_size((50, 5), main_rect);
     let block = Block::new()
         .title("Delete note ?")
@@ -710,7 +746,7 @@ fn draw_deleting_popup(frame: &mut Frame, main_rect: Rect, note_delete_selected:
     )
     .split(block.inner(popup_area));
 
-    let yes = Paragraph::new(Line::from(vec![if note_delete_selected {
+    let yes = Paragraph::new(Line::from(vec![if delete {
         Span::raw("Yes").add_modifier(Modifier::UNDERLINED)
     } else {
         Span::raw("Yes")
@@ -723,7 +759,7 @@ fn draw_deleting_popup(frame: &mut Frame, main_rect: Rect, note_delete_selected:
             .border_type(BorderType::Plain)
             .border_style(Style::default().fg(Color::Green)),
     );
-    let no = Paragraph::new(Line::from(vec![if note_delete_selected {
+    let no = Paragraph::new(Line::from(vec![if delete {
         Span::raw("No")
     } else {
         Span::raw("No").add_modifier(Modifier::UNDERLINED)
@@ -872,6 +908,8 @@ fn draw_tag_managing(
 }
 
 fn draw_new_tag(frame: &mut Frame, main_rect: Rect, name: &str, taken: bool) {
+    let popup_area = create_popup_size((30, 5), main_rect);
+
     let new_tag_entry = Paragraph::new(Line::from(vec![
         Span::raw(name).style(Style::default().add_modifier(Modifier::UNDERLINED))
     ]))
@@ -884,7 +922,8 @@ fn draw_new_tag(frame: &mut Frame, main_rect: Rect, name: &str, taken: bool) {
             .padding(Padding::uniform(1)),
     );
 
-    frame.render_widget(new_tag_entry, create_popup_size((30, 5), main_rect));
+    frame.render_widget(Clear, popup_area);
+    frame.render_widget(new_tag_entry, popup_area);
 }
 
 fn draw_delete_tag(frame: &mut Frame, main_rect: Rect, delete: bool) {
@@ -928,6 +967,7 @@ fn draw_delete_tag(frame: &mut Frame, main_rect: Rect, delete: bool) {
             .border_style(Style::default().fg(Color::Red)),
     );
 
+    frame.render_widget(Clear, popup_area);
     frame.render_widget(yes, layout[0]);
     frame.render_widget(no, layout[1]);
     frame.render_widget(block, popup_area);
