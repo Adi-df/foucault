@@ -1,7 +1,7 @@
 use anyhow::Result;
 
 use rusqlite::Connection;
-use sea_query::{ConditionalStatement, Expr, Iden, Query, SqliteQueryBuilder};
+use sea_query::{Expr, Iden, Order, Query, SqliteQueryBuilder};
 
 #[derive(Iden)]
 pub struct TagsTable;
@@ -67,5 +67,21 @@ impl Tag {
                 .as_str(),
         )?;
         Ok(())
+    }
+
+    pub fn search_by_name(pattern: &str, db: &Connection) -> Result<Vec<Tag>> {
+        db.prepare(
+            Query::select()
+                .from(TagsTable)
+                .columns([TagsCharacters::Id, TagsCharacters::Name])
+                .order_by(TagsCharacters::Id, Order::Desc)
+                .and_where(Expr::col(TagsCharacters::Name).like(format!("{pattern}%")))
+                .to_string(SqliteQueryBuilder)
+                .as_str(),
+        )?
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
+        .map(|row| -> Result<(i64, String)> { row.map_err(anyhow::Error::from) })
+        .map(|row| row.map(|(id, name)| Tag { id, name }))
+        .collect()
     }
 }

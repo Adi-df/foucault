@@ -6,6 +6,7 @@ mod markdown;
 mod note;
 mod notebook;
 mod notebook_selector;
+mod states;
 mod tags;
 
 use std::fs;

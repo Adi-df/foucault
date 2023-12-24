@@ -4,12 +4,10 @@ use std::path::Path;
 use anyhow::Result;
 
 use rusqlite::Connection;
-use sea_query::{Expr, Iden, JoinType, Query, SqliteQueryBuilder};
+use sea_query::{Expr, Iden, JoinType, Order, Query, SqliteQueryBuilder};
 
-use crate::{
-    links::LinksCharacters,
-    tags::{Tag, TagsCharacters, TagsJoinCharacters, TagsJoinTable, TagsTable},
-};
+use crate::links::LinksCharacters;
+use crate::tags::{Tag, TagsCharacters, TagsJoinCharacters, TagsJoinTable, TagsTable};
 
 #[derive(Iden)]
 pub struct NoteTable;
@@ -149,5 +147,29 @@ impl Note {
     pub fn import_content(&mut self, file: &Path) -> Result<()> {
         self.content = String::from_utf8(fs::read(file)?)?;
         Ok(())
+    }
+
+    pub fn search_by_name(pattern: &str, db: &Connection) -> Result<Vec<NoteSummary>> {
+        db.prepare(
+            Query::select()
+                .from(NoteTable)
+                .columns([NoteCharacters::Id, NoteCharacters::Name])
+                .order_by(NoteCharacters::Name, Order::Asc)
+                .and_where(Expr::col(NoteCharacters::Name).like(format!("{pattern}%")))
+                .to_string(SqliteQueryBuilder)
+                .as_str(),
+        )?
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
+        .map(|row| -> Result<(i64, String)> { row.map_err(anyhow::Error::from) })
+        .map(|row| {
+            row.and_then(|(id, name)| {
+                Ok(NoteSummary {
+                    id,
+                    name,
+                    tags: Note::fetch_tags(id, db)?,
+                })
+            })
+        })
+        .collect()
     }
 }
