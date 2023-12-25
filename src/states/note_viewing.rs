@@ -8,7 +8,7 @@ use log::info;
 use crossterm::event::KeyCode;
 use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
 use crossterm::ExecutableCommand;
-use ratatui::prelude::{Alignment, Constraint, CrosstermBackend, Direction, Layout, Rect};
+use ratatui::prelude::{Alignment, Constraint, CrosstermBackend, Direction, Layout, Margin, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::Text;
 use ratatui::widgets::{
@@ -194,15 +194,15 @@ pub fn draw_viewed_note(
         );
 
     let content_scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
-        .begin_symbol(Some("^"))
-        .end_symbol(Some("v"));
+        .begin_symbol(Some("↑"))
+        .end_symbol(Some("↓"));
 
     frame.render_widget(note_title, horizontal_layout[0]);
     frame.render_widget(note_tags, horizontal_layout[1]);
     frame.render_widget(note_content, vertical_layout[1]);
     frame.render_stateful_widget(
         content_scrollbar,
-        vertical_layout[1],
+        vertical_layout[1].inner(&Margin::new(0, 1)),
         &mut ScrollbarState::new(content_len).position(*scroll),
     );
 }

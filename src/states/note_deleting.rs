@@ -23,11 +23,7 @@ pub struct NoteDeletingStateData {
 
 pub fn run_note_deleting_state(
     NoteDeletingStateData {
-        viewing_data:
-            NoteViewingStateData {
-                mut note_data,
-                scroll,
-            },
+        viewing_data: NoteViewingStateData { note_data, scroll },
         delete,
     }: NoteDeletingStateData,
     key_code: KeyCode,
