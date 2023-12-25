@@ -5,7 +5,6 @@ use ratatui::{
     prelude::Alignment,
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
-    widgets::{Paragraph, Wrap},
 };
 
 static HEADER_COLOR: [Color; 6] = [

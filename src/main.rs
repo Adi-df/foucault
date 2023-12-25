@@ -1,7 +1,6 @@
 mod explore;
 mod helpers;
 mod links;
-mod logger;
 mod markdown;
 mod note;
 mod notebook;
@@ -12,7 +11,6 @@ mod tags;
 use std::fs;
 use std::path::PathBuf;
 
-use crate::logger::SimpleLogger;
 use anyhow::Result;
 use log::{error, info};
 
@@ -41,8 +39,7 @@ enum Commands {
 }
 
 fn main() -> Result<()> {
-    log::set_boxed_logger(Box::new(SimpleLogger::new(true)))?;
-    log::set_max_level(log::LevelFilter::Info);
+    env_logger::init();
 
     info!("Start foucault");
 
