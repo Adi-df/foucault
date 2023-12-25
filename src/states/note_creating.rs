@@ -38,6 +38,7 @@ pub fn run_note_creating_state(
                     tags: Vec::new(),
                     links: Vec::new(),
                 },
+                scroll: 0,
             })
         }
         KeyCode::Esc => {

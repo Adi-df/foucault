@@ -53,10 +53,8 @@ pub fn links(content: &str) -> Vec<String> {
     todo!();
 }
 
-pub fn render<'a>(content: &str) -> Paragraph<'a> {
-    let ast = to_mdast(content, &ParseOptions::default()).unwrap();
-
-    Paragraph::new(parse(&ast)).wrap(Wrap { trim: true })
+pub fn render<'a>(content: &str) -> Vec<Line<'a>> {
+    parse(&to_mdast(content, &ParseOptions::default()).unwrap())
 }
 
 fn parse<'a>(ast: &Node) -> Vec<Line<'a>> {
