@@ -23,6 +23,7 @@ use crate::note::{Note, NoteData};
 use crate::notebook::Notebook;
 use crate::states::note_deleting::NoteDeletingStateData;
 use crate::states::note_renaming::NoteRenamingStateData;
+use crate::states::note_tags_managing::NoteTagsManagingStateData;
 use crate::states::notes_managing::NotesManagingStateData;
 use crate::states::State;
 
@@ -76,6 +77,15 @@ pub fn run_note_viewing_state(
             State::NoteRenaming(NoteRenamingStateData {
                 viewing_data: NoteViewingStateData { note_data, scroll },
                 new_name: String::new(),
+            })
+        }
+        KeyCode::Char('t') => {
+            info!("Manage tags of note {}", note_data.note.name);
+            State::NoteTagsManaging(NoteTagsManagingStateData {
+                new_tag: String::new(),
+                selected: 0,
+                tags: note_data.note.get_tags(notebook.db())?,
+                note: note_data.note,
             })
         }
         KeyCode::Up => State::NoteViewing(NoteViewingStateData {
@@ -151,7 +161,7 @@ pub fn draw_viewed_note(
     .split(main_rect);
     let horizontal_layout = Layout::new(
         Direction::Horizontal,
-        [Constraint::Percentage(40), Constraint::Min(0)],
+        [Constraint::Percentage(30), Constraint::Min(0)],
     )
     .split(vertical_layout[0]);
 
@@ -168,7 +178,7 @@ pub fn draw_viewed_note(
                 .padding(Padding::uniform(1)),
         );
     let note_tags = Table::default()
-        .rows([Row::new(tags.iter().map(Text::raw))])
+        .rows([Row::new(tags.iter().map(|el| Text::raw(el.name.as_str())))])
         .block(
             Block::default()
                 .title("Tags")

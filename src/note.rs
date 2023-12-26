@@ -3,7 +3,7 @@ use std::path::Path;
 
 use anyhow::Result;
 
-use rusqlite::Connection;
+use rusqlite::{Connection, OptionalExtension};
 use sea_query::{Expr, Iden, JoinType, Order, Query, SqliteQueryBuilder};
 
 use crate::links::LinksCharacters;
@@ -36,18 +36,19 @@ pub struct NoteSummary {
 #[derive(Debug)]
 pub struct NoteData {
     pub note: Note,
-    pub tags: Vec<String>,
+    pub tags: Vec<Tag>,
     pub links: Vec<i64>,
 }
 
 impl Note {
     pub fn new(name: String, content: String, db: &Connection) -> Result<Self> {
         db.execute_batch(
-            &Query::insert()
+            Query::insert()
                 .into_table(NoteTable)
                 .columns([NoteCharacters::Name, NoteCharacters::Content])
                 .values([name.as_str().into(), content.as_str().into()])?
-                .to_string(SqliteQueryBuilder),
+                .to_string(SqliteQueryBuilder)
+                .as_str(),
         )?;
 
         Ok(Self {
@@ -57,8 +58,8 @@ impl Note {
         })
     }
 
-    pub fn load(id: i64, db: &Connection) -> Result<Self> {
-        let [name, content]: [String; 2] = db.query_row(
+    pub fn load(id: i64, db: &Connection) -> Result<Option<Self>> {
+        db.query_row(
             Query::select()
                 .from(NoteTable)
                 .columns([NoteCharacters::Name, NoteCharacters::Content])
@@ -67,9 +68,10 @@ impl Note {
                 .as_str(),
             [],
             |row| Ok([row.get(0)?, row.get(1)?]),
-        )?;
-
-        Ok(Note { id, name, content })
+        )
+        .optional()
+        .map_err(anyhow::Error::from)
+        .map(|res| res.map(|[name, content]| Note { id, name, content }))
     }
 
     pub fn update(&self, db: &Connection) -> Result<()> {
@@ -83,8 +85,8 @@ impl Note {
                 .and_where(Expr::col(NoteCharacters::Id).eq(self.id))
                 .to_string(SqliteQueryBuilder)
                 .as_str(),
-        )?;
-        Ok(())
+        )
+        .map_err(anyhow::Error::from)
     }
 
     pub fn delete(self, db: &Connection) -> Result<()> {
@@ -94,8 +96,20 @@ impl Note {
                 .and_where(Expr::col(NoteCharacters::Id).eq(self.id))
                 .to_string(SqliteQueryBuilder)
                 .as_str(),
-        )?;
-        Ok(())
+        )
+        .map_err(anyhow::Error::from)
+    }
+
+    pub fn add_tag(&self, tag: &Tag, db: &Connection) -> Result<()> {
+        db.execute_batch(
+            Query::insert()
+                .into_table(TagsJoinTable)
+                .columns([TagsJoinCharacters::NoteId, TagsJoinCharacters::TagId])
+                .values([self.id.into(), tag.id.into()])?
+                .to_string(SqliteQueryBuilder)
+                .as_str(),
+        )
+        .map_err(anyhow::Error::from)
     }
 
     pub fn fetch_tags(id: i64, db: &Connection) -> Result<Vec<Tag>> {
@@ -147,8 +161,7 @@ impl Note {
     }
 
     pub fn export_content(&self, file: &Path) -> Result<()> {
-        fs::write(file, self.content.as_bytes())?;
-        Ok(())
+        fs::write(file, self.content.as_bytes()).map_err(anyhow::Error::from)
     }
 
     pub fn import_content(&mut self, file: &Path) -> Result<()> {
