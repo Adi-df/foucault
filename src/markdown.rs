@@ -1,13 +1,15 @@
-use markdown::mdast::Node;
-use markdown::{to_mdast, ParseOptions};
+mod elements;
 
+use markdown::{to_mdast, ParseOptions};
 use ratatui::{
     prelude::Alignment,
-    style::{Color, Modifier, Style, Stylize},
-    text::{Line, Span},
+    style::{Color, Modifier},
+    widgets::{Paragraph, Wrap},
 };
 
-static HEADER_COLOR: [Color; 6] = [
+use self::elements::BlockElements;
+
+const HEADER_COLOR: [Color; 6] = [
     Color::Red,
     Color::Green,
     Color::Blue,
@@ -15,7 +17,7 @@ static HEADER_COLOR: [Color; 6] = [
     Color::Magenta,
     Color::Cyan,
 ];
-static HEADER_MODIFIER: [Modifier; 6] = [
+const HEADER_MODIFIER: [Modifier; 6] = [
     Modifier::BOLD,
     Modifier::empty(),
     Modifier::ITALIC,
@@ -23,7 +25,7 @@ static HEADER_MODIFIER: [Modifier; 6] = [
     Modifier::DIM,
     Modifier::DIM,
 ];
-static HEADER_ALIGNEMENT: [Alignment; 6] = [
+const HEADER_ALIGNEMENT: [Alignment; 6] = [
     Alignment::Center,
     Alignment::Center,
     Alignment::Left,
@@ -32,14 +34,16 @@ static HEADER_ALIGNEMENT: [Alignment; 6] = [
     Alignment::Left,
 ];
 
-static TEXT: usize = 0;
-static ITALIC: usize = 1;
-static STRONG: usize = 2;
-static LINK: usize = 3;
-static CROSS_REF: usize = 4;
-static BLOCKQUOTE: usize = 5;
+const BLOCKQUOTE_ALIGNEMENT: Alignment = Alignment::Center;
 
-static RICH_TEXT_COLOR: [Color; 6] = [
+const TEXT: usize = 0;
+const ITALIC: usize = 1;
+const STRONG: usize = 2;
+const HYPERLINK: usize = 3;
+const CROSS_REF: usize = 4;
+const BLOCKQUOTE: usize = 5;
+
+const RICH_TEXT_COLOR: [Color; 6] = [
     Color::Reset,     // Text
     Color::Green,     // Italic
     Color::Yellow,    // Strong
@@ -48,127 +52,23 @@ static RICH_TEXT_COLOR: [Color; 6] = [
     Color::Yellow,    // Blockquote
 ];
 
-pub fn links(content: &str) -> Vec<String> {
-    todo!();
+pub fn parse(content: &str) -> Vec<BlockElements> {
+    BlockElements::parse_node(&to_mdast(content, &ParseOptions::default()).unwrap())
 }
 
-pub fn render<'a>(content: &str) -> Vec<Line<'a>> {
-    parse(&to_mdast(content, &ParseOptions::default()).unwrap())
+pub fn lines(blocks: &[BlockElements], max_len: u16) -> usize {
+    blocks
+        .iter()
+        .map(|block| block.lines(max_len as usize))
+        .sum()
 }
 
-fn parse<'a>(ast: &Node) -> Vec<Line<'a>> {
-    match ast {
-        Node::Root(root) => root.children.iter().flat_map(parse).collect(),
-        Node::Paragraph(paragraph) => vec![Line::from(
-            paragraph
-                .children
-                .iter()
-                .flat_map(parse_text)
-                .collect::<Vec<Span>>(),
-        )],
-        Node::Heading(header) => {
-            let depth = header.depth as usize - 1;
-            vec![Line::from(
-                header
-                    .children
-                    .iter()
-                    .flat_map(parse_text)
-                    .map(|text| {
-                        text.style(
-                            Style::default()
-                                .fg(HEADER_COLOR[depth])
-                                .add_modifier(HEADER_MODIFIER[depth] | Modifier::UNDERLINED),
-                        )
-                    })
-                    .collect::<Vec<Span>>(),
-            )
-            .alignment(HEADER_ALIGNEMENT[depth])]
-        }
-        Node::BlockQuote(block) => block
-            .children
+pub fn render(blocks: &[BlockElements]) -> Paragraph {
+    Paragraph::new(
+        blocks
             .iter()
-            .flat_map(parse)
-            .map(|line| {
-                let mut line = line.alignment(Alignment::Center);
-                line.patch_style(
-                    Style::default()
-                        .fg(RICH_TEXT_COLOR[BLOCKQUOTE])
-                        .add_modifier(Modifier::ITALIC),
-                );
-                line
-            })
-            .collect(),
-        _ => Vec::new(),
-    }
-}
-
-fn parse_text<'a>(child: &Node) -> Vec<Span<'a>> {
-    match child {
-        Node::Text(text) => parse_cross_links(text.value.as_str()),
-        Node::Emphasis(empathis) => empathis
-            .children
-            .iter()
-            .flat_map(parse_text)
-            .map(|span| {
-                span.add_modifier(Modifier::ITALIC)
-                    .fg(RICH_TEXT_COLOR[ITALIC])
-            })
-            .collect(),
-        Node::Strong(strong) => strong
-            .children
-            .iter()
-            .flat_map(parse_text)
-            .map(|span| {
-                span.add_modifier(Modifier::BOLD)
-                    .fg(RICH_TEXT_COLOR[STRONG])
-            })
-            .collect(),
-        Node::Link(link) => link
-            .children
-            .iter()
-            .flat_map(parse_text)
-            .map(|span| {
-                span.style(
-                    Style::default()
-                        .fg(RICH_TEXT_COLOR[LINK])
-                        .add_modifier(Modifier::UNDERLINED),
-                )
-            })
-            .collect(),
-        _ => Vec::new(),
-    }
-}
-
-fn parse_cross_links<'a>(content: &str) -> Vec<Span<'a>> {
-    let mut content_iter = content.chars().peekable();
-    let mut escape = false;
-    let mut spans = Vec::new();
-    let mut current_span = String::new();
-
-    while let Some(c) = content_iter.next() {
-        if escape {
-            current_span.push(c);
-            escape = false;
-            continue;
-        }
-
-        if c == '[' && matches!(content_iter.peek(), Some('[')) {
-            spans.push(Span::raw(current_span).style(Style::default().fg(RICH_TEXT_COLOR[TEXT])));
-            current_span = String::from("[");
-            content_iter.next();
-        } else if c == ']' && matches!(content_iter.peek(), Some(']')) {
-            current_span.push(']');
-            spans.push(Span::raw(current_span).style(Style::new().fg(RICH_TEXT_COLOR[CROSS_REF])));
-            current_span = String::new();
-            content_iter.next();
-        } else {
-            current_span.push(c);
-        }
-    }
-
-    if !current_span.is_empty() {
-        spans.push(Span::raw(current_span).style(Style::default().fg(RICH_TEXT_COLOR[TEXT])));
-    }
-
-    spans
+            .flat_map(BlockElements::into_line)
+            .collect::<Vec<_>>(),
+    )
+    .wrap(Wrap { trim: true })
 }

@@ -18,7 +18,7 @@ use ratatui::widgets::{
 use ratatui::{Frame, Terminal};
 use scopeguard::defer;
 
-use crate::markdown::render;
+use crate::markdown::{lines, parse, render};
 use crate::note::Note;
 use crate::notebook::Notebook;
 use crate::states::note_deleting::NoteDeletingStateData;
@@ -78,16 +78,14 @@ pub fn run_note_viewing_state(
                 new_name: String::new(),
             })
         }
-        KeyCode::Up if scroll > 0 => State::NoteViewing(NoteViewingStateData {
+        KeyCode::Up => State::NoteViewing(NoteViewingStateData {
             note_data,
-            scroll: scroll - 1,
+            scroll: scroll.saturating_sub(1),
         }),
-        KeyCode::Down if scroll < render(note_data.note.content.as_str()).len() => {
-            State::NoteViewing(NoteViewingStateData {
-                note_data,
-                scroll: scroll + 1,
-            })
-        }
+        KeyCode::Down => State::NoteViewing(NoteViewingStateData {
+            note_data,
+            scroll: scroll.saturating_add(1),
+        }),
         _ => State::NoteViewing(NoteViewingStateData { note_data, scroll }),
     })
 }
@@ -157,9 +155,6 @@ pub fn draw_viewed_note(
     )
     .split(vertical_layout[0]);
 
-    let rendered_content = render(note.content.as_str());
-    let content_len = rendered_content.len();
-
     let note_title = Paragraph::new(note.name.as_str())
         .style(Style::default().add_modifier(Modifier::BOLD))
         .alignment(Alignment::Left)
@@ -181,17 +176,22 @@ pub fn draw_viewed_note(
                 .border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(Color::Red)),
         );
-    let note_content = Paragraph::new(rendered_content)
-        .wrap(Wrap { trim: true })
-        .scroll((*scroll as u16, 0))
-        .block(
-            Block::default()
-                .title("Content")
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(Color::Yellow))
-                .padding(Padding::uniform(1)),
-        );
+
+    let content_block = Block::default()
+        .title("Content")
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .border_style(Style::default().fg(Color::Yellow))
+        .padding(Padding::uniform(1));
+
+    let parsed_content = parse(note.content.as_str());
+    let content_len = lines(
+        &parsed_content,
+        content_block.inner(vertical_layout[1]).width,
+    );
+    let scroll = scroll.rem_euclid(content_len);
+
+    let note_content = render(&parsed_content).scroll((scroll as u16, 0));
 
     let content_scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
         .begin_symbol(Some("↑"))
@@ -199,10 +199,11 @@ pub fn draw_viewed_note(
 
     frame.render_widget(note_title, horizontal_layout[0]);
     frame.render_widget(note_tags, horizontal_layout[1]);
-    frame.render_widget(note_content, vertical_layout[1]);
+    frame.render_widget(note_content, content_block.inner(vertical_layout[1]));
+    frame.render_widget(content_block, vertical_layout[1]);
     frame.render_stateful_widget(
         content_scrollbar,
         vertical_layout[1].inner(&Margin::new(0, 1)),
-        &mut ScrollbarState::new(content_len).position(*scroll),
+        &mut ScrollbarState::new(content_len).position(scroll),
     );
 }
