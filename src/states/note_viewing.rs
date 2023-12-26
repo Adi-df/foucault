@@ -82,7 +82,6 @@ pub fn run_note_viewing_state(
         KeyCode::Char('t') => {
             info!("Manage tags of note {}", note_data.note.name);
             State::NoteTagsManaging(NoteTagsManagingStateData {
-                new_tag: String::new(),
                 selected: 0,
                 tags: note_data.note.get_tags(notebook.db())?,
                 note: note_data.note,

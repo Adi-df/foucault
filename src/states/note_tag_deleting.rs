@@ -22,7 +22,6 @@ pub fn run_note_tag_deleting_state(
     NoteTagDeletingStateData {
         tags_managing:
             NoteTagsManagingStateData {
-                new_tag,
                 selected,
                 mut tags,
                 note,
@@ -34,7 +33,6 @@ pub fn run_note_tag_deleting_state(
 ) -> Result<State> {
     Ok(match key_code {
         KeyCode::Esc => State::NoteTagsManaging(NoteTagsManagingStateData {
-            new_tag,
             selected,
             tags,
             note,
@@ -45,14 +43,12 @@ pub fn run_note_tag_deleting_state(
                 note.remove_tag(tag.id, notebook.db())?;
 
                 State::NoteTagsManaging(NoteTagsManagingStateData {
-                    new_tag,
                     selected: 0,
                     tags,
                     note,
                 })
             } else {
                 State::NoteTagsManaging(NoteTagsManagingStateData {
-                    new_tag,
                     selected,
                     tags,
                     note,
@@ -61,7 +57,6 @@ pub fn run_note_tag_deleting_state(
         }
         KeyCode::Tab => State::NoteTagDeleting(NoteTagDeletingStateData {
             tags_managing: NoteTagsManagingStateData {
-                new_tag,
                 selected,
                 tags,
                 note,
@@ -70,7 +65,6 @@ pub fn run_note_tag_deleting_state(
         }),
         _ => State::NoteTagDeleting(NoteTagDeletingStateData {
             tags_managing: NoteTagsManagingStateData {
-                new_tag,
                 selected,
                 tags,
                 note,
@@ -92,8 +86,7 @@ pub fn draw_note_tag_deleting_state_data(
         .draw(|frame| {
             let main_rect = main_frame.inner(frame.size());
 
-            draw_note_tags_managing(frame, tags_managing, false, main_rect);
-
+            draw_note_tags_managing(frame, tags_managing, main_rect);
             draw_yes_no_prompt(frame, *delete, "Remove tag ?", main_rect);
 
             frame.render_widget(main_frame, frame.size());

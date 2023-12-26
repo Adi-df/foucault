@@ -4,7 +4,7 @@ use anyhow::Result;
 
 use crossterm::event::KeyCode;
 use ratatui::prelude::{Constraint, CrosstermBackend, Direction, Layout, Rect};
-use ratatui::style::{Color, Modifier, Style};
+use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, List, ListState, Padding, Paragraph};
 use ratatui::{Frame, Terminal};
@@ -14,12 +14,12 @@ use crate::notebook::Notebook;
 use crate::states::State;
 use crate::tags::Tag;
 
+use super::note_tag_adding::NoteTagAddingStateData;
 use super::note_tag_deleting::NoteTagDeletingStateData;
 use super::note_viewing::NoteViewingStateData;
 
 #[derive(Debug)]
 pub struct NoteTagsManagingStateData {
-    pub new_tag: String,
     pub selected: usize,
     pub tags: Vec<Tag>,
     pub note: Note,
@@ -29,7 +29,6 @@ pub fn run_note_tags_managing_state(
     NoteTagsManagingStateData {
         note,
         tags,
-        mut new_tag,
         selected,
     }: NoteTagsManagingStateData,
     key_code: KeyCode,
@@ -45,67 +44,37 @@ pub fn run_note_tags_managing_state(
                 scroll: 0,
             })
         }
-        KeyCode::Char(c) if !c.is_whitespace() => {
-            new_tag.push(c);
-            State::NoteTagsManaging(NoteTagsManagingStateData {
-                new_tag,
-                selected,
-                tags,
-                note,
-            })
-        }
-        KeyCode::Backspace => {
-            new_tag.pop();
-            State::NoteTagsManaging(NoteTagsManagingStateData {
-                new_tag,
-                selected,
-                tags,
-                note,
-            })
-        }
-        KeyCode::Enter => {
-            if let Some(tag) = Tag::load_by_name(new_tag.as_str(), notebook.db())? {
-                note.add_tag(&tag, notebook.db())?;
-                State::NoteTagsManaging(NoteTagsManagingStateData {
-                    new_tag: String::new(),
-                    selected: 0,
-                    tags: note.get_tags(notebook.db())?,
-                    note,
-                })
-            } else {
-                State::NoteTagsManaging(NoteTagsManagingStateData {
-                    new_tag,
+        KeyCode::Char('d') if !tags.is_empty() => {
+            State::NoteTagDeleting(NoteTagDeletingStateData {
+                tags_managing: NoteTagsManagingStateData {
                     selected,
                     tags,
                     note,
-                })
-            }
+                },
+                delete: false,
+            })
         }
-        KeyCode::Delete if !tags.is_empty() => State::NoteTagDeleting(NoteTagDeletingStateData {
+        KeyCode::Char('a') => State::NoteTagAdding(NoteTagAddingStateData {
             tags_managing: NoteTagsManagingStateData {
-                new_tag,
                 selected,
                 tags,
                 note,
             },
-            delete: false,
+            tag_name: String::new(),
         }),
         KeyCode::Up if selected > 0 => State::NoteTagsManaging(NoteTagsManagingStateData {
-            new_tag,
             selected: selected - 1,
             tags,
             note,
         }),
         KeyCode::Down if selected < tags.len() - 1 => {
             State::NoteTagsManaging(NoteTagsManagingStateData {
-                new_tag,
                 selected: selected + 1,
                 tags,
                 note,
             })
         }
         _ => State::NoteTagsManaging(NoteTagsManagingStateData {
-            new_tag,
             selected,
             tags,
             note,
@@ -116,16 +85,13 @@ pub fn run_note_tags_managing_state(
 pub fn draw_note_tags_managing_state(
     data: &NoteTagsManagingStateData,
     terminal: &mut Terminal<CrosstermBackend<Stdout>>,
-    notebook: &Notebook,
     main_frame: Block,
 ) -> Result<()> {
-    let valid_new_tag_name = Tag::tag_exists(data.new_tag.as_str(), notebook.db())?;
-
     terminal
         .draw(|frame| {
             let main_rect = main_frame.inner(frame.size());
 
-            draw_note_tags_managing(frame, data, valid_new_tag_name, main_rect);
+            draw_note_tags_managing(frame, data, main_rect);
 
             frame.render_widget(main_frame, frame.size());
         })
@@ -138,10 +104,8 @@ pub fn draw_note_tags_managing(
     NoteTagsManagingStateData {
         note,
         tags,
-        new_tag,
         selected,
     }: &NoteTagsManagingStateData,
-    valid: bool,
     main_rect: Rect,
 ) {
     let vertical_layout = Layout::new(
@@ -149,11 +113,6 @@ pub fn draw_note_tags_managing(
         [Constraint::Length(5), Constraint::Min(0)],
     )
     .split(main_rect);
-    let horizontal_layout = Layout::new(
-        Direction::Horizontal,
-        [Constraint::Percentage(30), Constraint::Min(0)],
-    )
-    .split(vertical_layout[0]);
 
     let note_name = Paragraph::new(Line::from(vec![
         Span::raw(note.name.as_str()).style(Style::default().fg(Color::Green))
@@ -164,17 +123,6 @@ pub fn draw_note_tags_managing(
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
             .border_style(Style::default().fg(Color::Blue))
-            .padding(Padding::uniform(1)),
-    );
-    let new_tag_name = Paragraph::new(Line::from(vec![
-        Span::raw(new_tag.as_str()).style(Style::default().add_modifier(Modifier::UNDERLINED))
-    ]))
-    .block(
-        Block::new()
-            .title("New tag")
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(if valid { Color::Green } else { Color::Red }))
             .padding(Padding::uniform(1)),
     );
 
@@ -189,8 +137,7 @@ pub fn draw_note_tags_managing(
                 .border_style(Style::default().fg(Color::Yellow)),
         );
 
-    frame.render_widget(note_name, horizontal_layout[0]);
-    frame.render_widget(new_tag_name, horizontal_layout[1]);
+    frame.render_widget(note_name, vertical_layout[0]);
     frame.render_stateful_widget(
         note_tags,
         vertical_layout[1],
