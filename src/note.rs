@@ -192,4 +192,19 @@ impl Note {
         })
         .collect()
     }
+
+    pub fn remove_tag(&self, id: i64, db: &Connection) -> Result<()> {
+        db.execute_batch(
+            Query::delete()
+                .from_table(TagsJoinTable)
+                .and_where(
+                    Expr::col(TagsJoinCharacters::TagId)
+                        .eq(id)
+                        .and(Expr::col(TagsJoinCharacters::NoteId).eq(self.id)),
+                )
+                .to_string(SqliteQueryBuilder)
+                .as_str(),
+        )
+        .map_err(anyhow::Error::from)
+    }
 }

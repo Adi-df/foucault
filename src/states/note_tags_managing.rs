@@ -27,7 +27,7 @@ pub struct NoteTagsManagingStateData {
 pub fn run_note_tags_managing(
     NoteTagsManagingStateData {
         note,
-        tags,
+        mut tags,
         mut new_tag,
         selected,
     }: NoteTagsManagingStateData,
@@ -44,7 +44,7 @@ pub fn run_note_tags_managing(
                 scroll: 0,
             })
         }
-        KeyCode::Char(c) => {
+        KeyCode::Char(c) if !c.is_whitespace() => {
             new_tag.push(c);
             State::NoteTagsManaging(NoteTagsManagingStateData {
                 new_tag,
@@ -79,6 +79,16 @@ pub fn run_note_tags_managing(
                     note,
                 })
             }
+        }
+        KeyCode::Delete if !tags.is_empty() => {
+            let tag = tags.swap_remove(selected);
+            note.remove_tag(tag.id, notebook.db())?;
+            State::NoteTagsManaging(NoteTagsManagingStateData {
+                new_tag,
+                selected: 0,
+                tags,
+                note,
+            })
         }
         KeyCode::Up if selected > 0 => State::NoteTagsManaging(NoteTagsManagingStateData {
             new_tag,
