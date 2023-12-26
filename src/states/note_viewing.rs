@@ -191,7 +191,7 @@ pub fn draw_viewed_note(
     );
     let scroll = scroll.rem_euclid(content_len);
 
-    let note_content = render(&parsed_content).scroll((scroll as u16, 0));
+    let note_content = render(&parsed_content).scroll((scroll.try_into().unwrap(), 0));
 
     let content_scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
         .begin_symbol(Some("↑"))

@@ -67,7 +67,7 @@ pub fn render(blocks: &[BlockElements]) -> Paragraph {
     Paragraph::new(
         blocks
             .iter()
-            .flat_map(BlockElements::into_line)
+            .flat_map(BlockElements::build_lines)
             .collect::<Vec<_>>(),
     )
     .wrap(Wrap { trim: true })

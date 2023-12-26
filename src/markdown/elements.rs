@@ -94,23 +94,23 @@ impl InlineElements {
                 span.patch_style(style);
                 Self::RichText { span }
             }
-            s @ _ => s,
+            s => s,
         }
     }
 
     fn discard_style(self) -> String {
         match self {
-            Self::RichText { span } => span.content.to_string(),
-            Self::CrossRef { span, .. } => span.content.to_string(),
-            Self::HyperLink { span, .. } => span.content.to_string(),
+            Self::RichText { span }
+            | Self::HyperLink { span, .. }
+            | Self::CrossRef { span, .. } => span.content.to_string(),
         }
     }
 
-    fn into_span(&self) -> Span<'static> {
+    fn build_span(&self) -> Span<'static> {
         match self {
-            InlineElements::RichText { span } => span.clone(),
-            InlineElements::HyperLink { span, .. } => span.clone(),
-            InlineElements::CrossRef { span, .. } => span.clone(),
+            Self::RichText { span }
+            | Self::HyperLink { span, .. }
+            | Self::CrossRef { span, .. } => span.clone(),
         }
     }
 }
@@ -166,17 +166,17 @@ impl BlockElements {
 
     fn content(self) -> Vec<InlineElements> {
         match self {
-            BlockElements::Paragraph { content } => content,
-            BlockElements::Heading { content, .. } => content,
-            BlockElements::BlockQuote { content } => content,
+            BlockElements::Paragraph { content }
+            | BlockElements::Heading { content, .. }
+            | BlockElements::BlockQuote { content } => content,
         }
     }
 
     fn get_content(&self) -> &[InlineElements] {
         match self {
-            BlockElements::Paragraph { content } => content,
-            BlockElements::Heading { content, .. } => content,
-            BlockElements::BlockQuote { content } => content,
+            BlockElements::Paragraph { content }
+            | BlockElements::Heading { content, .. }
+            | BlockElements::BlockQuote { content } => content,
         }
     }
 
@@ -191,29 +191,29 @@ impl BlockElements {
         textwrap::wrap(self.text().as_str(), max_len).len()
     }
 
-    pub fn into_line(&self) -> Vec<Line<'static>> {
+    pub fn build_lines(&self) -> Vec<Line<'static>> {
         match self {
             Self::Paragraph { content } => {
                 vec![Line::from(
                     content
-                        .into_iter()
-                        .map(InlineElements::into_span)
+                        .iter()
+                        .map(InlineElements::build_span)
                         .collect::<Vec<Span<'static>>>(),
                 )]
             }
             BlockElements::Heading { content, level } => vec![Line::from(
                 content
-                    .into_iter()
+                    .iter()
                     .map(|el| el.clone().richify(HEADING_STYLE[*level as usize]))
-                    .map(|el| el.into_span())
+                    .map(|el| el.build_span())
                     .collect::<Vec<Span<'static>>>(),
             )
             .alignment(HEADER_ALIGNEMENT[*level as usize])],
             BlockElements::BlockQuote { content } => vec![Line::from(
                 content
-                    .into_iter()
+                    .iter()
                     .map(|el| el.clone().richify(BLOCKQUOTE_STYLE))
-                    .map(|el| el.into_span())
+                    .map(|el| el.build_span())
                     .collect::<Vec<Span<'static>>>(),
             )
             .alignment(BLOCKQUOTE_ALIGNEMENT)],
@@ -232,14 +232,14 @@ fn parse_cross_links(text: &str) -> Vec<InlineElements> {
         if cross_ref {
             if c == ']' && matches!(content_iter.peek(), Some(']')) {
                 spans.push(InlineElements::CrossRef {
-                    span: Span::raw(format!("[{}]", current_span)).style(CROSS_REF_STYLE),
+                    span: Span::raw(format!("[{current_span}]")).style(CROSS_REF_STYLE),
                     dest: current_span,
                 });
                 current_span = String::new();
                 cross_ref = false;
                 content_iter.next();
             } else {
-                current_span.push(c)
+                current_span.push(c);
             }
         } else {
             if escape {
@@ -265,7 +265,7 @@ fn parse_cross_links(text: &str) -> Vec<InlineElements> {
     if !current_span.is_empty() {
         spans.push(InlineElements::RichText {
             span: Span::raw(current_span),
-        })
+        });
     }
 
     spans
