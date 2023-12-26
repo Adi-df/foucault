@@ -74,7 +74,6 @@ pub fn run_tags_managing_state(
         }
         KeyCode::Char('d') if !state_data.pattern_editing && !state_data.tags.is_empty() => {
             State::TagDeleting(TagsDeletingStateData {
-                selected: state_data.selected,
                 delete: false,
                 tags_managing: state_data,
             })

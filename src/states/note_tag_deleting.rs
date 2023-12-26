@@ -1,7 +1,6 @@
 use std::io::Stdout;
 
 use anyhow::Result;
-
 use crossterm::event::KeyCode;
 use ratatui::prelude::{Alignment, Constraint, CrosstermBackend, Direction, Layout};
 use ratatui::style::{Color, Modifier, Style, Stylize};
@@ -10,66 +9,96 @@ use ratatui::widgets::{Block, BorderType, Borders, Clear, Paragraph};
 use ratatui::Terminal;
 
 use crate::helpers::create_popup_size;
-use crate::notebook::Notebook;
-use crate::states::tags_managing::{draw_tags_managing, TagsManagingStateData};
 use crate::states::State;
-use crate::tags::Tag;
+use crate::{notebook::Notebook, states::note_tags_managing::NoteTagsManagingStateData};
+
+use crate::states::note_tags_managing::draw_note_tags_managing;
 
 #[derive(Debug)]
-pub struct TagsDeletingStateData {
-    pub tags_managing: TagsManagingStateData,
+pub struct NoteTagDeletingStateData {
+    pub tags_managing: NoteTagsManagingStateData,
     pub delete: bool,
 }
 
-pub fn run_tag_deleting_state(
-    TagsDeletingStateData {
-        mut tags_managing,
+pub fn run_note_tag_deleting_state(
+    NoteTagDeletingStateData {
+        tags_managing:
+            NoteTagsManagingStateData {
+                new_tag,
+                selected,
+                mut tags,
+                note,
+            },
         delete,
-    }: TagsDeletingStateData,
+    }: NoteTagDeletingStateData,
     key_code: KeyCode,
     notebook: &Notebook,
 ) -> Result<State> {
     Ok(match key_code {
-        KeyCode::Esc => State::TagsManaging(tags_managing),
+        KeyCode::Esc => State::NoteTagsManaging(NoteTagsManagingStateData {
+            new_tag,
+            selected,
+            tags,
+            note,
+        }),
         KeyCode::Enter => {
             if delete {
-                tags_managing
-                    .tags
-                    .swap_remove(tags_managing.selected)
-                    .delete(notebook.db())?;
+                let tag = tags.swap_remove(selected);
+                note.remove_tag(tag.id, notebook.db())?;
+
+                State::NoteTagsManaging(NoteTagsManagingStateData {
+                    new_tag,
+                    selected: 0,
+                    tags,
+                    note,
+                })
+            } else {
+                State::NoteTagsManaging(NoteTagsManagingStateData {
+                    new_tag,
+                    selected,
+                    tags,
+                    note,
+                })
             }
-            State::TagsManaging(tags_managing)
         }
-        KeyCode::Tab => State::TagDeleting(TagsDeletingStateData {
-            tags_managing,
+        KeyCode::Tab => State::NoteTagDeleting(NoteTagDeletingStateData {
+            tags_managing: NoteTagsManagingStateData {
+                new_tag,
+                selected,
+                tags,
+                note,
+            },
             delete: !delete,
         }),
-        _ => State::TagDeleting(TagsDeletingStateData {
-            tags_managing,
+        _ => State::NoteTagDeleting(NoteTagDeletingStateData {
+            tags_managing: NoteTagsManagingStateData {
+                new_tag,
+                selected,
+                tags,
+                note,
+            },
             delete,
         }),
     })
 }
 
-pub fn draw_tag_deleting_state(
-    TagsDeletingStateData {
+pub fn draw_note_tag_deleting_state_data(
+    NoteTagDeletingStateData {
         tags_managing,
         delete,
-    }: &TagsDeletingStateData,
+    }: &NoteTagDeletingStateData,
     terminal: &mut Terminal<CrosstermBackend<Stdout>>,
     main_frame: Block,
 ) -> Result<()> {
-    let Tag { name, .. } = &tags_managing.tags[tags_managing.selected];
-
     terminal
         .draw(|frame| {
             let main_rect = main_frame.inner(frame.size());
 
-            draw_tags_managing(frame, tags_managing, main_rect);
+            draw_note_tags_managing(frame, tags_managing, false, main_rect);
 
             let popup_area = create_popup_size((50, 5), main_rect);
             let block = Block::new()
-                .title(format!("Delete tag {name} ?"))
+                .title("Remove tag ?")
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(Color::Blue));
@@ -114,6 +143,6 @@ pub fn draw_tag_deleting_state(
 
             frame.render_widget(main_frame, frame.size());
         })
-        .map(|_| ())
         .map_err(anyhow::Error::from)
+        .map(|_| ())
 }

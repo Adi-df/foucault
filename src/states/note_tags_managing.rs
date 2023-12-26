@@ -3,17 +3,18 @@ use std::io::Stdout;
 use anyhow::Result;
 
 use crossterm::event::KeyCode;
-use ratatui::prelude::{Constraint, CrosstermBackend, Direction, Layout};
+use ratatui::prelude::{Constraint, CrosstermBackend, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, List, ListState, Padding, Paragraph};
-use ratatui::Terminal;
+use ratatui::{Frame, Terminal};
 
 use crate::note::{Note, NoteData};
 use crate::notebook::Notebook;
 use crate::states::State;
 use crate::tags::Tag;
 
+use super::note_tag_deleting::NoteTagDeletingStateData;
 use super::note_viewing::NoteViewingStateData;
 
 #[derive(Debug)]
@@ -24,10 +25,10 @@ pub struct NoteTagsManagingStateData {
     pub note: Note,
 }
 
-pub fn run_note_tags_managing(
+pub fn run_note_tags_managing_state(
     NoteTagsManagingStateData {
         note,
-        mut tags,
+        tags,
         mut new_tag,
         selected,
     }: NoteTagsManagingStateData,
@@ -80,16 +81,15 @@ pub fn run_note_tags_managing(
                 })
             }
         }
-        KeyCode::Delete if !tags.is_empty() => {
-            let tag = tags.swap_remove(selected);
-            note.remove_tag(tag.id, notebook.db())?;
-            State::NoteTagsManaging(NoteTagsManagingStateData {
+        KeyCode::Delete if !tags.is_empty() => State::NoteTagDeleting(NoteTagDeletingStateData {
+            tags_managing: NoteTagsManagingStateData {
                 new_tag,
-                selected: 0,
+                selected,
                 tags,
                 note,
-            })
-        }
+            },
+            delete: false,
+        }),
         KeyCode::Up if selected > 0 => State::NoteTagsManaging(NoteTagsManagingStateData {
             new_tag,
             selected: selected - 1,
@@ -113,80 +113,87 @@ pub fn run_note_tags_managing(
     })
 }
 
+pub fn draw_note_tags_managing_state(
+    data: &NoteTagsManagingStateData,
+    terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+    notebook: &Notebook,
+    main_frame: Block,
+) -> Result<()> {
+    let valid_new_tag_name = Tag::tag_exists(data.new_tag.as_str(), notebook.db())?;
+
+    terminal
+        .draw(|frame| {
+            let main_rect = main_frame.inner(frame.size());
+
+            draw_note_tags_managing(frame, data, valid_new_tag_name, main_rect);
+
+            frame.render_widget(main_frame, frame.size());
+        })
+        .map_err(anyhow::Error::from)
+        .map(|_| ())
+}
+
 pub fn draw_note_tags_managing(
+    frame: &mut Frame,
     NoteTagsManagingStateData {
         note,
         tags,
         new_tag,
         selected,
     }: &NoteTagsManagingStateData,
-    terminal: &mut Terminal<CrosstermBackend<Stdout>>,
-    notebook: &Notebook,
-    main_frame: Block,
-) -> Result<()> {
-    let valid_new_tag_name = Tag::tag_exists(new_tag.as_str(), notebook.db())?;
+    valid: bool,
+    main_rect: Rect,
+) {
+    let vertical_layout = Layout::new(
+        Direction::Vertical,
+        [Constraint::Length(5), Constraint::Min(0)],
+    )
+    .split(main_rect);
+    let horizontal_layout = Layout::new(
+        Direction::Horizontal,
+        [Constraint::Percentage(30), Constraint::Min(0)],
+    )
+    .split(vertical_layout[0]);
 
-    terminal
-        .draw(|frame| {
-            let main_rect = main_frame.inner(frame.size());
+    let note_name = Paragraph::new(Line::from(vec![
+        Span::raw(note.name.as_str()).style(Style::default().fg(Color::Green))
+    ]))
+    .block(
+        Block::new()
+            .title("Note name")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::default().fg(Color::Blue))
+            .padding(Padding::uniform(1)),
+    );
+    let new_tag_name = Paragraph::new(Line::from(vec![
+        Span::raw(new_tag.as_str()).style(Style::default().add_modifier(Modifier::UNDERLINED))
+    ]))
+    .block(
+        Block::new()
+            .title("New tag")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::default().fg(if valid { Color::Green } else { Color::Red }))
+            .padding(Padding::uniform(1)),
+    );
 
-            let vertical_layout = Layout::new(
-                Direction::Vertical,
-                [Constraint::Length(5), Constraint::Min(0)],
-            )
-            .split(main_rect);
-            let horizontal_layout = Layout::new(
-                Direction::Horizontal,
-                [Constraint::Percentage(30), Constraint::Min(0)],
-            )
-            .split(vertical_layout[0]);
+    let note_tags = List::new(tags.iter().map(|tag| Span::raw(tag.name.as_str())))
+        .highlight_symbol(">> ")
+        .highlight_style(Style::default().fg(Color::Black).bg(Color::White))
+        .block(
+            Block::new()
+                .title("Note Tags")
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(Color::Yellow)),
+        );
 
-            let note_name = Paragraph::new(Line::from(vec![
-                Span::raw(note.name.as_str()).style(Style::default().fg(Color::Green))
-            ]))
-            .block(
-                Block::new()
-                    .title("Note name")
-                    .borders(Borders::ALL)
-                    .border_type(BorderType::Rounded)
-                    .border_style(Style::default().fg(Color::Blue))
-                    .padding(Padding::uniform(1)),
-            );
-            let new_tag_name = Paragraph::new(Line::from(vec![Span::raw(new_tag.as_str())
-                .style(Style::default().add_modifier(Modifier::UNDERLINED))]))
-            .block(
-                Block::new()
-                    .title("New tag")
-                    .borders(Borders::ALL)
-                    .border_type(BorderType::Rounded)
-                    .border_style(Style::default().fg(if valid_new_tag_name {
-                        Color::Green
-                    } else {
-                        Color::Red
-                    }))
-                    .padding(Padding::uniform(1)),
-            );
-
-            let note_tags = List::new(tags.iter().map(|tag| Span::raw(tag.name.as_str())))
-                .highlight_symbol(">> ")
-                .highlight_style(Style::default().fg(Color::Black).bg(Color::White))
-                .block(
-                    Block::new()
-                        .title("Note Tags")
-                        .borders(Borders::ALL)
-                        .border_type(BorderType::Rounded)
-                        .border_style(Style::default().fg(Color::Yellow)),
-                );
-
-            frame.render_widget(note_name, horizontal_layout[0]);
-            frame.render_widget(new_tag_name, horizontal_layout[1]);
-            frame.render_stateful_widget(
-                note_tags,
-                vertical_layout[1],
-                &mut ListState::default().with_selected(Some(*selected)),
-            );
-            frame.render_widget(main_frame, frame.size());
-        })
-        .map_err(anyhow::Error::from)
-        .map(|_| ())
+    frame.render_widget(note_name, horizontal_layout[0]);
+    frame.render_widget(new_tag_name, horizontal_layout[1]);
+    frame.render_stateful_widget(
+        note_tags,
+        vertical_layout[1],
+        &mut ListState::default().with_selected(Some(*selected)),
+    );
 }

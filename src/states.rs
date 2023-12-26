@@ -1,6 +1,7 @@
 mod note_creating;
 mod note_deleting;
 mod note_renaming;
+mod note_tag_deleting;
 mod note_tags_managing;
 mod note_viewing;
 mod notes_managing;
@@ -48,7 +49,10 @@ use crate::states::tags_managing::{
     draw_tags_managing_state, run_tags_managing_state, TagsManagingStateData,
 };
 
-use self::note_tags_managing::{draw_note_tags_managing, run_note_tags_managing};
+use self::note_tag_deleting::{
+    draw_note_tag_deleting_state_data, run_note_tag_deleting_state, NoteTagDeletingStateData,
+};
+use self::note_tags_managing::{draw_note_tags_managing_state, run_note_tags_managing_state};
 
 #[derive(Debug)]
 pub enum State {
@@ -60,6 +64,7 @@ pub enum State {
     NoteDeleting(NoteDeletingStateData),
     NoteRenaming(NoteRenamingStateData),
     NoteTagsManaging(NoteTagsManagingStateData),
+    NoteTagDeleting(NoteTagDeletingStateData),
     TagsManaging(TagsManagingStateData),
     TagCreating(TagsCreatingStateData),
     TagDeleting(TagsDeletingStateData),
@@ -81,7 +86,8 @@ impl State {
             }
             State::NoteDeleting(data) => run_note_deleting_state(data, key_code, notebook),
             State::NoteRenaming(data) => run_note_renaming_state(data, key_code, notebook),
-            State::NoteTagsManaging(data) => run_note_tags_managing(data, key_code, notebook),
+            State::NoteTagsManaging(data) => run_note_tags_managing_state(data, key_code, notebook),
+            State::NoteTagDeleting(data) => run_note_tag_deleting_state(data, key_code, notebook),
             State::TagsManaging(data) => run_tags_managing_state(data, key_code, notebook),
             State::TagCreating(data) => run_tag_creating_state(data, key_code, notebook),
             State::TagDeleting(data) => run_tag_deleting_state(data, key_code, notebook),
@@ -109,7 +115,10 @@ impl State {
             State::NoteDeleting(data) => draw_note_deleting_state(data, terminal, main_frame),
             State::NoteRenaming(data) => draw_note_renaming_state(data, terminal, main_frame),
             State::NoteTagsManaging(data) => {
-                draw_note_tags_managing(data, terminal, notebook, main_frame)
+                draw_note_tags_managing_state(data, terminal, notebook, main_frame)
+            }
+            State::NoteTagDeleting(data) => {
+                draw_note_tag_deleting_state_data(data, terminal, main_frame)
             }
             State::TagsManaging(data) => draw_tags_managing_state(data, terminal, main_frame),
             State::TagCreating(data) => {
