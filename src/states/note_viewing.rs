@@ -78,14 +78,13 @@ pub fn run_note_viewing_state(
                 new_name: String::new(),
             })
         }
-        KeyCode::Up if scroll > 0 => State::NoteViewing(NoteViewingStateData {
+        KeyCode::Up => State::NoteViewing(NoteViewingStateData {
             note_data,
-            scroll: scroll - 1,
+            scroll: scroll.saturating_sub(1),
         }),
-        // TODO: Prevent from scrolling out of note
         KeyCode::Down => State::NoteViewing(NoteViewingStateData {
             note_data,
-            scroll: scroll + 1,
+            scroll: scroll.saturating_add(1),
         }),
         _ => State::NoteViewing(NoteViewingStateData { note_data, scroll }),
     })
@@ -190,8 +189,9 @@ pub fn draw_viewed_note(
         &parsed_content,
         content_block.inner(vertical_layout[1]).width,
     );
+    let scroll = scroll.rem_euclid(content_len);
 
-    let note_content = render(&parsed_content).scroll((*scroll as u16, 0));
+    let note_content = render(&parsed_content).scroll((scroll as u16, 0));
 
     let content_scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
         .begin_symbol(Some("↑"))
@@ -204,6 +204,6 @@ pub fn draw_viewed_note(
     frame.render_stateful_widget(
         content_scrollbar,
         vertical_layout[1].inner(&Margin::new(0, 1)),
-        &mut ScrollbarState::new(content_len).position(*scroll),
+        &mut ScrollbarState::new(content_len).position(scroll),
     );
 }
