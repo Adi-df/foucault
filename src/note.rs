@@ -33,6 +33,13 @@ pub struct NoteSummary {
     pub tags: Vec<Tag>,
 }
 
+#[derive(Debug)]
+pub struct NoteData {
+    pub note: Note,
+    pub tags: Vec<String>,
+    pub links: Vec<i64>,
+}
+
 impl Note {
     pub fn new(name: String, content: String, db: &Connection) -> Result<Self> {
         db.execute_batch(

@@ -18,35 +18,33 @@ use ratatui::style::{Color, Style};
 use ratatui::widgets::{Block, BorderType, Borders, Padding};
 use ratatui::Terminal;
 
-use crate::note::Note;
 use crate::notebook::Notebook;
 
-use self::note_creating::{
+use crate::states::note_creating::{
     draw_note_creating_state, run_note_creating_state, NoteCreatingStateData,
 };
-use self::note_deleting::{
+use crate::states::note_deleting::{
     draw_note_deleting_state, run_note_deleting_state, NoteDeletingStateData,
 };
-use self::note_renaming::{
+use crate::states::note_renaming::{
     draw_note_renaming_state, run_note_renaming_state, NoteRenamingStateData,
 };
-use self::note_viewing::{draw_note_viewing_state, run_note_viewing_state, NoteViewingStateData};
-use self::notes_managing::{
+use crate::states::note_viewing::{
+    draw_note_viewing_state, run_note_viewing_state, NoteViewingStateData,
+};
+use crate::states::notes_managing::{
     draw_note_managing_state, run_note_managing_state, NotesManagingStateData,
 };
-use self::nothing::{draw_nothing_state, run_nothing_state};
-use self::tag_creating::{draw_tags_creating_state, run_tag_creating_state, TagsCreatingStateData};
-use self::tag_deleting::{draw_tag_deleting_state, run_tag_deleting_state, TagsDeletingStateData};
-use self::tags_managing::{
+use crate::states::nothing::{draw_nothing_state, run_nothing_state};
+use crate::states::tag_creating::{
+    draw_tags_creating_state, run_tag_creating_state, TagsCreatingStateData,
+};
+use crate::states::tag_deleting::{
+    draw_tag_deleting_state, run_tag_deleting_state, TagsDeletingStateData,
+};
+use crate::states::tags_managing::{
     draw_tags_managing_state, run_tags_managing_state, TagsManagingStateData,
 };
-
-#[derive(Debug)]
-pub struct NoteData {
-    pub note: Note,
-    pub tags: Vec<String>,
-    pub links: Vec<i64>,
-}
 
 #[derive(Debug)]
 pub enum State {

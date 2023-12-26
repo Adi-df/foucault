@@ -11,10 +11,10 @@ use ratatui::widgets::{Block, BorderType, Borders, Padding, Paragraph};
 use ratatui::Terminal;
 
 use crate::helpers::create_popup_size;
-use crate::note::Note;
+use crate::note::{Note, NoteData};
 use crate::notebook::Notebook;
 use crate::states::note_viewing::NoteViewingStateData;
-use crate::states::{NoteData, State};
+use crate::states::State;
 
 #[derive(Debug)]
 pub struct NoteCreatingStateData {

@@ -10,10 +10,10 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, List, ListState, Padding, Paragraph};
 use ratatui::Terminal;
 
-use crate::note::{Note, NoteSummary};
+use crate::note::{Note, NoteData, NoteSummary};
 use crate::notebook::Notebook;
 use crate::states::note_viewing::NoteViewingStateData;
-use crate::states::{NoteData, State};
+use crate::states::State;
 
 #[derive(Debug)]
 pub struct NotesManagingStateData {

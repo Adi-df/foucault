@@ -4,6 +4,7 @@ use std::{env, fs};
 
 use anyhow::Result;
 use log::info;
+use scopeguard::defer;
 
 use crossterm::event::KeyCode;
 use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
@@ -16,15 +17,14 @@ use ratatui::widgets::{
     ScrollbarState, Table,
 };
 use ratatui::{Frame, Terminal};
-use scopeguard::defer;
 
 use crate::markdown::{lines, parse, render};
-use crate::note::Note;
+use crate::note::{Note, NoteData};
 use crate::notebook::Notebook;
 use crate::states::note_deleting::NoteDeletingStateData;
 use crate::states::note_renaming::NoteRenamingStateData;
 use crate::states::notes_managing::NotesManagingStateData;
-use crate::states::{NoteData, State};
+use crate::states::State;
 
 #[derive(Debug)]
 pub struct NoteViewingStateData {
