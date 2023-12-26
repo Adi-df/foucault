@@ -4,7 +4,7 @@ use markdown::{to_mdast, ParseOptions};
 use ratatui::{
     prelude::Alignment,
     style::{Color, Modifier},
-    text::Line,
+    widgets::{Paragraph, Wrap},
 };
 
 use self::elements::BlockElements;
@@ -52,13 +52,23 @@ const RICH_TEXT_COLOR: [Color; 6] = [
     Color::Yellow,    // Blockquote
 ];
 
-pub fn links(content: &str) -> Vec<String> {
-    todo!();
+pub fn parse(content: &str) -> Vec<BlockElements> {
+    BlockElements::parse_node(&to_mdast(content, &ParseOptions::default()).unwrap())
 }
 
-pub fn render(content: &str) -> Vec<Line<'static>> {
-    BlockElements::parse_node(&to_mdast(content, &ParseOptions::default()).unwrap())
-        .into_iter()
-        .flat_map(BlockElements::into_line)
-        .collect()
+pub fn lines(blocks: &[BlockElements], max_len: u16) -> usize {
+    blocks
+        .iter()
+        .map(|block| block.lines(max_len as usize))
+        .sum()
+}
+
+pub fn render(blocks: &[BlockElements]) -> Paragraph {
+    Paragraph::new(
+        blocks
+            .iter()
+            .flat_map(BlockElements::into_line)
+            .collect::<Vec<_>>(),
+    )
+    .wrap(Wrap { trim: true })
 }

@@ -50,6 +50,7 @@ const HEADING_STYLE: [Style; 6] = [
         .fg(HEADER_COLOR[5]),
 ];
 
+#[derive(Debug, Clone)]
 pub enum InlineElements {
     RichText { span: Span<'static> },
     HyperLink { span: Span<'static>, dest: String },
@@ -105,15 +106,16 @@ impl InlineElements {
         }
     }
 
-    fn into_span(self) -> Span<'static> {
+    fn into_span(&self) -> Span<'static> {
         match self {
-            InlineElements::RichText { span } => span,
-            InlineElements::HyperLink { span, .. } => span,
-            InlineElements::CrossRef { span, .. } => span,
+            InlineElements::RichText { span } => span.clone(),
+            InlineElements::HyperLink { span, .. } => span.clone(),
+            InlineElements::CrossRef { span, .. } => span.clone(),
         }
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum BlockElements {
     Paragraph {
         content: Vec<InlineElements>,
@@ -170,7 +172,26 @@ impl BlockElements {
         }
     }
 
-    pub fn into_line(self) -> Vec<Line<'static>> {
+    fn get_content(&self) -> &[InlineElements] {
+        match self {
+            BlockElements::Paragraph { content } => content,
+            BlockElements::Heading { content, .. } => content,
+            BlockElements::BlockQuote { content } => content,
+        }
+    }
+
+    pub fn text(&self) -> String {
+        self.get_content()
+            .iter()
+            .map(|el| el.clone().discard_style())
+            .collect()
+    }
+
+    pub fn lines(&self, max_len: usize) -> usize {
+        textwrap::wrap(self.text().as_str(), max_len).len()
+    }
+
+    pub fn into_line(&self) -> Vec<Line<'static>> {
         match self {
             Self::Paragraph { content } => {
                 vec![Line::from(
@@ -183,16 +204,16 @@ impl BlockElements {
             BlockElements::Heading { content, level } => vec![Line::from(
                 content
                     .into_iter()
-                    .map(|el| el.richify(HEADING_STYLE[level as usize]))
-                    .map(InlineElements::into_span)
+                    .map(|el| el.clone().richify(HEADING_STYLE[*level as usize]))
+                    .map(|el| el.into_span())
                     .collect::<Vec<Span<'static>>>(),
             )
-            .alignment(HEADER_ALIGNEMENT[level as usize])],
+            .alignment(HEADER_ALIGNEMENT[*level as usize])],
             BlockElements::BlockQuote { content } => vec![Line::from(
                 content
                     .into_iter()
-                    .map(|el| el.richify(BLOCKQUOTE_STYLE))
-                    .map(InlineElements::into_span)
+                    .map(|el| el.clone().richify(BLOCKQUOTE_STYLE))
+                    .map(|el| el.into_span())
                     .collect::<Vec<Span<'static>>>(),
             )
             .alignment(BLOCKQUOTE_ALIGNEMENT)],
