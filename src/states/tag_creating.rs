@@ -11,11 +11,9 @@ use ratatui::Terminal;
 
 use crate::helpers::create_popup_size;
 use crate::notebook::Notebook;
-use crate::states::tag_managing::TagsManagingStateData;
+use crate::states::tags_managing::{draw_tags_managing, TagsManagingStateData};
 use crate::states::State;
 use crate::tags::Tag;
-
-use super::tag_managing::draw_tags_managing;
 
 #[derive(Debug)]
 pub struct TagsCreatingStateData {

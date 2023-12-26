@@ -13,7 +13,7 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::Text;
 use ratatui::widgets::{
     Block, BorderType, Borders, Padding, Paragraph, Row, Scrollbar, ScrollbarOrientation,
-    ScrollbarState, Table, Wrap,
+    ScrollbarState, Table,
 };
 use ratatui::{Frame, Terminal};
 use scopeguard::defer;
@@ -22,8 +22,8 @@ use crate::markdown::{lines, parse, render};
 use crate::note::Note;
 use crate::notebook::Notebook;
 use crate::states::note_deleting::NoteDeletingStateData;
-use crate::states::note_managing::NotesManagingStateData;
 use crate::states::note_renaming::NoteRenamingStateData;
+use crate::states::notes_managing::NotesManagingStateData;
 use crate::states::{NoteData, State};
 
 #[derive(Debug)]

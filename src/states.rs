@@ -1,12 +1,12 @@
 mod note_creating;
 mod note_deleting;
-mod note_managing;
 mod note_renaming;
 mod note_viewing;
+mod notes_managing;
 mod nothing;
 mod tag_creating;
 mod tag_deleting;
-mod tag_managing;
+mod tags_managing;
 
 use std::io::Stdout;
 
@@ -27,17 +27,17 @@ use self::note_creating::{
 use self::note_deleting::{
     draw_note_deleting_state, run_note_deleting_state, NoteDeletingStateData,
 };
-use self::note_managing::{
-    draw_note_managing_state, run_note_managing_state, NotesManagingStateData,
-};
 use self::note_renaming::{
     draw_note_renaming_state, run_note_renaming_state, NoteRenamingStateData,
 };
 use self::note_viewing::{draw_note_viewing_state, run_note_viewing_state, NoteViewingStateData};
+use self::notes_managing::{
+    draw_note_managing_state, run_note_managing_state, NotesManagingStateData,
+};
 use self::nothing::{draw_nothing_state, run_nothing_state};
 use self::tag_creating::{draw_tags_creating_state, run_tag_creating_state, TagsCreatingStateData};
 use self::tag_deleting::{draw_tag_deleting_state, run_tag_deleting_state, TagsDeletingStateData};
-use self::tag_managing::{
+use self::tags_managing::{
     draw_tags_managing_state, run_tags_managing_state, TagsManagingStateData,
 };
 

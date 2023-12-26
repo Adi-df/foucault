@@ -15,8 +15,8 @@ use crate::helpers::Capitalize;
 use crate::note::Note;
 use crate::notebook::Notebook;
 use crate::states::note_creating::NoteCreatingStateData;
-use crate::states::note_managing::NotesManagingStateData;
-use crate::states::tag_managing::TagsManagingStateData;
+use crate::states::notes_managing::NotesManagingStateData;
+use crate::states::tags_managing::TagsManagingStateData;
 use crate::states::State;
 use crate::tags::Tag;
 
