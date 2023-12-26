@@ -3,13 +3,11 @@ use std::io::Stdout;
 use anyhow::Result;
 
 use crossterm::event::KeyCode;
-use ratatui::prelude::{Alignment, Constraint, CrosstermBackend, Direction, Layout};
-use ratatui::style::{Color, Modifier, Style, Stylize};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, BorderType, Borders, Clear, Paragraph};
+use ratatui::prelude::CrosstermBackend;
+use ratatui::widgets::Block;
 use ratatui::Terminal;
 
-use crate::helpers::create_popup_size;
+use crate::helpers::yes_no_popup;
 use crate::notebook::Notebook;
 use crate::states::tags_managing::{draw_tags_managing, TagsManagingStateData};
 use crate::states::State;
@@ -67,50 +65,12 @@ pub fn draw_tag_deleting_state(
 
             draw_tags_managing(frame, tags_managing, main_rect);
 
-            let popup_area = create_popup_size((50, 5), main_rect);
-            let block = Block::new()
-                .title(format!("Delete tag {name} ?"))
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(Color::Blue));
-
-            let layout = Layout::new(
-                Direction::Horizontal,
-                [Constraint::Percentage(50), Constraint::Percentage(50)],
-            )
-            .split(block.inner(popup_area));
-
-            let yes = Paragraph::new(Line::from(vec![if *delete {
-                Span::raw("Yes").add_modifier(Modifier::UNDERLINED)
-            } else {
-                Span::raw("Yes")
-            }]))
-            .style(Style::default().fg(Color::Green))
-            .alignment(Alignment::Center)
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .border_type(BorderType::Plain)
-                    .border_style(Style::default().fg(Color::Green)),
+            yes_no_popup(
+                frame,
+                *delete,
+                format!("Delete tag {name} ?").as_str(),
+                main_rect,
             );
-            let no = Paragraph::new(Line::from(vec![if *delete {
-                Span::raw("No")
-            } else {
-                Span::raw("No").add_modifier(Modifier::UNDERLINED)
-            }]))
-            .style(Style::default().fg(Color::Red))
-            .alignment(Alignment::Center)
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .border_type(BorderType::Plain)
-                    .border_style(Style::default().fg(Color::Red)),
-            );
-
-            frame.render_widget(Clear, popup_area);
-            frame.render_widget(yes, layout[0]);
-            frame.render_widget(no, layout[1]);
-            frame.render_widget(block, popup_area);
 
             frame.render_widget(main_frame, frame.size());
         })
