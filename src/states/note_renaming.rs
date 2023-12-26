@@ -13,19 +13,23 @@ use ratatui::Terminal;
 use crate::helpers::create_popup_size;
 use crate::notebook::Notebook;
 use crate::states::note_viewing::NoteViewingStateData;
-use crate::states::{NoteData, State};
+use crate::states::State;
 
 use super::note_viewing::draw_viewed_note;
 
 #[derive(Debug)]
 pub struct NoteRenamingStateData {
-    pub note_data: NoteData,
+    pub viewing_data: NoteViewingStateData,
     pub new_name: String,
 }
 
 pub fn run_note_renaming_state(
     NoteRenamingStateData {
-        mut note_data,
+        viewing_data:
+            NoteViewingStateData {
+                mut note_data,
+                scroll,
+            },
         mut new_name,
     }: NoteRenamingStateData,
     key_code: KeyCode,
@@ -34,30 +38,30 @@ pub fn run_note_renaming_state(
     Ok(match key_code {
         KeyCode::Esc => {
             info!("Cancel renaming");
-            State::NoteViewing(NoteViewingStateData { note_data })
+            State::NoteViewing(NoteViewingStateData { note_data, scroll })
         }
         KeyCode::Enter => {
             note_data.note.name = new_name;
             note_data.note.update(notebook.db())?;
-            State::NoteViewing(NoteViewingStateData { note_data })
+            State::NoteViewing(NoteViewingStateData { note_data, scroll })
         }
 
         KeyCode::Backspace => {
             new_name.pop();
             State::NoteRenaming(NoteRenamingStateData {
-                note_data,
+                viewing_data: NoteViewingStateData { note_data, scroll },
                 new_name,
             })
         }
         KeyCode::Char(c) => {
             new_name.push(c);
             State::NoteRenaming(NoteRenamingStateData {
-                note_data,
+                viewing_data: NoteViewingStateData { note_data, scroll },
                 new_name,
             })
         }
         _ => State::NoteRenaming(NoteRenamingStateData {
-            note_data,
+            viewing_data: NoteViewingStateData { note_data, scroll },
             new_name,
         }),
     })
@@ -65,7 +69,7 @@ pub fn run_note_renaming_state(
 
 pub fn draw_note_renaming_state(
     NoteRenamingStateData {
-        note_data,
+        viewing_data,
         new_name,
     }: &NoteRenamingStateData,
     terminal: &mut Terminal<CrosstermBackend<Stdout>>,
@@ -74,7 +78,7 @@ pub fn draw_note_renaming_state(
     terminal
         .draw(|frame| {
             let main_rect = main_frame.inner(frame.size());
-            draw_viewed_note(frame, note_data, main_rect);
+            draw_viewed_note(frame, viewing_data, main_rect);
             let popup_area = create_popup_size((30, 5), main_rect);
 
             let new_note_entry = Paragraph::new(Line::from(vec![

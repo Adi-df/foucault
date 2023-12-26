@@ -8,14 +8,17 @@ use log::info;
 use crossterm::event::KeyCode;
 use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
 use crossterm::ExecutableCommand;
-use ratatui::prelude::{Alignment, Constraint, CrosstermBackend, Direction, Layout, Rect};
+use ratatui::prelude::{Alignment, Constraint, CrosstermBackend, Direction, Layout, Margin, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::Text;
-use ratatui::widgets::{Block, BorderType, Borders, Padding, Paragraph, Row, Table};
+use ratatui::widgets::{
+    Block, BorderType, Borders, Padding, Paragraph, Row, Scrollbar, ScrollbarOrientation,
+    ScrollbarState, Table, Wrap,
+};
 use ratatui::{Frame, Terminal};
 use scopeguard::defer;
 
-use crate::markdown::render;
+use crate::markdown::{lines, parse, render};
 use crate::note::Note;
 use crate::notebook::Notebook;
 use crate::states::note_deleting::NoteDeletingStateData;
@@ -26,10 +29,14 @@ use crate::states::{NoteData, State};
 #[derive(Debug)]
 pub struct NoteViewingStateData {
     pub note_data: NoteData,
+    pub scroll: usize,
 }
 
 pub fn run_note_viewing_state(
-    NoteViewingStateData { mut note_data }: NoteViewingStateData,
+    NoteViewingStateData {
+        mut note_data,
+        scroll,
+    }: NoteViewingStateData,
     key_code: KeyCode,
     notebook: &Notebook,
     force_redraw: &mut bool,
@@ -47,7 +54,7 @@ pub fn run_note_viewing_state(
             info!("Edit note {}", note_data.note.name);
             edit_note(&mut note_data.note, notebook)?;
             *force_redraw = true;
-            State::NoteViewing(NoteViewingStateData { note_data })
+            State::NoteViewing(NoteViewingStateData { note_data, scroll })
         }
         KeyCode::Char('s') => {
             info!("List notes.");
@@ -60,18 +67,26 @@ pub fn run_note_viewing_state(
         KeyCode::Char('d') => {
             info!("Not deleting prompt.");
             State::NoteDeleting(NoteDeletingStateData {
-                note_data,
+                viewing_data: NoteViewingStateData { note_data, scroll },
                 delete: false,
             })
         }
         KeyCode::Char('r') => {
             info!("Prompt note new name");
             State::NoteRenaming(NoteRenamingStateData {
-                note_data,
+                viewing_data: NoteViewingStateData { note_data, scroll },
                 new_name: String::new(),
             })
         }
-        _ => State::NoteViewing(NoteViewingStateData { note_data }),
+        KeyCode::Up => State::NoteViewing(NoteViewingStateData {
+            note_data,
+            scroll: scroll.saturating_sub(1),
+        }),
+        KeyCode::Down => State::NoteViewing(NoteViewingStateData {
+            note_data,
+            scroll: scroll.saturating_add(1),
+        }),
+        _ => State::NoteViewing(NoteViewingStateData { note_data, scroll }),
     })
 }
 
@@ -105,7 +120,7 @@ fn edit_note(note: &mut Note, notebook: &Notebook) -> Result<()> {
 }
 
 pub fn draw_note_viewing_state(
-    NoteViewingStateData { note_data }: &NoteViewingStateData,
+    state_data: &NoteViewingStateData,
     terminal: &mut Terminal<CrosstermBackend<Stdout>>,
     main_frame: Block,
 ) -> Result<()> {
@@ -113,7 +128,7 @@ pub fn draw_note_viewing_state(
         .draw(|frame| {
             let main_rect = main_frame.inner(frame.size());
 
-            draw_viewed_note(frame, note_data, main_rect);
+            draw_viewed_note(frame, state_data, main_rect);
 
             frame.render_widget(main_frame, frame.size());
         })
@@ -123,7 +138,10 @@ pub fn draw_note_viewing_state(
 
 pub fn draw_viewed_note(
     frame: &mut Frame,
-    NoteData { note, tags, .. }: &NoteData,
+    NoteViewingStateData {
+        note_data: NoteData { note, tags, .. },
+        scroll,
+    }: &NoteViewingStateData,
     main_rect: Rect,
 ) {
     let vertical_layout = Layout::new(
@@ -158,16 +176,34 @@ pub fn draw_viewed_note(
                 .border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(Color::Red)),
         );
-    let note_content = render(note.content.as_str()).block(
-        Block::default()
-            .title("Content")
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(Color::Yellow))
-            .padding(Padding::uniform(1)),
+
+    let content_block = Block::default()
+        .title("Content")
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .border_style(Style::default().fg(Color::Yellow))
+        .padding(Padding::uniform(1));
+
+    let parsed_content = parse(note.content.as_str());
+    let content_len = lines(
+        &parsed_content,
+        content_block.inner(vertical_layout[1]).width,
     );
+    let scroll = scroll.rem_euclid(content_len);
+
+    let note_content = render(&parsed_content).scroll((scroll as u16, 0));
+
+    let content_scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+        .begin_symbol(Some("↑"))
+        .end_symbol(Some("↓"));
 
     frame.render_widget(note_title, horizontal_layout[0]);
     frame.render_widget(note_tags, horizontal_layout[1]);
-    frame.render_widget(note_content, vertical_layout[1]);
+    frame.render_widget(note_content, content_block.inner(vertical_layout[1]));
+    frame.render_widget(content_block, vertical_layout[1]);
+    frame.render_stateful_widget(
+        content_scrollbar,
+        vertical_layout[1].inner(&Margin::new(0, 1)),
+        &mut ScrollbarState::new(content_len).position(scroll),
+    );
 }

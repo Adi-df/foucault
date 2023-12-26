@@ -13,26 +13,29 @@ use ratatui::Terminal;
 use crate::helpers::create_popup_size;
 use crate::notebook::Notebook;
 use crate::states::note_viewing::{draw_viewed_note, NoteViewingStateData};
-use crate::states::{NoteData, State};
+use crate::states::State;
 
 #[derive(Debug)]
 pub struct NoteDeletingStateData {
-    pub note_data: NoteData,
+    pub viewing_data: NoteViewingStateData,
     pub delete: bool,
 }
 
 pub fn run_note_deleting_state(
-    NoteDeletingStateData { note_data, delete }: NoteDeletingStateData,
+    NoteDeletingStateData {
+        viewing_data: NoteViewingStateData { note_data, scroll },
+        delete,
+    }: NoteDeletingStateData,
     key_code: KeyCode,
     notebook: &Notebook,
 ) -> Result<State> {
     Ok(match key_code {
         KeyCode::Esc => {
             info!("Cancel deleting");
-            State::NoteViewing(NoteViewingStateData { note_data })
+            State::NoteViewing(NoteViewingStateData { note_data, scroll })
         }
         KeyCode::Tab => State::NoteDeleting(NoteDeletingStateData {
-            note_data,
+            viewing_data: NoteViewingStateData { note_data, scroll },
             delete: !delete,
         }),
         KeyCode::Enter => {
@@ -40,15 +43,21 @@ pub fn run_note_deleting_state(
                 note_data.note.delete(notebook.db())?;
                 State::Nothing
             } else {
-                State::NoteViewing(NoteViewingStateData { note_data })
+                State::NoteViewing(NoteViewingStateData { note_data, scroll })
             }
         }
-        _ => State::NoteDeleting(NoteDeletingStateData { note_data, delete }),
+        _ => State::NoteDeleting(NoteDeletingStateData {
+            viewing_data: NoteViewingStateData { note_data, scroll },
+            delete,
+        }),
     })
 }
 
 pub fn draw_note_deleting_state(
-    NoteDeletingStateData { note_data, delete }: &NoteDeletingStateData,
+    NoteDeletingStateData {
+        viewing_data,
+        delete,
+    }: &NoteDeletingStateData,
     terminal: &mut Terminal<CrosstermBackend<Stdout>>,
     main_frame: Block,
 ) -> Result<()> {
@@ -56,7 +65,7 @@ pub fn draw_note_deleting_state(
         .draw(|frame| {
             let main_rect = main_frame.inner(frame.size());
 
-            draw_viewed_note(frame, note_data, main_rect);
+            draw_viewed_note(frame, viewing_data, main_rect);
 
             let popup_area = create_popup_size((50, 5), main_rect);
             let block = Block::new()

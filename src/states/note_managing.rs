@@ -62,6 +62,7 @@ pub fn run_note_managing_state(
 
             State::NoteViewing(NoteViewingStateData {
                 note_data: NoteData { note, tags, links },
+                scroll: 0,
             })
         }
         KeyCode::Backspace => {
