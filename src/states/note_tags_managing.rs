@@ -61,6 +61,7 @@ pub fn run_note_tags_managing_state(
                 note,
             },
             tag_name: String::new(),
+            valid: false,
         }),
         KeyCode::Up if selected > 0 => State::NoteTagsManaging(NoteTagsManagingStateData {
             selected: selected - 1,

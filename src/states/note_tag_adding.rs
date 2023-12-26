@@ -7,16 +7,16 @@ use ratatui::widgets::Block;
 use ratatui::Terminal;
 
 use crate::helpers::draw_text_prompt;
+use crate::notebook::Notebook;
+use crate::states::note_tags_managing::{draw_note_tags_managing, NoteTagsManagingStateData};
 use crate::states::State;
 use crate::tags::Tag;
-use crate::{notebook::Notebook, states::note_tags_managing::NoteTagsManagingStateData};
-
-use crate::states::note_tags_managing::draw_note_tags_managing;
 
 #[derive(Debug)]
 pub struct NoteTagAddingStateData {
     pub tags_managing: NoteTagsManagingStateData,
     pub tag_name: String,
+    pub valid: bool,
 }
 
 pub fn run_note_tag_adding_state(
@@ -28,6 +28,7 @@ pub fn run_note_tag_adding_state(
                 note,
             },
         mut tag_name,
+        ..
     }: NoteTagAddingStateData,
     key_code: KeyCode,
     notebook: &Notebook,
@@ -46,6 +47,7 @@ pub fn run_note_tag_adding_state(
                     tags,
                     note,
                 },
+                valid: Tag::tag_exists(tag_name.as_str(), notebook.db())?,
                 tag_name,
             })
         }
@@ -57,6 +59,7 @@ pub fn run_note_tag_adding_state(
                     tags,
                     note,
                 },
+                valid: Tag::tag_exists(tag_name.as_str(), notebook.db())?,
                 tag_name,
             })
         }
@@ -76,6 +79,7 @@ pub fn run_note_tag_adding_state(
                         tags,
                         note,
                     },
+                    valid: Tag::tag_exists(tag_name.as_str(), notebook.db())?,
                     tag_name,
                 })
             }
@@ -86,6 +90,7 @@ pub fn run_note_tag_adding_state(
                 tags,
                 note,
             },
+            valid: Tag::tag_exists(tag_name.as_str(), notebook.db())?,
             tag_name,
         }),
     })
@@ -95,19 +100,17 @@ pub fn draw_note_tag_adding_state_data(
     NoteTagAddingStateData {
         tags_managing,
         tag_name,
+        valid,
     }: &NoteTagAddingStateData,
     terminal: &mut Terminal<CrosstermBackend<Stdout>>,
-    notebook: &Notebook,
     main_frame: Block,
 ) -> Result<()> {
-    let exists = Tag::tag_exists(tag_name, notebook.db())?;
-
     terminal
         .draw(|frame| {
             let main_rect = main_frame.inner(frame.size());
 
             draw_note_tags_managing(frame, tags_managing, main_rect);
-            draw_text_prompt(frame, "Tag name", tag_name.as_str(), exists, main_rect);
+            draw_text_prompt(frame, "Tag name", tag_name.as_str(), *valid, main_rect);
 
             frame.render_widget(main_frame, frame.size());
         })

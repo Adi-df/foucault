@@ -102,6 +102,8 @@ pub fn draw_text_prompt(
     valid: bool,
     main_rect: ratatui::prelude::Rect,
 ) {
+    let popup_area = create_popup_size((30, 5), main_rect);
+
     let new_note_entry = Paragraph::new(Line::from(vec![
         Span::raw(text).style(Style::default().add_modifier(Modifier::UNDERLINED))
     ]))
@@ -114,7 +116,8 @@ pub fn draw_text_prompt(
             .padding(Padding::uniform(1)),
     );
 
-    frame.render_widget(new_note_entry, create_popup_size((30, 5), main_rect));
+    frame.render_widget(Clear, popup_area);
+    frame.render_widget(new_note_entry, popup_area);
 }
 
 pub trait Capitalize<'a> {

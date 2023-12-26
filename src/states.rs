@@ -41,7 +41,7 @@ use crate::states::notes_managing::{
 };
 use crate::states::nothing::{draw_nothing_state, run_nothing_state};
 use crate::states::tag_creating::{
-    draw_tags_creating_state, run_tag_creating_state, TagsCreatingStateData,
+    draw_tag_creating_state, run_tag_creating_state, TagsCreatingStateData,
 };
 use crate::states::tag_deleting::{
     draw_tag_deleting_state, run_tag_deleting_state, TagsDeletingStateData,
@@ -50,13 +50,15 @@ use crate::states::tags_managing::{
     draw_tags_managing_state, run_tags_managing_state, TagsManagingStateData,
 };
 
-use self::note_tag_adding::{
+use crate::states::note_tag_adding::{
     draw_note_tag_adding_state_data, run_note_tag_adding_state, NoteTagAddingStateData,
 };
-use self::note_tag_deleting::{
+use crate::states::note_tag_deleting::{
     draw_note_tag_deleting_state_data, run_note_tag_deleting_state, NoteTagDeletingStateData,
 };
-use self::note_tags_managing::{draw_note_tags_managing_state, run_note_tags_managing_state};
+use crate::states::note_tags_managing::{
+    draw_note_tags_managing_state, run_note_tags_managing_state,
+};
 
 #[derive(Debug)]
 pub enum State {
@@ -124,15 +126,13 @@ impl State {
                 draw_note_tags_managing_state(data, terminal, main_frame)
             }
             State::NoteTagAdding(data) => {
-                draw_note_tag_adding_state_data(data, terminal, notebook, main_frame)
+                draw_note_tag_adding_state_data(data, terminal, main_frame)
             }
             State::NoteTagDeleting(data) => {
                 draw_note_tag_deleting_state_data(data, terminal, main_frame)
             }
             State::TagsManaging(data) => draw_tags_managing_state(data, terminal, main_frame),
-            State::TagCreating(data) => {
-                draw_tags_creating_state(data, terminal, notebook, main_frame)
-            }
+            State::TagCreating(data) => draw_tag_creating_state(data, terminal, main_frame),
             State::TagDeleting(data) => draw_tag_deleting_state(data, terminal, main_frame),
             State::Exit => unreachable!(),
         }

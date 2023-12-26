@@ -70,6 +70,7 @@ pub fn run_tags_managing_state(
             State::TagCreating(TagsCreatingStateData {
                 tags_search: state_data,
                 name: String::new(),
+                valid: false,
             })
         }
         KeyCode::Char('d') if !state_data.pattern_editing && !state_data.tags.is_empty() => {
