@@ -8,7 +8,7 @@ use ratatui::prelude::CrosstermBackend;
 use ratatui::widgets::Block;
 use ratatui::Terminal;
 
-use crate::helpers::yes_no_popup;
+use crate::helpers::draw_yes_no_prompt;
 use crate::notebook::Notebook;
 use crate::states::note_viewing::{draw_viewed_note, NoteViewingStateData};
 use crate::states::State;
@@ -65,7 +65,7 @@ pub fn draw_note_deleting_state(
 
             draw_viewed_note(frame, viewing_data, main_rect);
 
-            yes_no_popup(frame, *delete, "Delete note ?", main_rect);
+            draw_yes_no_prompt(frame, *delete, "Delete note ?", main_rect);
 
             frame.render_widget(main_frame, frame.size());
         })

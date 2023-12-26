@@ -7,7 +7,7 @@ use ratatui::prelude::CrosstermBackend;
 use ratatui::widgets::Block;
 use ratatui::Terminal;
 
-use crate::helpers::yes_no_popup;
+use crate::helpers::draw_yes_no_prompt;
 use crate::notebook::Notebook;
 use crate::states::tags_managing::{draw_tags_managing, TagsManagingStateData};
 use crate::states::State;
@@ -65,7 +65,7 @@ pub fn draw_tag_deleting_state(
 
             draw_tags_managing(frame, tags_managing, main_rect);
 
-            yes_no_popup(
+            draw_yes_no_prompt(
                 frame,
                 *delete,
                 format!("Delete tag {name} ?").as_str(),

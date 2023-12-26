@@ -211,7 +211,11 @@ pub fn draw_viewed_note(
         &parsed_content,
         content_block.inner(vertical_layout[1]).width,
     );
-    let scroll = scroll.rem_euclid(content_len);
+    let scroll = if content_len == 0 {
+        0
+    } else {
+        scroll.rem_euclid(content_len)
+    };
 
     let note_content = render(&parsed_content).scroll((scroll.try_into().unwrap(), 0));
 
