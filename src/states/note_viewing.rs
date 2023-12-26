@@ -179,12 +179,20 @@ pub fn draw_viewed_note(
         );
     let note_tags = Table::default()
         .rows([Row::new(tags.iter().map(|el| Text::raw(el.name.as_str())))])
+        .widths(
+            [Constraint::Percentage(100 / tags.len() as u16)]
+                .into_iter()
+                .cycle()
+                .take(tags.len()),
+        )
+        .column_spacing(1)
         .block(
             Block::default()
                 .title("Tags")
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(Color::Red)),
+                .border_style(Style::default().fg(Color::Red))
+                .padding(Padding::uniform(1)),
         );
 
     let content_block = Block::default()
