@@ -3,13 +3,11 @@ use std::io::Stdout;
 use anyhow::Result;
 
 use crossterm::event::KeyCode;
-use ratatui::prelude::{Alignment, Constraint, CrosstermBackend, Direction, Layout};
-use ratatui::style::{Color, Modifier, Style, Stylize};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, BorderType, Borders, Clear, Paragraph};
+use ratatui::prelude::CrosstermBackend;
+use ratatui::widgets::Block;
 use ratatui::Terminal;
 
-use crate::helpers::create_popup_size;
+use crate::helpers::draw_yes_no_prompt;
 use crate::notebook::Notebook;
 use crate::states::tags_managing::{draw_tags_managing, TagsManagingStateData};
 use crate::states::State;
@@ -18,14 +16,12 @@ use crate::tags::Tag;
 #[derive(Debug)]
 pub struct TagsDeletingStateData {
     pub tags_managing: TagsManagingStateData,
-    pub selected: usize,
     pub delete: bool,
 }
 
 pub fn run_tag_deleting_state(
     TagsDeletingStateData {
         mut tags_managing,
-        selected,
         delete,
     }: TagsDeletingStateData,
     key_code: KeyCode,
@@ -37,19 +33,17 @@ pub fn run_tag_deleting_state(
             if delete {
                 tags_managing
                     .tags
-                    .swap_remove(selected)
+                    .swap_remove(tags_managing.selected)
                     .delete(notebook.db())?;
             }
             State::TagsManaging(tags_managing)
         }
         KeyCode::Tab => State::TagDeleting(TagsDeletingStateData {
             tags_managing,
-            selected,
             delete: !delete,
         }),
         _ => State::TagDeleting(TagsDeletingStateData {
             tags_managing,
-            selected,
             delete,
         }),
     })
@@ -58,13 +52,12 @@ pub fn run_tag_deleting_state(
 pub fn draw_tag_deleting_state(
     TagsDeletingStateData {
         tags_managing,
-        selected,
         delete,
     }: &TagsDeletingStateData,
     terminal: &mut Terminal<CrosstermBackend<Stdout>>,
     main_frame: Block,
 ) -> Result<()> {
-    let Tag { name, .. } = &tags_managing.tags[*selected];
+    let Tag { name, .. } = &tags_managing.tags[tags_managing.selected];
 
     terminal
         .draw(|frame| {
@@ -72,50 +65,12 @@ pub fn draw_tag_deleting_state(
 
             draw_tags_managing(frame, tags_managing, main_rect);
 
-            let popup_area = create_popup_size((50, 5), main_rect);
-            let block = Block::new()
-                .title(format!("Delete tag {name} ?"))
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(Color::Blue));
-
-            let layout = Layout::new(
-                Direction::Horizontal,
-                [Constraint::Percentage(50), Constraint::Percentage(50)],
-            )
-            .split(block.inner(popup_area));
-
-            let yes = Paragraph::new(Line::from(vec![if *delete {
-                Span::raw("Yes").add_modifier(Modifier::UNDERLINED)
-            } else {
-                Span::raw("Yes")
-            }]))
-            .style(Style::default().fg(Color::Green))
-            .alignment(Alignment::Center)
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .border_type(BorderType::Plain)
-                    .border_style(Style::default().fg(Color::Green)),
+            draw_yes_no_prompt(
+                frame,
+                *delete,
+                format!("Delete tag {name} ?").as_str(),
+                main_rect,
             );
-            let no = Paragraph::new(Line::from(vec![if *delete {
-                Span::raw("No")
-            } else {
-                Span::raw("No").add_modifier(Modifier::UNDERLINED)
-            }]))
-            .style(Style::default().fg(Color::Red))
-            .alignment(Alignment::Center)
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .border_type(BorderType::Plain)
-                    .border_style(Style::default().fg(Color::Red)),
-            );
-
-            frame.render_widget(Clear, popup_area);
-            frame.render_widget(yes, layout[0]);
-            frame.render_widget(no, layout[1]);
-            frame.render_widget(block, popup_area);
 
             frame.render_widget(main_frame, frame.size());
         })

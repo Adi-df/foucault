@@ -4,13 +4,11 @@ use anyhow::Result;
 
 use crossterm::event::KeyCode;
 use log::info;
-use ratatui::prelude::{Alignment, Constraint, CrosstermBackend, Direction, Layout};
-use ratatui::style::{Color, Modifier, Style, Stylize};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, BorderType, Borders, Clear, Paragraph};
+use ratatui::prelude::CrosstermBackend;
+use ratatui::widgets::Block;
 use ratatui::Terminal;
 
-use crate::helpers::create_popup_size;
+use crate::helpers::draw_yes_no_prompt;
 use crate::notebook::Notebook;
 use crate::states::note_viewing::{draw_viewed_note, NoteViewingStateData};
 use crate::states::State;
@@ -67,50 +65,7 @@ pub fn draw_note_deleting_state(
 
             draw_viewed_note(frame, viewing_data, main_rect);
 
-            let popup_area = create_popup_size((50, 5), main_rect);
-            let block = Block::new()
-                .title("Delete note ?")
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(Color::Blue));
-
-            let layout = Layout::new(
-                Direction::Horizontal,
-                [Constraint::Percentage(50), Constraint::Percentage(50)],
-            )
-            .split(block.inner(popup_area));
-
-            let yes = Paragraph::new(Line::from(vec![if *delete {
-                Span::raw("Yes").add_modifier(Modifier::UNDERLINED)
-            } else {
-                Span::raw("Yes")
-            }]))
-            .style(Style::default().fg(Color::Green))
-            .alignment(Alignment::Center)
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .border_type(BorderType::Plain)
-                    .border_style(Style::default().fg(Color::Green)),
-            );
-            let no = Paragraph::new(Line::from(vec![if *delete {
-                Span::raw("No")
-            } else {
-                Span::raw("No").add_modifier(Modifier::UNDERLINED)
-            }]))
-            .style(Style::default().fg(Color::Red))
-            .alignment(Alignment::Center)
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .border_type(BorderType::Plain)
-                    .border_style(Style::default().fg(Color::Red)),
-            );
-
-            frame.render_widget(Clear, popup_area);
-            frame.render_widget(yes, layout[0]);
-            frame.render_widget(no, layout[1]);
-            frame.render_widget(block, popup_area);
+            draw_yes_no_prompt(frame, *delete, "Delete note ?", main_rect);
 
             frame.render_widget(main_frame, frame.size());
         })

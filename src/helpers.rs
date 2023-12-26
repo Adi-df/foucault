@@ -1,4 +1,8 @@
-use ratatui::prelude::{Constraint, Direction, Layout, Rect};
+use ratatui::prelude::{Alignment, Constraint, Direction, Layout, Rect};
+use ratatui::style::{Color, Modifier, Style, Stylize};
+use ratatui::text::{Line, Span};
+use ratatui::widgets::{Block, BorderType, Borders, Clear, Padding, Paragraph};
+use ratatui::Frame;
 
 pub fn create_popup_proportion(proportion: (u16, u16), rect: Rect) -> Rect {
     let vertical = Layout::new(
@@ -42,6 +46,75 @@ pub fn create_popup_size(size: (u16, u16), rect: Rect) -> Rect {
     )
     .split(vertical[1]);
     horizontal[1]
+}
+
+pub fn draw_yes_no_prompt(frame: &mut Frame, choice: bool, title: &str, main_rect: Rect) {
+    let popup_area = create_popup_size((50, 5), main_rect);
+    let block = Block::new()
+        .title(title)
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .border_style(Style::default().fg(Color::Blue));
+
+    let layout = Layout::new(
+        Direction::Horizontal,
+        [Constraint::Percentage(50), Constraint::Percentage(50)],
+    )
+    .split(block.inner(popup_area));
+
+    let yes = Paragraph::new(Line::from(vec![if choice {
+        Span::raw("Yes").add_modifier(Modifier::UNDERLINED)
+    } else {
+        Span::raw("Yes")
+    }]))
+    .style(Style::default().fg(Color::Green))
+    .alignment(Alignment::Center)
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Plain)
+            .border_style(Style::default().fg(Color::Green)),
+    );
+    let no = Paragraph::new(Line::from(vec![if choice {
+        Span::raw("No")
+    } else {
+        Span::raw("No").add_modifier(Modifier::UNDERLINED)
+    }]))
+    .style(Style::default().fg(Color::Red))
+    .alignment(Alignment::Center)
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Plain)
+            .border_style(Style::default().fg(Color::Red)),
+    );
+
+    frame.render_widget(Clear, popup_area);
+    frame.render_widget(yes, layout[0]);
+    frame.render_widget(no, layout[1]);
+    frame.render_widget(block, popup_area);
+}
+
+pub fn draw_text_prompt(
+    frame: &mut ratatui::Frame<'_>,
+    title: &str,
+    text: &str,
+    valid: bool,
+    main_rect: ratatui::prelude::Rect,
+) {
+    let new_note_entry = Paragraph::new(Line::from(vec![
+        Span::raw(text).style(Style::default().add_modifier(Modifier::UNDERLINED))
+    ]))
+    .block(
+        Block::default()
+            .title(title)
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::default().fg(if valid { Color::Green } else { Color::Red }))
+            .padding(Padding::uniform(1)),
+    );
+
+    frame.render_widget(new_note_entry, create_popup_size((30, 5), main_rect));
 }
 
 pub trait Capitalize<'a> {

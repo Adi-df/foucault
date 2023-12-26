@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use rusqlite::Connection;
+use rusqlite::{Connection, OptionalExtension};
 use sea_query::{Expr, Iden, Order, Query, SqliteQueryBuilder};
 
 #[derive(Iden)]
@@ -42,6 +42,27 @@ impl Tag {
         Ok(Self {
             id: db.last_insert_rowid(),
             name: name.to_owned(),
+        })
+    }
+
+    pub fn load_by_name(name: &str, db: &Connection) -> Result<Option<Tag>> {
+        db.query_row(
+            Query::select()
+                .from(TagsTable)
+                .columns([TagsCharacters::Id])
+                .and_where(Expr::col(TagsCharacters::Name).eq(name))
+                .to_string(SqliteQueryBuilder)
+                .as_str(),
+            [],
+            |row| row.get(0),
+        )
+        .optional()
+        .map_err(anyhow::Error::from)
+        .map(|res| {
+            res.map(|id| Tag {
+                id,
+                name: name.to_string(),
+            })
         })
     }
 

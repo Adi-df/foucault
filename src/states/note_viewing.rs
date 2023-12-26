@@ -23,6 +23,7 @@ use crate::note::{Note, NoteData};
 use crate::notebook::Notebook;
 use crate::states::note_deleting::NoteDeletingStateData;
 use crate::states::note_renaming::NoteRenamingStateData;
+use crate::states::note_tags_managing::NoteTagsManagingStateData;
 use crate::states::notes_managing::NotesManagingStateData;
 use crate::states::State;
 
@@ -76,6 +77,14 @@ pub fn run_note_viewing_state(
             State::NoteRenaming(NoteRenamingStateData {
                 viewing_data: NoteViewingStateData { note_data, scroll },
                 new_name: String::new(),
+            })
+        }
+        KeyCode::Char('t') => {
+            info!("Manage tags of note {}", note_data.note.name);
+            State::NoteTagsManaging(NoteTagsManagingStateData {
+                selected: 0,
+                tags: note_data.note.get_tags(notebook.db())?,
+                note: note_data.note,
             })
         }
         KeyCode::Up => State::NoteViewing(NoteViewingStateData {
@@ -151,7 +160,7 @@ pub fn draw_viewed_note(
     .split(main_rect);
     let horizontal_layout = Layout::new(
         Direction::Horizontal,
-        [Constraint::Percentage(40), Constraint::Min(0)],
+        [Constraint::Percentage(30), Constraint::Min(0)],
     )
     .split(vertical_layout[0]);
 
@@ -168,13 +177,25 @@ pub fn draw_viewed_note(
                 .padding(Padding::uniform(1)),
         );
     let note_tags = Table::default()
-        .rows([Row::new(tags.iter().map(Text::raw))])
+        .rows([Row::new(tags.iter().map(|el| Text::raw(el.name.as_str())))])
+        .widths(
+            [if tags.is_empty() {
+                Constraint::Min(0)
+            } else {
+                Constraint::Percentage(100 / u16::try_from(tags.len()).unwrap())
+            }]
+            .into_iter()
+            .cycle()
+            .take(tags.len()),
+        )
+        .column_spacing(1)
         .block(
             Block::default()
                 .title("Tags")
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(Color::Red)),
+                .border_style(Style::default().fg(Color::Red))
+                .padding(Padding::uniform(1)),
         );
 
     let content_block = Block::default()
@@ -189,7 +210,11 @@ pub fn draw_viewed_note(
         &parsed_content,
         content_block.inner(vertical_layout[1]).width,
     );
-    let scroll = scroll.rem_euclid(content_len);
+    let scroll = if content_len == 0 {
+        0
+    } else {
+        scroll.rem_euclid(content_len)
+    };
 
     let note_content = render(&parsed_content).scroll((scroll.try_into().unwrap(), 0));
 

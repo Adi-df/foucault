@@ -4,12 +4,10 @@ use anyhow::Result;
 
 use crossterm::event::KeyCode;
 use ratatui::prelude::CrosstermBackend;
-use ratatui::style::{Color, Modifier, Style};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, BorderType, Borders, Clear, Padding, Paragraph};
+use ratatui::widgets::Block;
 use ratatui::Terminal;
 
-use crate::helpers::create_popup_size;
+use crate::helpers::draw_text_prompt;
 use crate::notebook::Notebook;
 use crate::states::tags_managing::{draw_tags_managing, TagsManagingStateData};
 use crate::states::State;
@@ -69,27 +67,7 @@ pub fn draw_tags_creating_state(
             let main_rect = main_frame.inner(frame.size());
 
             draw_tags_managing(frame, tags_search, main_rect);
-
-            let popup_area = create_popup_size((30, 5), main_rect);
-
-            let new_tag_entry = Paragraph::new(Line::from(vec![
-                Span::raw(name).style(Style::default().add_modifier(Modifier::UNDERLINED))
-            ]))
-            .block(
-                Block::default()
-                    .title("Tag name")
-                    .borders(Borders::ALL)
-                    .border_type(BorderType::Rounded)
-                    .border_style(Style::default().fg(if taken {
-                        Color::Red
-                    } else {
-                        Color::Green
-                    }))
-                    .padding(Padding::uniform(1)),
-            );
-
-            frame.render_widget(Clear, popup_area);
-            frame.render_widget(new_tag_entry, popup_area);
+            draw_text_prompt(frame, "Tag name", name, taken, main_rect);
 
             frame.render_widget(main_frame, frame.size());
         })

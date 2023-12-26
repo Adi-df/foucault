@@ -5,12 +5,10 @@ use log::info;
 
 use crossterm::event::KeyCode;
 use ratatui::prelude::CrosstermBackend;
-use ratatui::style::{Color, Modifier, Style};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, BorderType, Borders, Clear, Padding, Paragraph};
+use ratatui::widgets::Block;
 use ratatui::Terminal;
 
-use crate::helpers::create_popup_size;
+use crate::helpers::draw_text_prompt;
 use crate::notebook::Notebook;
 use crate::states::note_viewing::NoteViewingStateData;
 use crate::states::State;
@@ -78,23 +76,9 @@ pub fn draw_note_renaming_state(
     terminal
         .draw(|frame| {
             let main_rect = main_frame.inner(frame.size());
+
             draw_viewed_note(frame, viewing_data, main_rect);
-            let popup_area = create_popup_size((30, 5), main_rect);
-
-            let new_note_entry = Paragraph::new(Line::from(vec![
-                Span::raw(new_name).style(Style::default().add_modifier(Modifier::UNDERLINED))
-            ]))
-            .block(
-                Block::default()
-                    .title("Rename note")
-                    .borders(Borders::ALL)
-                    .border_type(BorderType::Rounded)
-                    .border_style(Style::default().fg(Color::Green))
-                    .padding(Padding::uniform(1)),
-            );
-
-            frame.render_widget(Clear, popup_area);
-            frame.render_widget(new_note_entry, create_popup_size((30, 5), main_rect));
+            draw_text_prompt(frame, "Rename note", new_name, true, main_rect);
 
             frame.render_widget(main_frame, frame.size());
         })
