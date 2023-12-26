@@ -5,10 +5,13 @@ use anyhow::Result;
 use crossterm::event::KeyCode;
 use log::info;
 use ratatui::{
-    prelude::{Constraint, CrosstermBackend, Direction, Layout, Rect},
+    prelude::{Constraint, CrosstermBackend, Direction, Layout, Margin, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, BorderType, Borders, List, ListState, Padding, Paragraph},
+    widgets::{
+        Block, BorderType, Borders, List, ListState, Padding, Paragraph, Scrollbar,
+        ScrollbarOrientation, ScrollbarState,
+    },
     Frame, Terminal,
 };
 
@@ -173,11 +176,20 @@ pub fn draw_tags_managing(
                 .padding(Padding::uniform(2)),
         );
 
+    let tags_scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+        .begin_symbol(Some("↑"))
+        .end_symbol(Some("↓"));
+
     frame.render_widget(filter_editing_active, filter_bar_layout[0]);
     frame.render_widget(filter_bar, filter_bar_layout[1]);
     frame.render_stateful_widget(
         list_results,
         vertical_layout[1],
         &mut ListState::with_selected(ListState::default(), Some(*selected)),
+    );
+    frame.render_stateful_widget(
+        tags_scrollbar,
+        vertical_layout[1].inner(&Margin::new(0, 1)),
+        &mut ScrollbarState::new(tags.len()).position(*selected),
     );
 }

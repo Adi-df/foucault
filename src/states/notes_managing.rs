@@ -4,10 +4,13 @@ use anyhow::Result;
 use log::info;
 
 use crossterm::event::KeyCode;
-use ratatui::prelude::{Constraint, CrosstermBackend, Direction, Layout};
+use ratatui::prelude::{Constraint, CrosstermBackend, Direction, Layout, Margin};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, BorderType, Borders, List, ListState, Padding, Paragraph};
+use ratatui::widgets::{
+    Block, BorderType, Borders, List, ListState, Padding, Paragraph, Scrollbar,
+    ScrollbarOrientation, ScrollbarState,
+};
 use ratatui::Terminal;
 
 use crate::note::{Note, NoteData, NoteSummary};
@@ -107,7 +110,7 @@ pub fn draw_note_managing_state(
         .draw(|frame| {
             let main_rect = main_frame.inner(frame.size());
 
-            let layout = Layout::new(
+            let vertical_layout = Layout::new(
                 Direction::Vertical,
                 [Constraint::Length(5), Constraint::Min(0)],
             )
@@ -141,11 +144,20 @@ pub fn draw_note_managing_state(
                         .padding(Padding::uniform(2)),
                 );
 
-            frame.render_widget(search_bar, layout[0]);
+            let notes_scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+                .begin_symbol(Some("↑"))
+                .end_symbol(Some("↓"));
+
+            frame.render_widget(search_bar, vertical_layout[0]);
             frame.render_stateful_widget(
                 list_results,
-                layout[1],
+                vertical_layout[1],
                 &mut ListState::with_selected(ListState::default(), Some(*selected)),
+            );
+            frame.render_stateful_widget(
+                notes_scrollbar,
+                vertical_layout[1].inner(&Margin::new(0, 1)),
+                &mut ScrollbarState::new(notes.len()).position(*selected),
             );
 
             frame.render_widget(main_frame, frame.size());

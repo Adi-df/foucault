@@ -66,8 +66,8 @@ pub fn run_tag_creating_state(
         }
         _ => State::TagCreating(TagsCreatingStateData {
             tags_search,
-            valid,
             name,
+            valid,
         }),
     })
 }
