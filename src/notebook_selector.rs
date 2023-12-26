@@ -14,11 +14,14 @@ use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
 use crossterm::{event, ExecutableCommand};
-use ratatui::prelude::{Alignment, CrosstermBackend};
+use ratatui::prelude::{Alignment, CrosstermBackend, Margin};
 use ratatui::style::Style;
 use ratatui::style::{Color, Modifier};
 use ratatui::text::Text;
-use ratatui::widgets::{Block, BorderType, Borders, List, ListDirection, ListState, Padding};
+use ratatui::widgets::{
+    Block, BorderType, Borders, List, ListDirection, ListState, Padding, Scrollbar,
+    ScrollbarOrientation, ScrollbarState,
+};
 use ratatui::Terminal;
 
 #[derive(Clone, Debug, Error)]
@@ -55,24 +58,23 @@ pub fn open_selector(dir: &Path) -> Result<Option<String>> {
 
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
 
-    let mut selected_notebook = ListState::default().with_selected(Some(0));
+    let mut selected = 0;
 
     loop {
         if event::poll(Duration::from_millis(50))? {
             if let Event::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Press {
-                    if key.code == KeyCode::Esc || key.code == KeyCode::Char('q') {
-                        info!("Quit notebook selector.");
-                        break Ok(None);
-                    } else if let Some(selected) = selected_notebook.selected_mut() {
-                        match key.code {
-                            KeyCode::Up if *selected > 0 => *selected -= 1,
-                            KeyCode::Down if *selected < notebooks.len() - 1 => *selected += 1,
-                            KeyCode::Enter => {
-                                break Ok(Some(notebooks[*selected].clone()));
-                            }
-                            _ => {}
+                    match key.code {
+                        KeyCode::Esc | KeyCode::Char('q') => {
+                            info!("Quit notebook selector.");
+                            break Ok(None);
                         }
+                        KeyCode::Up if selected > 0 => selected -= 1,
+                        KeyCode::Down if selected < notebooks.len() - 1 => selected += 1,
+                        KeyCode::Enter => {
+                            break Ok(Some(notebooks[selected].clone()));
+                        }
+                        _ => {}
                     }
                 }
             }
@@ -99,12 +101,21 @@ pub fn open_selector(dir: &Path) -> Result<Option<String>> {
                 .highlight_style(Style::default().fg(Color::Black).bg(Color::White))
                 .direction(ListDirection::TopToBottom);
 
+            let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+                .begin_symbol(Some("↑"))
+                .end_symbol(Some("↓"));
+
             frame.render_stateful_widget(
                 list,
                 main_block.inner(frame.size()),
-                &mut selected_notebook,
+                &mut ListState::default().with_selected(Some(selected)),
             );
             frame.render_widget(main_block, frame.size());
+            frame.render_stateful_widget(
+                scrollbar,
+                frame.size().inner(&Margin::new(0, 1)),
+                &mut ScrollbarState::new(notebooks.len()).position(selected),
+            );
         })?;
     }
 }
