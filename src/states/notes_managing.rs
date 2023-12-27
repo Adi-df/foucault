@@ -40,11 +40,7 @@ impl NotesManagingStateData {
 }
 
 pub fn run_note_managing_state(
-    NotesManagingStateData {
-        mut pattern,
-        selected,
-        notes,
-    }: NotesManagingStateData,
+    mut state_data: NotesManagingStateData,
     key_code: KeyCode,
     notebook: &Notebook,
 ) -> Result<State> {
@@ -53,8 +49,8 @@ pub fn run_note_managing_state(
             info!("Stop note searching.");
             State::Nothing
         }
-        KeyCode::Enter if !notes.is_empty() => {
-            let note_summary = &notes[selected];
+        KeyCode::Enter if !state_data.notes.is_empty() => {
+            let note_summary = &state_data.notes[state_data.selected];
             if let Some(note) = Note::load(note_summary.id, notebook.db())? {
                 info!("Open note {}", note_summary.name);
 
@@ -63,44 +59,34 @@ pub fn run_note_managing_state(
                     notebook.db(),
                 )?)
             } else {
-                State::NotesManaging(NotesManagingStateData {
-                    pattern,
-                    selected,
-                    notes,
-                })
+                State::NotesManaging(state_data)
             }
         }
         KeyCode::Backspace => {
-            pattern.pop();
-            State::NotesManaging(NotesManagingStateData::from_pattern(
-                pattern,
-                notebook.db(),
-            )?)
+            state_data.pattern.pop();
+            state_data.notes = Note::search_by_name(state_data.pattern.as_str(), notebook.db())?;
+            state_data.selected = 0;
+
+            State::NotesManaging(state_data)
         }
         KeyCode::Char(c) => {
-            pattern.push(c);
-            State::NotesManaging(NotesManagingStateData::from_pattern(
-                pattern,
-                notebook.db(),
-            )?)
+            state_data.pattern.push(c);
+            state_data.notes = Note::search_by_name(state_data.pattern.as_str(), notebook.db())?;
+            state_data.selected = 0;
+
+            State::NotesManaging(state_data)
         }
-        KeyCode::Up if selected > 0 => State::NotesManaging(NotesManagingStateData {
-            pattern,
-            selected: selected - 1,
-            notes,
+        KeyCode::Up if state_data.selected > 0 => State::NotesManaging(NotesManagingStateData {
+            selected: state_data.selected - 1,
+            ..state_data
         }),
-        KeyCode::Down if selected < notes.len().saturating_sub(1) => {
+        KeyCode::Down if state_data.selected < state_data.notes.len().saturating_sub(1) => {
             State::NotesManaging(NotesManagingStateData {
-                pattern,
-                selected: selected + 1,
-                notes,
+                selected: state_data.selected + 1,
+                ..state_data
             })
         }
-        _ => State::NotesManaging(NotesManagingStateData {
-            pattern,
-            selected,
-            notes,
-        }),
+        _ => State::NotesManaging(state_data),
     })
 }
 

@@ -11,14 +11,14 @@ use crate::states::{State, Terminal};
 
 #[derive(Debug)]
 pub struct NoteDeletingStateData {
-    pub viewing_data: NoteViewingStateData,
+    pub note_viewing_data: NoteViewingStateData,
     pub delete: bool,
 }
 
 impl NoteDeletingStateData {
-    pub fn empty(viewing_data: NoteViewingStateData) -> Self {
+    pub fn empty(note_viewing_data: NoteViewingStateData) -> Self {
         NoteDeletingStateData {
-            viewing_data,
+            note_viewing_data,
             delete: false,
         }
     }
@@ -26,7 +26,7 @@ impl NoteDeletingStateData {
 
 pub fn run_note_deleting_state(
     NoteDeletingStateData {
-        viewing_data: NoteViewingStateData { note_data, scroll },
+        note_viewing_data,
         delete,
     }: NoteDeletingStateData,
     key_code: KeyCode,
@@ -35,22 +35,22 @@ pub fn run_note_deleting_state(
     Ok(match key_code {
         KeyCode::Esc => {
             info!("Cancel deleting");
-            State::NoteViewing(NoteViewingStateData { note_data, scroll })
+            State::NoteViewing(note_viewing_data)
         }
         KeyCode::Tab => State::NoteDeleting(NoteDeletingStateData {
-            viewing_data: NoteViewingStateData { note_data, scroll },
+            note_viewing_data,
             delete: !delete,
         }),
         KeyCode::Enter => {
             if delete {
-                note_data.note.delete(notebook.db())?;
+                note_viewing_data.note_data.note.delete(notebook.db())?;
                 State::Nothing
             } else {
-                State::NoteViewing(NoteViewingStateData { note_data, scroll })
+                State::NoteViewing(note_viewing_data)
             }
         }
         _ => State::NoteDeleting(NoteDeletingStateData {
-            viewing_data: NoteViewingStateData { note_data, scroll },
+            note_viewing_data,
             delete,
         }),
     })
@@ -58,7 +58,7 @@ pub fn run_note_deleting_state(
 
 pub fn draw_note_deleting_state(
     NoteDeletingStateData {
-        viewing_data,
+        note_viewing_data,
         delete,
     }: &NoteDeletingStateData,
     terminal: &mut Terminal,
@@ -68,7 +68,7 @@ pub fn draw_note_deleting_state(
         .draw(|frame| {
             let main_rect = main_frame.inner(frame.size());
 
-            draw_viewed_note(frame, viewing_data, main_rect);
+            draw_viewed_note(frame, note_viewing_data, main_rect);
 
             draw_yes_no_prompt(frame, *delete, "Delete note ?", main_rect);
 

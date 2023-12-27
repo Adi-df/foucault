@@ -34,50 +34,32 @@ impl TryFromDatabase<Note> for NoteTagsManagingStateData {
 }
 
 pub fn run_note_tags_managing_state(
-    NoteTagsManagingStateData {
-        note,
-        tags,
-        selected,
-    }: NoteTagsManagingStateData,
+    state_data: NoteTagsManagingStateData,
     key_code: KeyCode,
     notebook: &Notebook,
 ) -> Result<State> {
     Ok(match key_code {
         KeyCode::Esc => State::NoteViewing(NoteViewingStateData {
-            note_data: note.try_into_database(notebook.db())?,
+            note_data: state_data.note.try_into_database(notebook.db())?,
             scroll: 0,
         }),
-        KeyCode::Char('d') if !tags.is_empty() => {
-            State::NoteTagDeleting(NoteTagDeletingStateData::empty(NoteTagsManagingStateData {
-                selected,
-                tags,
-                note,
-            }))
+        KeyCode::Char('d') if !state_data.tags.is_empty() => {
+            State::NoteTagDeleting(NoteTagDeletingStateData::empty(state_data))
         }
-        KeyCode::Char('a') => {
-            State::NoteTagAdding(NoteTagAddingStateData::empty(NoteTagsManagingStateData {
-                selected,
-                tags,
-                note,
-            }))
-        }
-        KeyCode::Up if selected > 0 => State::NoteTagsManaging(NoteTagsManagingStateData {
-            selected: selected - 1,
-            tags,
-            note,
-        }),
-        KeyCode::Down if selected < tags.len().saturating_sub(1) => {
+        KeyCode::Char('a') => State::NoteTagAdding(NoteTagAddingStateData::empty(state_data)),
+        KeyCode::Up if state_data.selected > 0 => {
             State::NoteTagsManaging(NoteTagsManagingStateData {
-                selected: selected + 1,
-                tags,
-                note,
+                selected: state_data.selected - 1,
+                ..state_data
             })
         }
-        _ => State::NoteTagsManaging(NoteTagsManagingStateData {
-            selected,
-            tags,
-            note,
-        }),
+        KeyCode::Down if state_data.selected < state_data.tags.len().saturating_sub(1) => {
+            State::NoteTagsManaging(NoteTagsManagingStateData {
+                selected: state_data.selected + 1,
+                ..state_data
+            })
+        }
+        _ => State::NoteTagsManaging(state_data),
     })
 }
 

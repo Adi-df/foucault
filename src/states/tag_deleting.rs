@@ -11,14 +11,14 @@ use crate::tag::Tag;
 
 #[derive(Debug)]
 pub struct TagsDeletingStateData {
-    pub tags_managing: TagsManagingStateData,
+    pub tags_managing_data: TagsManagingStateData,
     pub delete: bool,
 }
 
 impl TagsDeletingStateData {
-    pub fn empty(tags_managing: TagsManagingStateData) -> Self {
+    pub fn empty(tags_managing_data: TagsManagingStateData) -> Self {
         TagsDeletingStateData {
-            tags_managing,
+            tags_managing_data,
             delete: false,
         }
     }
@@ -26,32 +26,32 @@ impl TagsDeletingStateData {
 
 pub fn run_tag_deleting_state(
     TagsDeletingStateData {
-        mut tags_managing,
+        mut tags_managing_data,
         delete,
     }: TagsDeletingStateData,
     key_code: KeyCode,
     notebook: &Notebook,
 ) -> Result<State> {
     Ok(match key_code {
-        KeyCode::Esc => State::TagsManaging(tags_managing),
+        KeyCode::Esc => State::TagsManaging(tags_managing_data),
         KeyCode::Enter => {
             if delete {
-                tags_managing
+                tags_managing_data
                     .tags
-                    .swap_remove(tags_managing.selected)
+                    .swap_remove(tags_managing_data.selected)
                     .delete(notebook.db())?;
             }
             State::TagsManaging(TagsManagingStateData::from_pattern(
-                tags_managing.pattern,
+                tags_managing_data.pattern,
                 notebook.db(),
             )?)
         }
         KeyCode::Tab => State::TagDeleting(TagsDeletingStateData {
-            tags_managing,
+            tags_managing_data,
             delete: !delete,
         }),
         _ => State::TagDeleting(TagsDeletingStateData {
-            tags_managing,
+            tags_managing_data,
             delete,
         }),
     })
@@ -59,19 +59,19 @@ pub fn run_tag_deleting_state(
 
 pub fn draw_tag_deleting_state(
     TagsDeletingStateData {
-        tags_managing,
+        tags_managing_data,
         delete,
     }: &TagsDeletingStateData,
     terminal: &mut Terminal,
     main_frame: Block,
 ) -> Result<()> {
-    let Tag { name, .. } = &tags_managing.tags[tags_managing.selected];
+    let Tag { name, .. } = &tags_managing_data.tags[tags_managing_data.selected];
 
     terminal
         .draw(|frame| {
             let main_rect = main_frame.inner(frame.size());
 
-            draw_tags_managing(frame, tags_managing, main_rect);
+            draw_tags_managing(frame, tags_managing_data, main_rect);
 
             draw_yes_no_prompt(
                 frame,

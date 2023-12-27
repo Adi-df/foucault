@@ -11,14 +11,14 @@ use crate::states::{State, Terminal};
 
 #[derive(Debug)]
 pub struct NoteRenamingStateData {
-    pub viewing_data: NoteViewingStateData,
+    pub note_viewing_data: NoteViewingStateData,
     pub new_name: String,
 }
 
 impl NoteRenamingStateData {
-    pub fn empty(viewing_data: NoteViewingStateData) -> Self {
+    pub fn empty(note_viewing_data: NoteViewingStateData) -> Self {
         NoteRenamingStateData {
-            viewing_data,
+            note_viewing_data,
             new_name: String::new(),
         }
     }
@@ -26,11 +26,7 @@ impl NoteRenamingStateData {
 
 pub fn run_note_renaming_state(
     NoteRenamingStateData {
-        viewing_data:
-            NoteViewingStateData {
-                mut note_data,
-                scroll,
-            },
+        mut note_viewing_data,
         mut new_name,
     }: NoteRenamingStateData,
     key_code: KeyCode,
@@ -39,30 +35,30 @@ pub fn run_note_renaming_state(
     Ok(match key_code {
         KeyCode::Esc => {
             info!("Cancel renaming");
-            State::NoteViewing(NoteViewingStateData { note_data, scroll })
+            State::NoteViewing(note_viewing_data)
         }
         KeyCode::Enter => {
-            note_data.note.name = new_name;
-            note_data.note.update(notebook.db())?;
-            State::NoteViewing(NoteViewingStateData { note_data, scroll })
+            note_viewing_data.note_data.note.name = new_name;
+            note_viewing_data.note_data.note.update(notebook.db())?;
+            State::NoteViewing(note_viewing_data)
         }
 
         KeyCode::Backspace => {
             new_name.pop();
             State::NoteRenaming(NoteRenamingStateData {
-                viewing_data: NoteViewingStateData { note_data, scroll },
+                note_viewing_data,
                 new_name,
             })
         }
         KeyCode::Char(c) => {
             new_name.push(c);
             State::NoteRenaming(NoteRenamingStateData {
-                viewing_data: NoteViewingStateData { note_data, scroll },
+                note_viewing_data,
                 new_name,
             })
         }
         _ => State::NoteRenaming(NoteRenamingStateData {
-            viewing_data: NoteViewingStateData { note_data, scroll },
+            note_viewing_data,
             new_name,
         }),
     })
@@ -70,7 +66,7 @@ pub fn run_note_renaming_state(
 
 pub fn draw_note_renaming_state(
     NoteRenamingStateData {
-        viewing_data,
+        note_viewing_data: viewing_data,
         new_name,
     }: &NoteRenamingStateData,
     terminal: &mut Terminal,

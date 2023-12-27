@@ -36,48 +36,36 @@ impl TryFromDatabase<Tag> for TagNotesListingStateData {
 }
 
 pub fn run_tag_notes_listing_state(
-    TagNotesListingStateData {
-        tag,
-        notes,
-        selected,
-    }: TagNotesListingStateData,
+    state_data: TagNotesListingStateData,
     key_code: KeyCode,
     notebook: &Notebook,
 ) -> Result<State> {
     Ok(match key_code {
         KeyCode::Esc => State::Nothing,
-        KeyCode::Enter if !notes.is_empty() => {
-            let summary = &notes[selected];
+        KeyCode::Enter if !state_data.notes.is_empty() => {
+            let summary = &state_data.notes[state_data.selected];
             if let Some(note) = Note::load(summary.id, notebook.db())? {
                 State::NoteViewing(NoteViewingStateData::try_from_database(
                     note,
                     notebook.db(),
                 )?)
             } else {
-                State::TagNotesListing(TagNotesListingStateData {
-                    tag,
-                    notes,
-                    selected,
-                })
+                State::TagNotesListing(state_data)
             }
         }
-        KeyCode::Up if selected > 0 => State::TagNotesListing(TagNotesListingStateData {
-            tag,
-            notes,
-            selected: selected - 1,
-        }),
-        KeyCode::Down if selected < notes.len().saturating_sub(1) => {
+        KeyCode::Up if state_data.selected > 0 => {
             State::TagNotesListing(TagNotesListingStateData {
-                tag,
-                notes,
-                selected: selected + 1,
+                selected: state_data.selected - 1,
+                ..state_data
             })
         }
-        _ => State::TagNotesListing(TagNotesListingStateData {
-            tag,
-            notes,
-            selected,
-        }),
+        KeyCode::Down if state_data.selected < state_data.notes.len().saturating_sub(1) => {
+            State::TagNotesListing(TagNotesListingStateData {
+                selected: state_data.selected + 1,
+                ..state_data
+            })
+        }
+        _ => State::TagNotesListing(state_data),
     })
 }
 

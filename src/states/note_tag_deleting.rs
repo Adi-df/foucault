@@ -10,14 +10,14 @@ use crate::states::{State, Terminal};
 
 #[derive(Debug)]
 pub struct NoteTagDeletingStateData {
-    pub tags_managing: NoteTagsManagingStateData,
+    pub note_tags_managing_data: NoteTagsManagingStateData,
     pub delete: bool,
 }
 
 impl NoteTagDeletingStateData {
-    pub fn empty(tags_managing: NoteTagsManagingStateData) -> Self {
+    pub fn empty(note_tags_managing_data: NoteTagsManagingStateData) -> Self {
         NoteTagDeletingStateData {
-            tags_managing,
+            note_tags_managing_data,
             delete: false,
         }
     }
@@ -25,54 +25,37 @@ impl NoteTagDeletingStateData {
 
 pub fn run_note_tag_deleting_state(
     NoteTagDeletingStateData {
-        tags_managing:
-            NoteTagsManagingStateData {
-                selected,
-                mut tags,
-                note,
-            },
+        mut note_tags_managing_data,
         delete,
     }: NoteTagDeletingStateData,
     key_code: KeyCode,
     notebook: &Notebook,
 ) -> Result<State> {
     Ok(match key_code {
-        KeyCode::Esc => State::NoteTagsManaging(NoteTagsManagingStateData {
-            selected,
-            tags,
-            note,
-        }),
+        KeyCode::Esc => State::NoteTagsManaging(note_tags_managing_data),
         KeyCode::Enter => {
             if delete {
-                let tag = tags.swap_remove(selected);
-                note.remove_tag(tag.id, notebook.db())?;
+                let tag = note_tags_managing_data
+                    .tags
+                    .swap_remove(note_tags_managing_data.selected);
+                note_tags_managing_data
+                    .note
+                    .remove_tag(tag.id, notebook.db())?;
 
                 State::NoteTagsManaging(NoteTagsManagingStateData::try_from_database(
-                    note,
+                    note_tags_managing_data.note,
                     notebook.db(),
                 )?)
             } else {
-                State::NoteTagsManaging(NoteTagsManagingStateData {
-                    selected,
-                    tags,
-                    note,
-                })
+                State::NoteTagsManaging(note_tags_managing_data)
             }
         }
         KeyCode::Tab => State::NoteTagDeleting(NoteTagDeletingStateData {
-            tags_managing: NoteTagsManagingStateData {
-                selected,
-                tags,
-                note,
-            },
+            note_tags_managing_data,
             delete: !delete,
         }),
         _ => State::NoteTagDeleting(NoteTagDeletingStateData {
-            tags_managing: NoteTagsManagingStateData {
-                selected,
-                tags,
-                note,
-            },
+            note_tags_managing_data,
             delete,
         }),
     })
@@ -80,7 +63,7 @@ pub fn run_note_tag_deleting_state(
 
 pub fn draw_note_tag_deleting_state_data(
     NoteTagDeletingStateData {
-        tags_managing,
+        note_tags_managing_data,
         delete,
     }: &NoteTagDeletingStateData,
     terminal: &mut Terminal,
@@ -90,7 +73,7 @@ pub fn draw_note_tag_deleting_state_data(
         .draw(|frame| {
             let main_rect = main_frame.inner(frame.size());
 
-            draw_note_tags_managing(frame, tags_managing, main_rect);
+            draw_note_tags_managing(frame, note_tags_managing_data, main_rect);
             draw_yes_no_prompt(frame, *delete, "Remove tag ?", main_rect);
 
             frame.render_widget(main_frame, frame.size());

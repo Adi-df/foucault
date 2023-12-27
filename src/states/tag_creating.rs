@@ -11,15 +11,15 @@ use crate::tag::Tag;
 
 #[derive(Debug)]
 pub struct TagsCreatingStateData {
-    pub tags_search: TagsManagingStateData,
+    pub tags_managing_data: TagsManagingStateData,
     pub name: String,
     pub valid: bool,
 }
 
 impl TagsCreatingStateData {
-    pub fn empty(tags_search: TagsManagingStateData) -> Self {
+    pub fn empty(tags_managing_data: TagsManagingStateData) -> Self {
         TagsCreatingStateData {
-            tags_search,
+            tags_managing_data,
             name: String::new(),
             valid: false,
         }
@@ -27,58 +27,44 @@ impl TagsCreatingStateData {
 }
 
 pub fn run_tag_creating_state(
-    TagsCreatingStateData {
-        tags_search,
-        mut name,
-        valid,
-    }: TagsCreatingStateData,
+    mut state_data: TagsCreatingStateData,
     key_code: KeyCode,
     notebook: &Notebook,
 ) -> Result<State> {
     Ok(match key_code {
-        KeyCode::Esc => State::TagsManaging(tags_search),
-        KeyCode::Enter if !name.is_empty() => {
-            if Tag::tag_exists(name.as_str(), notebook.db())? {
+        KeyCode::Esc => State::TagsManaging(state_data.tags_managing_data),
+        KeyCode::Enter if !state_data.name.is_empty() => {
+            if Tag::tag_exists(state_data.name.as_str(), notebook.db())? {
                 State::TagCreating(TagsCreatingStateData {
-                    tags_search,
-                    name,
                     valid: false,
+                    ..state_data
                 })
             } else {
-                Tag::new(name.as_str(), notebook.db())?;
+                Tag::new(state_data.name.as_str(), notebook.db())?;
                 State::TagsManaging(TagsManagingStateData::from_pattern(
-                    tags_search.pattern,
+                    state_data.tags_managing_data.pattern,
                     notebook.db(),
                 )?)
             }
         }
         KeyCode::Backspace => {
-            name.pop();
-            State::TagCreating(TagsCreatingStateData {
-                tags_search,
-                valid: Tag::tag_exists(name.as_str(), notebook.db())? && !name.is_empty(),
-                name,
-            })
+            state_data.name.pop();
+            state_data.valid = Tag::tag_exists(state_data.name.as_str(), notebook.db())?
+                && !state_data.name.is_empty();
+            State::TagCreating(state_data)
         }
         KeyCode::Char(c) if !c.is_whitespace() => {
-            name.push(c);
-            State::TagCreating(TagsCreatingStateData {
-                tags_search,
-                valid: Tag::tag_exists(name.as_str(), notebook.db())? && !name.is_empty(),
-                name,
-            })
+            state_data.name.push(c);
+            state_data.valid = Tag::tag_exists(state_data.name.as_str(), notebook.db())?;
+            State::TagCreating(state_data)
         }
-        _ => State::TagCreating(TagsCreatingStateData {
-            tags_search,
-            name,
-            valid,
-        }),
+        _ => State::TagCreating(state_data),
     })
 }
 
 pub fn draw_tag_creating_state(
     TagsCreatingStateData {
-        tags_search,
+        tags_managing_data,
         name,
         valid: taken,
     }: &TagsCreatingStateData,
@@ -89,7 +75,7 @@ pub fn draw_tag_creating_state(
         .draw(|frame| {
             let main_rect = main_frame.inner(frame.size());
 
-            draw_tags_managing(frame, tags_search, main_rect);
+            draw_tags_managing(frame, tags_managing_data, main_rect);
             draw_text_prompt(frame, "Tag name", name, !taken, main_rect);
 
             frame.render_widget(main_frame, frame.size());
