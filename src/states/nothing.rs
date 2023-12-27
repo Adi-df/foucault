@@ -8,7 +8,6 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph};
 
 use crate::helpers::{create_popup_proportion, Capitalize};
-use crate::note::Note;
 use crate::notebook::Notebook;
 use crate::states::note_creating::NoteCreatingStateData;
 use crate::states::notes_managing::NotesManagingStateData;
@@ -29,11 +28,7 @@ pub fn run_nothing_state(key_code: KeyCode, notebook: &Notebook) -> Result<State
         }
         KeyCode::Char('s') => {
             info!("List notes.");
-            State::NotesManaging(NotesManagingStateData {
-                pattern: String::new(),
-                selected: 0,
-                notes: Note::search_by_name("", notebook.db())?,
-            })
+            State::NotesManaging(NotesManagingStateData::default(notebook.db())?)
         }
         KeyCode::Char('t') => {
             info!("Manage tags.");

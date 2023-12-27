@@ -39,7 +39,7 @@ impl TagsManagingStateData {
     }
 
     pub fn default(db: &Connection) -> Result<Self> {
-        TagsManagingStateData::from_pattern(String::new(), db)
+        Self::from_pattern(String::new(), db)
     }
 }
 

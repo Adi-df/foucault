@@ -10,6 +10,8 @@ use ratatui::widgets::{
     ScrollbarOrientation, ScrollbarState,
 };
 
+use rusqlite::Connection;
+
 use crate::helpers::TryIntoDatabase;
 use crate::note::{Note, NoteSummary};
 use crate::notebook::Notebook;
@@ -20,6 +22,20 @@ pub struct NotesManagingStateData {
     pub pattern: String,
     pub selected: usize,
     pub notes: Vec<NoteSummary>,
+}
+
+impl NotesManagingStateData {
+    pub fn from_pattern(pattern: String, db: &Connection) -> Result<Self> {
+        Ok(NotesManagingStateData {
+            notes: Note::search_by_name(pattern.as_str(), db)?,
+            selected: 0,
+            pattern,
+        })
+    }
+
+    pub fn default(db: &Connection) -> Result<Self> {
+        Self::from_pattern(String::new(), db)
+    }
 }
 
 pub fn run_note_managing_state(
@@ -52,19 +68,17 @@ pub fn run_note_managing_state(
         }
         KeyCode::Backspace => {
             pattern.pop();
-            State::NotesManaging(NotesManagingStateData {
-                notes: Note::search_by_name(pattern.as_str(), notebook.db())?,
-                selected: 0,
+            State::NotesManaging(NotesManagingStateData::from_pattern(
                 pattern,
-            })
+                notebook.db(),
+            )?)
         }
         KeyCode::Char(c) => {
             pattern.push(c);
-            State::NotesManaging(NotesManagingStateData {
-                notes: Note::search_by_name(pattern.as_str(), notebook.db())?,
-                selected: 0,
+            State::NotesManaging(NotesManagingStateData::from_pattern(
                 pattern,
-            })
+                notebook.db(),
+            )?)
         }
         KeyCode::Up if selected > 0 => State::NotesManaging(NotesManagingStateData {
             pattern,
