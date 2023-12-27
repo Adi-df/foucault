@@ -172,7 +172,7 @@ impl InlineElement for SelectableInlineElements {
         let span = self.element.into_span();
 
         if self.selected {
-            span.underlined()
+            span.on_black()
         } else {
             span
         }
@@ -196,6 +196,12 @@ where
             .collect()
     }
     fn line_number(&self, max_len: usize) -> usize {
+        /*
+            NOTE: Line count is currently approximated by textwrap
+            as Ratatui wrapping system is pretty much incompatible
+            with paragraph scrolling.
+            PS: I know, it's a terrible and buggy workaround...
+        */
         textwrap::wrap(self.inner_text().as_str(), max_len).len()
     }
 }
@@ -344,4 +350,12 @@ fn parse_cross_links(text: &str) -> Vec<InlineElements> {
     }
 
     spans
+}
+
+impl BlockElements<SelectableInlineElements> {
+    pub fn select(&mut self, el: usize) {
+        if let Some(el) = self.get_content_mut().get_mut(el) {
+            el.selected = true;
+        }
+    }
 }

@@ -6,9 +6,9 @@ use ratatui::prelude::Alignment;
 use ratatui::style::{Color, Modifier};
 use ratatui::widgets::{Paragraph, Wrap};
 
-use crate::markdown::elements::{BlockElement, BlockElements, InlineElement};
-
-use self::elements::SelectableInlineElements;
+use crate::markdown::elements::{
+    BlockElement, BlockElements, InlineElement, SelectableInlineElements,
+};
 
 const HEADER_COLOR: [Color; 6] = [
     Color::Red,

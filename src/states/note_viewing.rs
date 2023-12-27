@@ -211,6 +211,7 @@ pub fn draw_viewed_note(
         .padding(Padding::uniform(1));
 
     let parsed_content = parse(note.content.as_str());
+
     let content_len = lines(
         &parsed_content,
         content_block.inner(vertical_layout[1]).width,
