@@ -156,3 +156,16 @@ where
         T::try_from_database(self, db)
     }
 }
+
+pub trait DiscardResult {
+    fn discard_result(self) -> Result<()>;
+}
+
+impl<T, E> DiscardResult for Result<T, E>
+where
+    E: Into<anyhow::Error>,
+{
+    fn discard_result(self) -> Result<()> {
+        self.map_err(Into::<anyhow::Error>::into).map(|_| ())
+    }
+}

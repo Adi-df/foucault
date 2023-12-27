@@ -3,7 +3,7 @@ use anyhow::Result;
 use crossterm::event::KeyCode;
 use ratatui::widgets::Block;
 
-use crate::helpers::draw_yes_no_prompt;
+use crate::helpers::{draw_yes_no_prompt, DiscardResult};
 use crate::notebook::Notebook;
 use crate::states::tags_managing::{draw_tags_managing, TagsManagingStateData};
 use crate::states::{State, Terminal};
@@ -82,6 +82,5 @@ pub fn draw_tag_deleting_state(
 
             frame.render_widget(main_frame, frame.size());
         })
-        .map(|_| ())
-        .map_err(anyhow::Error::from)
+        .discard_result()
 }

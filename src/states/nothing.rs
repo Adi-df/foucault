@@ -7,7 +7,7 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph};
 
-use crate::helpers::{create_popup_proportion, Capitalize};
+use crate::helpers::{create_popup_proportion, Capitalize, DiscardResult};
 use crate::notebook::Notebook;
 use crate::states::note_creating::NoteCreatingStateData;
 use crate::states::notes_managing::NotesManagingStateData;
@@ -41,20 +41,21 @@ pub fn draw_nothing_state(
     notebook: &Notebook,
     main_frame: Block,
 ) -> Result<()> {
-    terminal.draw(|frame| {
-        let main_rect = main_frame.inner(frame.size());
+    terminal
+        .draw(|frame| {
+            let main_rect = main_frame.inner(frame.size());
 
-        let title = Paragraph::new(Line::from(vec![Span::raw(notebook.name.capitalize())
-            .style(
-                Style::default()
-                    .fg(Color::Blue)
-                    .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
-            )]))
-        .alignment(Alignment::Center);
+            let title = Paragraph::new(Line::from(vec![Span::raw(notebook.name.capitalize())
+                .style(
+                    Style::default()
+                        .fg(Color::Blue)
+                        .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
+                )]))
+            .alignment(Alignment::Center);
 
-        frame.render_widget(title, create_popup_proportion((40, 10), main_rect));
+            frame.render_widget(title, create_popup_proportion((40, 10), main_rect));
 
-        frame.render_widget(main_frame, frame.size());
-    })?;
-    Ok(())
+            frame.render_widget(main_frame, frame.size());
+        })
+        .discard_result()
 }

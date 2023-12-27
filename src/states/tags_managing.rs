@@ -13,7 +13,7 @@ use ratatui::Frame;
 
 use rusqlite::Connection;
 
-use crate::helpers::TryFromDatabase;
+use crate::helpers::{DiscardResult, TryFromDatabase};
 use crate::notebook::Notebook;
 use crate::states::tag_creating::TagsCreatingStateData;
 use crate::states::tag_deleting::TagsDeletingStateData;
@@ -111,8 +111,7 @@ pub fn draw_tags_managing_state(
 
             frame.render_widget(main_frame, frame.size());
         })
-        .map(|_| ())
-        .map_err(anyhow::Error::from)
+        .discard_result()
 }
 
 pub fn draw_tags_managing(

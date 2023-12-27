@@ -4,7 +4,7 @@ use log::info;
 use crossterm::event::KeyCode;
 use ratatui::widgets::Block;
 
-use crate::helpers::draw_text_prompt;
+use crate::helpers::{draw_text_prompt, DiscardResult};
 use crate::notebook::Notebook;
 use crate::states::note_viewing::{draw_viewed_note, NoteViewingStateData};
 use crate::states::{State, Terminal};
@@ -81,6 +81,5 @@ pub fn draw_note_renaming_state(
 
             frame.render_widget(main_frame, frame.size());
         })
-        .map(|_| ())
-        .map_err(anyhow::Error::from)
+        .discard_result()
 }

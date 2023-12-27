@@ -11,7 +11,7 @@ use ratatui::widgets::{
 
 use rusqlite::Connection;
 
-use crate::helpers::TryFromDatabase;
+use crate::helpers::{DiscardResult, TryFromDatabase};
 use crate::note::{Note, NoteSummary};
 use crate::notebook::Notebook;
 use crate::states::note_viewing::NoteViewingStateData;
@@ -126,7 +126,7 @@ pub fn draw_tag_notes_listing_state(
                 vertical_layout[1].inner(&Margin::new(0, 1)),
                 &mut ScrollbarState::new(notes.len()).position(*selected),
             );
+            frame.render_widget(main_frame, frame.size());
         })
-        .map_err(anyhow::Error::from)
-        .map(|_| ())
+        .discard_result()
 }

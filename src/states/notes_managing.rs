@@ -12,7 +12,7 @@ use ratatui::widgets::{
 
 use rusqlite::Connection;
 
-use crate::helpers::TryFromDatabase;
+use crate::helpers::{DiscardResult, TryFromDatabase};
 use crate::note::{Note, NoteSummary};
 use crate::notebook::Notebook;
 use crate::states::note_viewing::NoteViewingStateData;
@@ -155,6 +155,5 @@ pub fn draw_note_managing_state(
 
             frame.render_widget(main_frame, frame.size());
         })
-        .map(|_| ())
-        .map_err(anyhow::Error::from)
+        .discard_result()
 }

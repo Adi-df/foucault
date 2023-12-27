@@ -7,7 +7,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, List, ListState, Padding, Paragraph};
 use ratatui::Frame;
 
-use crate::helpers::{TryFromDatabase, TryIntoDatabase};
+use crate::helpers::{DiscardResult, TryFromDatabase, TryIntoDatabase};
 use crate::note::Note;
 use crate::notebook::Notebook;
 use crate::states::note_tag_adding::NoteTagAddingStateData;
@@ -76,8 +76,7 @@ pub fn draw_note_tags_managing_state(
 
             frame.render_widget(main_frame, frame.size());
         })
-        .map_err(anyhow::Error::from)
-        .map(|_| ())
+        .discard_result()
 }
 
 pub fn draw_note_tags_managing(

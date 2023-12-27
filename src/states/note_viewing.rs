@@ -19,7 +19,7 @@ use ratatui::widgets::{
 };
 use ratatui::Frame;
 
-use crate::helpers::{TryFromDatabase, TryIntoDatabase};
+use crate::helpers::{DiscardResult, TryFromDatabase, TryIntoDatabase};
 use crate::markdown::{lines, parse, render};
 use crate::note::{Note, NoteData};
 use crate::notebook::Notebook;
@@ -147,8 +147,7 @@ pub fn draw_note_viewing_state(
 
             frame.render_widget(main_frame, frame.size());
         })
-        .map_err(anyhow::Error::from)
-        .map(|_| ())
+        .discard_result()
 }
 
 pub fn draw_viewed_note(

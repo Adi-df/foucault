@@ -3,7 +3,7 @@ use anyhow::Result;
 use crossterm::event::KeyCode;
 use ratatui::widgets::Block;
 
-use crate::helpers::draw_text_prompt;
+use crate::helpers::{draw_text_prompt, DiscardResult};
 use crate::notebook::Notebook;
 use crate::states::note_tags_managing::{draw_note_tags_managing, NoteTagsManagingStateData};
 use crate::states::{State, Terminal};
@@ -81,6 +81,5 @@ pub fn draw_note_tag_adding_state_data(
 
             frame.render_widget(main_frame, frame.size());
         })
-        .map_err(anyhow::Error::from)
-        .map(|_| ())
+        .discard_result()
 }

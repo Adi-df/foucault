@@ -4,7 +4,7 @@ use log::info;
 use crossterm::event::KeyCode;
 use ratatui::widgets::Block;
 
-use crate::helpers::{draw_text_prompt, TryFromDatabase};
+use crate::helpers::{draw_text_prompt, DiscardResult, TryFromDatabase};
 use crate::note::Note;
 use crate::notebook::Notebook;
 use crate::states::note_viewing::NoteViewingStateData;
@@ -60,12 +60,13 @@ pub fn draw_note_creating_state(
     terminal: &mut Terminal,
     main_frame: Block,
 ) -> Result<()> {
-    terminal.draw(|frame| {
-        let main_rect = main_frame.inner(frame.size());
+    terminal
+        .draw(|frame| {
+            let main_rect = main_frame.inner(frame.size());
 
-        draw_text_prompt(frame, "Note name", name, true, main_rect);
+            draw_text_prompt(frame, "Note name", name, true, main_rect);
 
-        frame.render_widget(main_frame, frame.size());
-    })?;
-    Ok(())
+            frame.render_widget(main_frame, frame.size());
+        })
+        .discard_result()
 }
