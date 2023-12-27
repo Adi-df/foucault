@@ -20,6 +20,7 @@ use ratatui::widgets::{
 use ratatui::Frame;
 
 use crate::helpers::{DiscardResult, TryFromDatabase, TryIntoDatabase};
+use crate::markdown::elements::BlockElement;
 use crate::markdown::{lines, parse, render, ParsedMarkdown};
 use crate::note::{Note, NoteData};
 use crate::notebook::Notebook;
@@ -32,16 +33,30 @@ use crate::states::{State, Terminal};
 pub struct NoteViewingStateData {
     pub note_data: NoteData,
     pub parsed_content: ParsedMarkdown,
-    pub scroll: usize,
+    pub selected: (usize, usize),
 }
 
 impl TryFromDatabase<Note> for NoteViewingStateData {
     fn try_from_database(note: Note, db: &Connection) -> Result<Self> {
+        let mut parsed_content = parse(note.content.as_str());
+        parsed_content.get_mut(0).map(|line| line.select(0, true));
+
         Ok(NoteViewingStateData {
-            parsed_content: parse(note.content.as_str()),
             note_data: note.try_into_database(db)?,
-            scroll: 0,
+            parsed_content,
+            selected: (0, 0),
         })
+    }
+}
+
+impl NoteViewingStateData {
+    fn parse_content(&mut self) {
+        self.parsed_content = parse(self.note_data.note.content.as_str());
+    }
+    fn select_content(&mut self, selected: bool) {
+        self.parsed_content
+            .get_mut(self.selected.1)
+            .map(|line| line.select(self.selected.0, selected));
     }
 }
 
@@ -63,7 +78,9 @@ pub fn run_note_viewing_state(
         KeyCode::Char('e') => {
             info!("Edit note {}", state_data.note_data.note.name);
             edit_note(&mut state_data.note_data.note, notebook)?;
-            state_data.parsed_content = parse(state_data.note_data.note.content.as_str());
+            state_data.parse_content();
+            state_data.selected = (0, 0);
+            state_data.select_content(true);
             *force_redraw = true;
             State::NoteViewing(state_data)
         }
@@ -86,12 +103,45 @@ pub fn run_note_viewing_state(
                 notebook.db(),
             )?)
         }
-        KeyCode::Up => {
-            state_data.scroll = state_data.scroll.saturating_sub(1);
+        KeyCode::Up if state_data.selected.1 > 0 => {
+            state_data.select_content(false);
+            state_data.selected.1 -= 1;
+            state_data.selected.0 = state_data.selected.0.min(
+                state_data.parsed_content[state_data.selected.1]
+                    .len()
+                    .saturating_sub(1),
+            );
+            state_data.select_content(true);
             State::NoteViewing(state_data)
         }
-        KeyCode::Down => {
-            state_data.scroll = state_data.scroll.saturating_add(1);
+        KeyCode::Down
+            if state_data.selected.1 < state_data.parsed_content.len().saturating_sub(1) =>
+        {
+            state_data.select_content(false);
+            state_data.selected.1 += 1;
+            state_data.selected.0 = state_data.selected.0.min(
+                state_data.parsed_content[state_data.selected.1]
+                    .len()
+                    .saturating_sub(1),
+            );
+            state_data.select_content(true);
+            State::NoteViewing(state_data)
+        }
+        KeyCode::Left if state_data.selected.0 > 0 => {
+            state_data.select_content(false);
+            state_data.selected.0 -= 1;
+            state_data.select_content(true);
+            State::NoteViewing(state_data)
+        }
+        KeyCode::Right
+            if state_data.selected.0
+                < state_data.parsed_content[state_data.selected.1]
+                    .len()
+                    .saturating_sub(1) =>
+        {
+            state_data.select_content(false);
+            state_data.selected.0 += 1;
+            state_data.select_content(true);
             State::NoteViewing(state_data)
         }
         _ => State::NoteViewing(state_data),
@@ -148,7 +198,7 @@ pub fn draw_viewed_note(
     NoteViewingStateData {
         note_data: NoteData { note, tags, .. },
         parsed_content,
-        scroll,
+        selected,
     }: &NoteViewingStateData,
     main_rect: Rect,
 ) {
@@ -204,15 +254,16 @@ pub fn draw_viewed_note(
         .border_style(Style::default().fg(Color::Yellow))
         .padding(Padding::uniform(1));
 
-    let content_len = lines(
-        parsed_content,
-        content_block.inner(vertical_layout[1]).width,
-    );
-    let scroll = if content_len == 0 {
+    let content_area = content_block.inner(vertical_layout[1]);
+    let content_len = lines(parsed_content, content_area.width);
+
+    let selected_block = if parsed_content.len() == 0 {
         0
     } else {
-        scroll.rem_euclid(content_len)
+        selected.1.rem_euclid(parsed_content.len())
     };
+
+    let scroll = lines(&parsed_content[..selected_block], content_area.width);
 
     let note_content = render(parsed_content).scroll((scroll.try_into().unwrap(), 0));
 

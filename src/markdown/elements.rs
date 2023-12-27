@@ -189,6 +189,9 @@ where
     fn get_content_mut(&mut self) -> &mut [T];
     fn build_lines(&self) -> Vec<Line<'static>>;
 
+    fn len(&self) -> usize {
+        self.get_content().len()
+    }
     fn inner_text(&self) -> String {
         self.get_content()
             .iter()
@@ -353,9 +356,9 @@ fn parse_cross_links(text: &str) -> Vec<InlineElements> {
 }
 
 impl BlockElements<SelectableInlineElements> {
-    pub fn select(&mut self, el: usize) {
+    pub fn select(&mut self, el: usize, selected: bool) {
         if let Some(el) = self.get_content_mut().get_mut(el) {
-            el.selected = true;
+            el.selected = selected;
         }
     }
 }

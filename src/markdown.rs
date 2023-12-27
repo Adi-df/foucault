@@ -1,4 +1,4 @@
-mod elements;
+pub mod elements;
 
 use markdown::{to_mdast, ParseOptions};
 
