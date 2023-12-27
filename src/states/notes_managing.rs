@@ -12,9 +12,10 @@ use ratatui::widgets::{
 
 use rusqlite::Connection;
 
-use crate::helpers::TryIntoDatabase;
+use crate::helpers::TryFromDatabase;
 use crate::note::{Note, NoteSummary};
 use crate::notebook::Notebook;
+use crate::states::note_viewing::NoteViewingStateData;
 use crate::states::{State, Terminal};
 
 #[derive(Debug)]
@@ -57,7 +58,10 @@ pub fn run_note_managing_state(
             if let Some(note) = Note::load(note_summary.id, notebook.db())? {
                 info!("Open note {}", note_summary.name);
 
-                State::NoteViewing(note.try_into_database(notebook.db())?)
+                State::NoteViewing(NoteViewingStateData::try_from_database(
+                    note,
+                    notebook.db(),
+                )?)
             } else {
                 State::NotesManaging(NotesManagingStateData {
                     pattern,

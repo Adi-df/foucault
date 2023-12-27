@@ -11,9 +11,10 @@ use ratatui::widgets::{
 
 use rusqlite::Connection;
 
-use crate::helpers::{TryFromDatabase, TryIntoDatabase};
+use crate::helpers::TryFromDatabase;
 use crate::note::{Note, NoteSummary};
 use crate::notebook::Notebook;
+use crate::states::note_viewing::NoteViewingStateData;
 use crate::states::{State, Terminal};
 use crate::tag::Tag;
 
@@ -48,7 +49,10 @@ pub fn run_tag_notes_listing_state(
         KeyCode::Enter if !notes.is_empty() => {
             let summary = &notes[selected];
             if let Some(note) = Note::load(summary.id, notebook.db())? {
-                State::NoteViewing(note.try_into_database(notebook.db())?)
+                State::NoteViewing(NoteViewingStateData::try_from_database(
+                    note,
+                    notebook.db(),
+                )?)
             } else {
                 State::TagNotesListing(TagNotesListingStateData {
                     tag,

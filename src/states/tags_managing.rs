@@ -13,7 +13,7 @@ use ratatui::Frame;
 
 use rusqlite::Connection;
 
-use crate::helpers::TryIntoDatabase;
+use crate::helpers::TryFromDatabase;
 use crate::notebook::Notebook;
 use crate::states::tag_creating::TagsCreatingStateData;
 use crate::states::tag_deleting::TagsDeletingStateData;
@@ -73,7 +73,10 @@ pub fn run_tags_managing_state(
         KeyCode::Enter if !state_data.tags.is_empty() => {
             let tag = state_data.tags.swap_remove(state_data.selected);
 
-            State::TagNotesListing(tag.try_into_database(notebook.db())?)
+            State::TagNotesListing(TagNotesListingStateData::try_from_database(
+                tag,
+                notebook.db(),
+            )?)
         }
         KeyCode::Tab => State::TagsManaging(TagsManagingStateData {
             pattern_editing: !state_data.pattern_editing,
