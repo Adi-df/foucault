@@ -29,6 +29,7 @@ pub struct Tag {
     pub id: i64,
     pub name: String,
 }
+
 impl Tag {
     pub fn new(name: &str, db: &Connection) -> Result<Self> {
         db.execute_batch(

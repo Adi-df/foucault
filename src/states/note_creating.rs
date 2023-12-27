@@ -4,8 +4,8 @@ use log::info;
 use crossterm::event::KeyCode;
 use ratatui::widgets::Block;
 
-use crate::helpers::draw_text_prompt;
-use crate::note::{Note, NoteData};
+use crate::helpers::{draw_text_prompt, TryIntoDatabase};
+use crate::note::Note;
 use crate::notebook::Notebook;
 use crate::states::note_viewing::NoteViewingStateData;
 use crate::states::{State, Terminal};
@@ -27,11 +27,7 @@ pub fn run_note_creating_state(
             let new_note = Note::new(name.clone(), String::new(), notebook.db())?;
 
             State::NoteViewing(NoteViewingStateData {
-                note_data: NoteData {
-                    note: new_note,
-                    tags: Vec::new(),
-                    links: Vec::new(),
-                },
+                note_data: new_note.try_into_database(notebook.db())?,
                 scroll: 0,
             })
         }

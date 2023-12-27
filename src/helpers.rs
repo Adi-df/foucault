@@ -1,8 +1,12 @@
+use anyhow::Result;
+
 use ratatui::prelude::{Alignment, Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Clear, Padding, Paragraph};
 use ratatui::Frame;
+
+use rusqlite::Connection;
 
 pub fn create_popup_proportion(proportion: (u16, u16), rect: Rect) -> Rect {
     let vertical = Layout::new(
@@ -133,5 +137,22 @@ where
         let mut formated_string = inner_str[0..1].to_uppercase();
         formated_string.push_str(&inner_str[1..]);
         formated_string
+    }
+}
+
+pub trait TryFromDatabase<T>: Sized {
+    fn try_from_database(value: T, db: &Connection) -> Result<Self>;
+}
+
+pub trait TryIntoDatabase<T> {
+    fn try_into_database(self, db: &Connection) -> Result<T>;
+}
+
+impl<T, U> TryIntoDatabase<T> for U
+where
+    T: TryFromDatabase<U>,
+{
+    fn try_into_database(self, db: &Connection) -> Result<T> {
+        T::try_from_database(self, db)
     }
 }

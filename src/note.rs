@@ -2,10 +2,12 @@ use std::fs;
 use std::path::Path;
 
 use anyhow::Result;
+use thiserror::Error;
 
 use rusqlite::{Connection, OptionalExtension};
 use sea_query::{Expr, Iden, JoinType, Order, Query, SqliteQueryBuilder};
 
+use crate::helpers::TryFromDatabase;
 use crate::links::LinksCharacters;
 use crate::tag::{Tag, TagsCharacters, TagsJoinCharacters, TagsJoinTable, TagsTable};
 
@@ -38,6 +40,12 @@ pub struct NoteData {
     pub note: Note,
     pub tags: Vec<Tag>,
     pub links: Vec<i64>,
+}
+
+#[derive(Debug, Error)]
+pub enum NoteError {
+    #[error("No such note exists")]
+    NoteDoesNotExist,
 }
 
 impl Note {
@@ -206,5 +214,41 @@ impl Note {
             })
         })
         .collect()
+    }
+}
+
+impl TryFromDatabase<NoteSummary> for Note {
+    fn try_from_database(note_summary: NoteSummary, db: &Connection) -> Result<Self> {
+        if let Some(note) = Note::load(note_summary.id, db)? {
+            Ok(note)
+        } else {
+            Err(NoteError::NoteDoesNotExist.into())
+        }
+    }
+}
+
+impl From<NoteData> for Note {
+    fn from(note_data: NoteData) -> Self {
+        note_data.note
+    }
+}
+
+impl TryFromDatabase<Note> for NoteSummary {
+    fn try_from_database(note: Note, db: &Connection) -> Result<Self> {
+        Ok(NoteSummary {
+            id: note.id,
+            tags: note.get_tags(db)?,
+            name: note.name,
+        })
+    }
+}
+
+impl TryFromDatabase<Note> for NoteData {
+    fn try_from_database(note: Note, db: &Connection) -> Result<Self> {
+        Ok(NoteData {
+            tags: note.get_tags(db)?,
+            links: note.get_links(db)?,
+            note,
+        })
     }
 }

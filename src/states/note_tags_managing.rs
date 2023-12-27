@@ -7,6 +7,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, List, ListState, Padding, Paragraph};
 use ratatui::Frame;
 
+use crate::helpers::TryIntoDatabase;
 use crate::note::{Note, NoteData};
 use crate::notebook::Notebook;
 use crate::states::note_tag_adding::NoteTagAddingStateData;
@@ -32,15 +33,10 @@ pub fn run_note_tags_managing_state(
     notebook: &Notebook,
 ) -> Result<State> {
     Ok(match key_code {
-        KeyCode::Esc => {
-            let tags = note.get_tags(notebook.db())?;
-            let links = note.get_links(notebook.db())?;
-
-            State::NoteViewing(NoteViewingStateData {
-                note_data: NoteData { note, tags, links },
-                scroll: 0,
-            })
-        }
+        KeyCode::Esc => State::NoteViewing(NoteViewingStateData {
+            note_data: note.try_into_database(notebook.db())?,
+            scroll: 0,
+        }),
         KeyCode::Char('d') if !tags.is_empty() => {
             State::NoteTagDeleting(NoteTagDeletingStateData {
                 tags_managing: NoteTagsManagingStateData {

@@ -10,7 +10,8 @@ use ratatui::widgets::{
     ScrollbarOrientation, ScrollbarState,
 };
 
-use crate::note::{Note, NoteData, NoteSummary};
+use crate::helpers::TryIntoDatabase;
+use crate::note::{Note, NoteSummary};
 use crate::notebook::Notebook;
 use crate::states::note_viewing::NoteViewingStateData;
 use crate::states::{State, Terminal};
@@ -39,13 +40,10 @@ pub fn run_note_managing_state(
         KeyCode::Enter if !notes.is_empty() => {
             let note_summary = &notes[selected];
             if let Some(note) = Note::load(note_summary.id, notebook.db())? {
-                let tags = note.get_tags(notebook.db())?.into_iter().collect();
-                let links = note.get_links(notebook.db())?;
-
                 info!("Open note {}", note_summary.name);
 
                 State::NoteViewing(NoteViewingStateData {
-                    note_data: NoteData { note, tags, links },
+                    note_data: note.try_into_database(notebook.db())?,
                     scroll: 0,
                 })
             } else {
@@ -58,20 +56,18 @@ pub fn run_note_managing_state(
         }
         KeyCode::Backspace => {
             pattern.pop();
-            notes = Note::search_by_name(pattern.as_str(), notebook.db())?;
             State::NotesManaging(NotesManagingStateData {
-                pattern,
+                notes: Note::search_by_name(pattern.as_str(), notebook.db())?,
                 selected: 0,
-                notes,
+                pattern,
             })
         }
         KeyCode::Char(c) => {
             pattern.push(c);
-            notes = Note::search_by_name(pattern.as_str(), notebook.db())?;
             State::NotesManaging(NotesManagingStateData {
-                pattern,
+                notes: Note::search_by_name(pattern.as_str(), notebook.db())?,
                 selected: 0,
-                notes,
+                pattern,
             })
         }
         KeyCode::Up if selected > 0 => State::NotesManaging(NotesManagingStateData {

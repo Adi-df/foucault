@@ -9,7 +9,8 @@ use ratatui::widgets::{
     ScrollbarOrientation, ScrollbarState,
 };
 
-use crate::note::{Note, NoteData, NoteSummary};
+use crate::helpers::TryIntoDatabase;
+use crate::note::{Note, NoteSummary};
 use crate::notebook::Notebook;
 use crate::states::note_viewing::NoteViewingStateData;
 use crate::states::{State, Terminal};
@@ -36,11 +37,8 @@ pub fn run_tag_notes_listing_state(
         KeyCode::Enter if !notes.is_empty() => {
             let summary = &notes[selected];
             if let Some(note) = Note::load(summary.id, notebook.db())? {
-                let tags = note.get_tags(notebook.db())?.into_iter().collect();
-                let links = note.get_links(notebook.db())?;
-
                 State::NoteViewing(NoteViewingStateData {
-                    note_data: NoteData { note, tags, links },
+                    note_data: note.try_into_database(notebook.db())?,
                     scroll: 0,
                 })
             } else {
