@@ -9,7 +9,6 @@ use crate::states::tags_managing::{draw_tags_managing, TagsManagingStateData};
 use crate::states::{State, Terminal};
 use crate::tag::Tag;
 
-#[derive(Debug)]
 pub struct TagsCreatingStateData {
     pub tags_managing_data: TagsManagingStateData,
     pub name: String,

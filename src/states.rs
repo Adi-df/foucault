@@ -66,7 +66,6 @@ use crate::states::tag_notes_listing::{
 
 pub type Terminal = UITerminal<CrosstermBackend<Stdout>>;
 
-#[derive(Debug)]
 pub enum State {
     Nothing,
     Exit,

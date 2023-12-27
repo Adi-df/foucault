@@ -9,7 +9,6 @@ use crate::notebook::Notebook;
 use crate::states::note_viewing::{draw_viewed_note, NoteViewingStateData};
 use crate::states::{State, Terminal};
 
-#[derive(Debug)]
 pub struct NoteRenamingStateData {
     pub note_viewing_data: NoteViewingStateData,
     pub new_name: String,

@@ -10,7 +10,6 @@ use crate::notebook::Notebook;
 use crate::states::note_viewing::NoteViewingStateData;
 use crate::states::{State, Terminal};
 
-#[derive(Debug)]
 pub struct NoteCreatingStateData {
     pub name: String,
 }

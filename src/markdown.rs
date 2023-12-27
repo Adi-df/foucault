@@ -53,7 +53,9 @@ const RICH_TEXT_COLOR: [Color; 6] = [
     Color::Yellow,    // Blockquote
 ];
 
-pub fn parse(content: &str) -> Vec<BlockElements<SelectableInlineElements>> {
+pub type ParsedMarkdown = Vec<BlockElements<SelectableInlineElements>>;
+
+pub fn parse(content: &str) -> ParsedMarkdown {
     BlockElements::parse_node(&to_mdast(content, &ParseOptions::default()).unwrap())
 }
 

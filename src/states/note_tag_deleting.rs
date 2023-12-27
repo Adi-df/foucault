@@ -8,7 +8,6 @@ use crate::notebook::Notebook;
 use crate::states::note_tags_managing::{draw_note_tags_managing, NoteTagsManagingStateData};
 use crate::states::{State, Terminal};
 
-#[derive(Debug)]
 pub struct NoteTagDeletingStateData {
     pub note_tags_managing_data: NoteTagsManagingStateData,
     pub delete: bool,

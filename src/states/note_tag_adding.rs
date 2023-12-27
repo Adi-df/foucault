@@ -9,7 +9,6 @@ use crate::states::note_tags_managing::{draw_note_tags_managing, NoteTagsManagin
 use crate::states::{State, Terminal};
 use crate::tag::Tag;
 
-#[derive(Debug)]
 pub struct NoteTagAddingStateData {
     pub note_tags_managing_data: NoteTagsManagingStateData,
     pub tag_name: String,

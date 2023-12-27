@@ -18,7 +18,6 @@ use crate::states::note_viewing::NoteViewingStateData;
 use crate::states::{State, Terminal};
 use crate::tag::Tag;
 
-#[derive(Debug)]
 pub struct TagNotesListingStateData {
     pub tag: Tag,
     pub notes: Vec<NoteSummary>,

@@ -7,7 +7,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, List, ListState, Padding, Paragraph};
 use ratatui::Frame;
 
-use crate::helpers::{DiscardResult, TryFromDatabase, TryIntoDatabase};
+use crate::helpers::{DiscardResult, TryFromDatabase};
 use crate::note::Note;
 use crate::notebook::Notebook;
 use crate::states::note_tag_adding::NoteTagAddingStateData;
@@ -18,7 +18,6 @@ use crate::tag::Tag;
 
 use super::tag_notes_listing::TagNotesListingStateData;
 
-#[derive(Debug)]
 pub struct NoteTagsManagingStateData {
     pub selected: usize,
     pub tags: Vec<Tag>,
@@ -41,10 +40,10 @@ pub fn run_note_tags_managing_state(
     notebook: &Notebook,
 ) -> Result<State> {
     Ok(match key_code {
-        KeyCode::Esc => State::NoteViewing(NoteViewingStateData {
-            note_data: state_data.note.try_into_database(notebook.db())?,
-            scroll: 0,
-        }),
+        KeyCode::Esc => State::NoteViewing(NoteViewingStateData::try_from_database(
+            state_data.note,
+            notebook.db(),
+        )?),
         KeyCode::Char('d') if !state_data.tags.is_empty() => {
             State::NoteTagDeleting(NoteTagDeletingStateData::empty(state_data))
         }

@@ -21,7 +21,6 @@ use crate::states::tag_notes_listing::TagNotesListingStateData;
 use crate::states::{State, Terminal};
 use crate::tag::Tag;
 
-#[derive(Debug)]
 pub struct TagsManagingStateData {
     pub pattern: String,
     pub pattern_editing: bool,

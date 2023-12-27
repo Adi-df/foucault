@@ -18,7 +18,6 @@ use crate::notebook::Notebook;
 use crate::states::note_viewing::NoteViewingStateData;
 use crate::states::{State, Terminal};
 
-#[derive(Debug)]
 pub struct NotesManagingStateData {
     pub pattern: String,
     pub selected: usize,

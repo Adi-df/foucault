@@ -20,7 +20,7 @@ use ratatui::widgets::{
 use ratatui::Frame;
 
 use crate::helpers::{DiscardResult, TryFromDatabase, TryIntoDatabase};
-use crate::markdown::{lines, parse, render};
+use crate::markdown::{lines, parse, render, ParsedMarkdown};
 use crate::note::{Note, NoteData};
 use crate::notebook::Notebook;
 use crate::states::note_deleting::NoteDeletingStateData;
@@ -29,15 +29,16 @@ use crate::states::note_tags_managing::NoteTagsManagingStateData;
 use crate::states::notes_managing::NotesManagingStateData;
 use crate::states::{State, Terminal};
 
-#[derive(Debug)]
 pub struct NoteViewingStateData {
     pub note_data: NoteData,
+    pub parsed_content: ParsedMarkdown,
     pub scroll: usize,
 }
 
 impl TryFromDatabase<Note> for NoteViewingStateData {
     fn try_from_database(note: Note, db: &Connection) -> Result<Self> {
         Ok(NoteViewingStateData {
+            parsed_content: parse(note.content.as_str()),
             note_data: note.try_into_database(db)?,
             scroll: 0,
         })
@@ -45,10 +46,7 @@ impl TryFromDatabase<Note> for NoteViewingStateData {
 }
 
 pub fn run_note_viewing_state(
-    NoteViewingStateData {
-        mut note_data,
-        scroll,
-    }: NoteViewingStateData,
+    mut state_data: NoteViewingStateData,
     key_code: KeyCode,
     notebook: &Notebook,
     force_redraw: &mut bool,
@@ -63,10 +61,11 @@ pub fn run_note_viewing_state(
             State::Exit
         }
         KeyCode::Char('e') => {
-            info!("Edit note {}", note_data.note.name);
-            edit_note(&mut note_data.note, notebook)?;
+            info!("Edit note {}", state_data.note_data.note.name);
+            edit_note(&mut state_data.note_data.note, notebook)?;
+            state_data.parsed_content = parse(state_data.note_data.note.content.as_str());
             *force_redraw = true;
-            State::NoteViewing(NoteViewingStateData { note_data, scroll })
+            State::NoteViewing(state_data)
         }
         KeyCode::Char('s') => {
             info!("List notes.");
@@ -74,34 +73,28 @@ pub fn run_note_viewing_state(
         }
         KeyCode::Char('d') => {
             info!("Not deleting prompt.");
-            State::NoteDeleting(NoteDeletingStateData::empty(NoteViewingStateData {
-                note_data,
-                scroll,
-            }))
+            State::NoteDeleting(NoteDeletingStateData::empty(state_data))
         }
         KeyCode::Char('r') => {
             info!("Prompt note new name");
-            State::NoteRenaming(NoteRenamingStateData::empty(NoteViewingStateData {
-                note_data,
-                scroll,
-            }))
+            State::NoteRenaming(NoteRenamingStateData::empty(state_data))
         }
         KeyCode::Char('t') => {
-            info!("Manage tags of note {}", note_data.note.name);
+            info!("Manage tags of note {}", state_data.note_data.note.name);
             State::NoteTagsManaging(NoteTagsManagingStateData::try_from_database(
-                note_data.note,
+                state_data.note_data.note,
                 notebook.db(),
             )?)
         }
-        KeyCode::Up => State::NoteViewing(NoteViewingStateData {
-            note_data,
-            scroll: scroll.saturating_sub(1),
-        }),
-        KeyCode::Down => State::NoteViewing(NoteViewingStateData {
-            note_data,
-            scroll: scroll.saturating_add(1),
-        }),
-        _ => State::NoteViewing(NoteViewingStateData { note_data, scroll }),
+        KeyCode::Up => {
+            state_data.scroll = state_data.scroll.saturating_sub(1);
+            State::NoteViewing(state_data)
+        }
+        KeyCode::Down => {
+            state_data.scroll = state_data.scroll.saturating_add(1);
+            State::NoteViewing(state_data)
+        }
+        _ => State::NoteViewing(state_data),
     })
 }
 
@@ -154,6 +147,7 @@ pub fn draw_viewed_note(
     frame: &mut Frame,
     NoteViewingStateData {
         note_data: NoteData { note, tags, .. },
+        parsed_content,
         scroll,
     }: &NoteViewingStateData,
     main_rect: Rect,
@@ -210,10 +204,8 @@ pub fn draw_viewed_note(
         .border_style(Style::default().fg(Color::Yellow))
         .padding(Padding::uniform(1));
 
-    let parsed_content = parse(note.content.as_str());
-
     let content_len = lines(
-        &parsed_content,
+        parsed_content,
         content_block.inner(vertical_layout[1]).width,
     );
     let scroll = if content_len == 0 {
@@ -222,7 +214,7 @@ pub fn draw_viewed_note(
         scroll.rem_euclid(content_len)
     };
 
-    let note_content = render(&parsed_content).scroll((scroll.try_into().unwrap(), 0));
+    let note_content = render(parsed_content).scroll((scroll.try_into().unwrap(), 0));
 
     let content_scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
         .begin_symbol(Some("↑"))
