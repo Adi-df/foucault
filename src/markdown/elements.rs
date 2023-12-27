@@ -1,8 +1,7 @@
 use markdown::mdast;
-use ratatui::{
-    style::{Modifier, Style},
-    text::{Line, Span},
-};
+
+use ratatui::style::{Modifier, Style};
+use ratatui::text::{Line, Span};
 
 use crate::markdown::{
     BLOCKQUOTE, BLOCKQUOTE_ALIGNEMENT, CROSS_REF, HEADER_ALIGNEMENT, HEADER_COLOR, HEADER_MODIFIER,

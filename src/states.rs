@@ -60,9 +60,9 @@ use crate::states::note_tag_deleting::{
 use crate::states::note_tags_managing::{
     draw_note_tags_managing_state, run_note_tags_managing_state,
 };
-use crate::states::tag_notes_listing::{run_tag_notes_listing_state, TagNotesListingStateData};
-
-use self::tag_notes_listing::draw_tag_notes_listing_state;
+use crate::states::tag_notes_listing::{
+    draw_tag_notes_listing_state, run_tag_notes_listing_state, TagNotesListingStateData,
+};
 
 #[derive(Debug)]
 pub enum State {

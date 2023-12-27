@@ -6,7 +6,7 @@ mod note;
 mod notebook;
 mod notebook_selector;
 mod states;
-mod tags;
+mod tag;
 
 use std::fs;
 use std::path::PathBuf;

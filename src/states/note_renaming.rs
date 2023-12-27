@@ -10,10 +10,8 @@ use ratatui::Terminal;
 
 use crate::helpers::draw_text_prompt;
 use crate::notebook::Notebook;
-use crate::states::note_viewing::NoteViewingStateData;
+use crate::states::note_viewing::{draw_viewed_note, NoteViewingStateData};
 use crate::states::State;
-
-use super::note_viewing::draw_viewed_note;
 
 #[derive(Debug)]
 pub struct NoteRenamingStateData {

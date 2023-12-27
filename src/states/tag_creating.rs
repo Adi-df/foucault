@@ -11,7 +11,7 @@ use crate::helpers::draw_text_prompt;
 use crate::notebook::Notebook;
 use crate::states::tags_managing::{draw_tags_managing, TagsManagingStateData};
 use crate::states::State;
-use crate::tags::Tag;
+use crate::tag::Tag;
 
 #[derive(Debug)]
 pub struct TagsCreatingStateData {

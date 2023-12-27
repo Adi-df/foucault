@@ -7,13 +7,13 @@ use rusqlite::{Connection, OptionalExtension};
 use sea_query::{Expr, Iden, JoinType, Order, Query, SqliteQueryBuilder};
 
 use crate::links::LinksCharacters;
-use crate::tags::{Tag, TagsCharacters, TagsJoinCharacters, TagsJoinTable, TagsTable};
+use crate::tag::{Tag, TagsCharacters, TagsJoinCharacters, TagsJoinTable, TagsTable};
 
 #[derive(Iden)]
-pub struct NoteTable;
+pub struct NotesTable;
 
 #[derive(Iden, Clone, Copy, Debug)]
-pub enum NoteCharacters {
+pub enum NotesCharacters {
     Id,
     Name,
     Content,
@@ -44,8 +44,8 @@ impl Note {
     pub fn new(name: String, content: String, db: &Connection) -> Result<Self> {
         db.execute_batch(
             Query::insert()
-                .into_table(NoteTable)
-                .columns([NoteCharacters::Name, NoteCharacters::Content])
+                .into_table(NotesTable)
+                .columns([NotesCharacters::Name, NotesCharacters::Content])
                 .values([name.as_str().into(), content.as_str().into()])?
                 .to_string(SqliteQueryBuilder)
                 .as_str(),
@@ -61,9 +61,9 @@ impl Note {
     pub fn load(id: i64, db: &Connection) -> Result<Option<Self>> {
         db.query_row(
             Query::select()
-                .from(NoteTable)
-                .columns([NoteCharacters::Name, NoteCharacters::Content])
-                .and_where(Expr::col(NoteCharacters::Id).eq(id))
+                .from(NotesTable)
+                .columns([NotesCharacters::Name, NotesCharacters::Content])
+                .and_where(Expr::col(NotesCharacters::Id).eq(id))
                 .to_string(SqliteQueryBuilder)
                 .as_str(),
             [],
@@ -77,12 +77,12 @@ impl Note {
     pub fn update(&self, db: &Connection) -> Result<()> {
         db.execute_batch(
             Query::update()
-                .table(NoteTable)
+                .table(NotesTable)
                 .values([
-                    (NoteCharacters::Name, self.name.as_str().into()),
-                    (NoteCharacters::Content, self.content.as_str().into()),
+                    (NotesCharacters::Name, self.name.as_str().into()),
+                    (NotesCharacters::Content, self.content.as_str().into()),
                 ])
-                .and_where(Expr::col(NoteCharacters::Id).eq(self.id))
+                .and_where(Expr::col(NotesCharacters::Id).eq(self.id))
                 .to_string(SqliteQueryBuilder)
                 .as_str(),
         )
@@ -92,8 +92,8 @@ impl Note {
     pub fn delete(self, db: &Connection) -> Result<()> {
         db.execute_batch(
             Query::delete()
-                .from_table(NoteTable)
-                .and_where(Expr::col(NoteCharacters::Id).eq(self.id))
+                .from_table(NotesTable)
+                .and_where(Expr::col(NotesCharacters::Id).eq(self.id))
                 .to_string(SqliteQueryBuilder)
                 .as_str(),
         )
@@ -187,10 +187,10 @@ impl Note {
     pub fn search_by_name(pattern: &str, db: &Connection) -> Result<Vec<NoteSummary>> {
         db.prepare(
             Query::select()
-                .from(NoteTable)
-                .columns([NoteCharacters::Id, NoteCharacters::Name])
-                .order_by(NoteCharacters::Name, Order::Asc)
-                .and_where(Expr::col(NoteCharacters::Name).like(format!("{pattern}%")))
+                .from(NotesTable)
+                .columns([NotesCharacters::Id, NotesCharacters::Name])
+                .order_by(NotesCharacters::Name, Order::Asc)
+                .and_where(Expr::col(NotesCharacters::Name).like(format!("{pattern}%")))
                 .to_string(SqliteQueryBuilder)
                 .as_str(),
         )?

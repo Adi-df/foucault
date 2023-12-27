@@ -10,15 +10,14 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph};
 use ratatui::Terminal;
 
-use crate::helpers::create_popup_proportion;
-use crate::helpers::Capitalize;
+use crate::helpers::{create_popup_proportion, Capitalize};
 use crate::note::Note;
 use crate::notebook::Notebook;
 use crate::states::note_creating::NoteCreatingStateData;
 use crate::states::notes_managing::NotesManagingStateData;
 use crate::states::tags_managing::TagsManagingStateData;
 use crate::states::State;
-use crate::tags::Tag;
+use crate::tag::Tag;
 
 pub fn run_nothing_state(key_code: KeyCode, notebook: &Notebook) -> Result<State> {
     Ok(match key_code {

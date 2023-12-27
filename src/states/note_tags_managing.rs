@@ -11,12 +11,11 @@ use ratatui::{Frame, Terminal};
 
 use crate::note::{Note, NoteData};
 use crate::notebook::Notebook;
+use crate::states::note_tag_adding::NoteTagAddingStateData;
+use crate::states::note_tag_deleting::NoteTagDeletingStateData;
+use crate::states::note_viewing::NoteViewingStateData;
 use crate::states::State;
-use crate::tags::Tag;
-
-use super::note_tag_adding::NoteTagAddingStateData;
-use super::note_tag_deleting::NoteTagDeletingStateData;
-use super::note_viewing::NoteViewingStateData;
+use crate::tag::Tag;
 
 #[derive(Debug)]
 pub struct NoteTagsManagingStateData {

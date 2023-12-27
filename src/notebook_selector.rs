@@ -9,11 +9,11 @@ use log::info;
 use scopeguard::defer;
 use thiserror::Error;
 
-use crossterm::event::{Event, KeyCode, KeyEventKind};
+use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
-use crossterm::{event, ExecutableCommand};
+use crossterm::ExecutableCommand;
 use ratatui::prelude::{Alignment, CrosstermBackend, Margin};
 use ratatui::style::Style;
 use ratatui::style::{Color, Modifier};

@@ -1,13 +1,12 @@
 mod elements;
 
 use markdown::{to_mdast, ParseOptions};
-use ratatui::{
-    prelude::Alignment,
-    style::{Color, Modifier},
-    widgets::{Paragraph, Wrap},
-};
 
-use self::elements::BlockElements;
+use ratatui::prelude::Alignment;
+use ratatui::style::{Color, Modifier};
+use ratatui::widgets::{Paragraph, Wrap};
+
+use crate::markdown::elements::BlockElements;
 
 const HEADER_COLOR: [Color; 6] = [
     Color::Red,

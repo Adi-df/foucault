@@ -9,8 +9,8 @@ use rusqlite::Connection;
 use sea_query::{ColumnDef, ForeignKey, ForeignKeyAction, SqliteQueryBuilder, Table};
 
 use crate::links::{LinksCharacters, LinksTable};
-use crate::note::{NoteCharacters, NoteTable};
-use crate::tags::{TagsCharacters, TagsJoinCharacters, TagsJoinTable, TagsTable};
+use crate::note::{NotesCharacters, NotesTable};
+use crate::tag::{TagsCharacters, TagsJoinCharacters, TagsJoinTable, TagsTable};
 
 pub struct Notebook {
     pub name: String,
@@ -89,15 +89,15 @@ impl Notebook {
         database.execute_batch(
             Table::create()
                 .if_not_exists()
-                .table(NoteTable)
+                .table(NotesTable)
                 .col(
-                    ColumnDef::new(NoteCharacters::Id)
+                    ColumnDef::new(NotesCharacters::Id)
                         .integer()
                         .primary_key()
                         .auto_increment(),
                 )
-                .col(ColumnDef::new(NoteCharacters::Name).string().not_null())
-                .col(ColumnDef::new(NoteCharacters::Content).text())
+                .col(ColumnDef::new(NotesCharacters::Name).string().not_null())
+                .col(ColumnDef::new(NotesCharacters::Content).text())
                 .build(SqliteQueryBuilder)
                 .as_str(),
         )?;
@@ -140,7 +140,7 @@ impl Notebook {
                 .foreign_key(
                     ForeignKey::create()
                         .from(TagsJoinTable, TagsJoinCharacters::NoteId)
-                        .to(NoteTable, NoteCharacters::Id)
+                        .to(NotesTable, NotesCharacters::Id)
                         .on_update(ForeignKeyAction::Cascade)
                         .on_delete(ForeignKeyAction::Cascade),
                 )
@@ -170,14 +170,14 @@ impl Notebook {
                 .foreign_key(
                     ForeignKey::create()
                         .from(LinksTable, LinksCharacters::Left)
-                        .to(NoteTable, NoteCharacters::Id)
+                        .to(NotesTable, NotesCharacters::Id)
                         .on_update(ForeignKeyAction::Cascade)
                         .on_delete(ForeignKeyAction::Cascade),
                 )
                 .foreign_key(
                     ForeignKey::create()
                         .from(LinksTable, LinksCharacters::Right)
-                        .to(NoteTable, NoteCharacters::Id)
+                        .to(NotesTable, NotesCharacters::Id)
                         .on_update(ForeignKeyAction::Cascade)
                         .on_delete(ForeignKeyAction::Cascade),
                 )

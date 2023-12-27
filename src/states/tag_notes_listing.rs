@@ -16,7 +16,7 @@ use crate::note::{Note, NoteData, NoteSummary};
 use crate::notebook::Notebook;
 use crate::states::note_viewing::NoteViewingStateData;
 use crate::states::State;
-use crate::tags::Tag;
+use crate::tag::Tag;
 
 #[derive(Debug)]
 pub struct TagNotesListingStateData {

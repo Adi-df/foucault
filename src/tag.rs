@@ -1,9 +1,9 @@
 use anyhow::Result;
 
 use rusqlite::{Connection, OptionalExtension};
-use sea_query::{ConditionalStatement, Expr, Iden, JoinType, Order, Query, SqliteQueryBuilder};
+use sea_query::{Expr, Iden, JoinType, Order, Query, SqliteQueryBuilder};
 
-use crate::note::{Note, NoteCharacters, NoteSummary, NoteTable};
+use crate::note::{Note, NoteSummary, NotesCharacters, NotesTable};
 
 #[derive(Iden)]
 pub struct TagsTable;
@@ -113,14 +113,14 @@ impl Tag {
             Query::select()
                 .from(TagsJoinTable)
                 .columns([
-                    (NoteTable, NoteCharacters::Id),
-                    (NoteTable, NoteCharacters::Name),
+                    (NotesTable, NotesCharacters::Id),
+                    (NotesTable, NotesCharacters::Name),
                 ])
                 .join(
                     JoinType::InnerJoin,
-                    NoteTable,
+                    NotesTable,
                     Expr::col((TagsJoinTable, TagsJoinCharacters::NoteId))
-                        .equals((NoteTable, NoteCharacters::Id)),
+                        .equals((NotesTable, NotesCharacters::Id)),
                 )
                 .and_where(Expr::col(TagsJoinCharacters::TagId).eq(id))
                 .to_string(SqliteQueryBuilder)

@@ -1,26 +1,25 @@
 use std::io::Stdout;
 
 use anyhow::Result;
+use log::info;
 
 use crossterm::event::KeyCode;
-use log::info;
-use ratatui::{
-    prelude::{Constraint, CrosstermBackend, Direction, Layout, Margin, Rect},
-    style::{Color, Modifier, Style},
-    text::{Line, Span},
-    widgets::{
-        Block, BorderType, Borders, List, ListState, Padding, Paragraph, Scrollbar,
-        ScrollbarOrientation, ScrollbarState,
-    },
-    Frame, Terminal,
+use ratatui::prelude::{Constraint, CrosstermBackend, Direction, Layout, Margin, Rect};
+use ratatui::style::{Color, Modifier, Style};
+use ratatui::text::{Line, Span};
+use ratatui::widgets::{
+    Block, BorderType, Borders, List, ListState, Padding, Paragraph, Scrollbar,
+    ScrollbarOrientation, ScrollbarState,
 };
+use ratatui::{Frame, Terminal};
 
-use crate::{notebook::Notebook, tags::Tag};
+use crate::notebook::Notebook;
+use crate::tag::Tag;
 
-use super::{
-    tag_creating::TagsCreatingStateData, tag_deleting::TagsDeletingStateData,
-    tag_notes_listing::TagNotesListingStateData, State,
-};
+use crate::states::tag_creating::TagsCreatingStateData;
+use crate::states::tag_deleting::TagsDeletingStateData;
+use crate::states::tag_notes_listing::TagNotesListingStateData;
+use crate::states::State;
 
 #[derive(Debug)]
 pub struct TagsManagingStateData {
