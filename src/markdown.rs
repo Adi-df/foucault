@@ -6,7 +6,7 @@ use ratatui::prelude::Alignment;
 use ratatui::style::{Color, Modifier};
 use ratatui::widgets::{Paragraph, Wrap};
 
-use crate::markdown::elements::BlockElements;
+use crate::markdown::elements::{BlockElement, BlockElements, InlineElement, InlineElements};
 
 const HEADER_COLOR: [Color; 6] = [
     Color::Red,
@@ -51,22 +51,30 @@ const RICH_TEXT_COLOR: [Color; 6] = [
     Color::Yellow,    // Blockquote
 ];
 
-pub fn parse(content: &str) -> Vec<BlockElements> {
+pub fn parse(content: &str) -> Vec<BlockElements<InlineElements>> {
     BlockElements::parse_node(&to_mdast(content, &ParseOptions::default()).unwrap())
 }
 
-pub fn lines(blocks: &[BlockElements], max_len: u16) -> usize {
+pub fn lines<T, U>(blocks: &[T], max_len: u16) -> usize
+where
+    U: InlineElement,
+    T: BlockElement<U>,
+{
     blocks
         .iter()
-        .map(|block| block.lines(max_len as usize))
+        .map(|block| block.line_number(max_len as usize))
         .sum()
 }
 
-pub fn render(blocks: &[BlockElements]) -> Paragraph {
+pub fn render<T, U>(blocks: &[T]) -> Paragraph
+where
+    U: InlineElement,
+    T: BlockElement<U>,
+{
     Paragraph::new(
         blocks
             .iter()
-            .flat_map(BlockElements::build_lines)
+            .flat_map(BlockElement::build_lines)
             .collect::<Vec<_>>(),
     )
     .wrap(Wrap { trim: true })

@@ -49,6 +49,39 @@ const HEADING_STYLE: [Style; 6] = [
         .fg(HEADER_COLOR[5]),
 ];
 
+pub trait InlineElement: Sized {
+    fn parse_node(node: &mdast::Node) -> Vec<Self>;
+    fn get_inner_span(&self) -> &Span<'static>;
+    fn get_inner_span_mut(&mut self) -> &mut Span<'static>;
+    fn into_span(self) -> Span<'static> {
+        self.get_inner_span().clone()
+    }
+    fn inner_text(&self) -> &str {
+        self.get_inner_span().content.as_ref()
+    }
+
+    fn patch_style(&mut self, style: Style) {
+        self.get_inner_span_mut().patch_style(style);
+    }
+    fn set_style(&mut self, style: Style) {
+        let span = self.get_inner_span_mut();
+        *span = span.clone().style(style);
+    }
+}
+
+pub trait ChainInlineElement: InlineElement + Sized {
+    fn patch_style(mut self, style: Style) -> Self {
+        InlineElement::patch_style(&mut self, style);
+        self
+    }
+    fn set_style(mut self, style: Style) -> Self {
+        InlineElement::set_style(&mut self, style);
+        self
+    }
+}
+
+impl<T> ChainInlineElement for T where T: InlineElement + Sized {}
+
 #[derive(Debug, Clone)]
 pub enum InlineElements {
     RichText { span: Span<'static> },
@@ -56,27 +89,27 @@ pub enum InlineElements {
     CrossRef { span: Span<'static>, dest: String },
 }
 
-impl InlineElements {
-    pub fn parse_node(node: &mdast::Node) -> Vec<InlineElements> {
+impl InlineElement for InlineElements {
+    fn parse_node(node: &mdast::Node) -> Vec<InlineElements> {
         match node {
             mdast::Node::Emphasis(italic) => italic
                 .children
                 .iter()
                 .flat_map(InlineElements::parse_node)
-                .map(|el| el.richify(ITALIC_STYLE))
+                .map(|el| ChainInlineElement::patch_style(el, ITALIC_STYLE))
                 .collect(),
             mdast::Node::Strong(strong) => strong
                 .children
                 .iter()
                 .flat_map(InlineElements::parse_node)
-                .map(|el| el.richify(STRONG_STYLE))
+                .map(|el| ChainInlineElement::patch_style(el, STRONG_STYLE))
                 .collect(),
             mdast::Node::Link(link) => vec![InlineElements::HyperLink {
                 span: Span::raw(
                     link.children
                         .iter()
                         .flat_map(InlineElements::parse_node)
-                        .map(InlineElements::discard_style)
+                        .map(|el| el.inner_text().to_string())
                         .collect::<String>(),
                 )
                 .style(HYPER_LINK_STYLE),
@@ -87,49 +120,58 @@ impl InlineElements {
         }
     }
 
-    fn richify(self, style: Style) -> Self {
-        match self {
-            Self::RichText { mut span } => {
-                span.patch_style(style);
-                Self::RichText { span }
-            }
-            s => s,
-        }
-    }
-
-    fn discard_style(self) -> String {
+    fn get_inner_span(&self) -> &Span<'static> {
         match self {
             Self::RichText { span }
             | Self::HyperLink { span, .. }
-            | Self::CrossRef { span, .. } => span.content.to_string(),
+            | Self::CrossRef { span, .. } => span,
         }
     }
 
-    fn build_span(&self) -> Span<'static> {
+    fn get_inner_span_mut(&mut self) -> &mut Span<'static> {
         match self {
             Self::RichText { span }
             | Self::HyperLink { span, .. }
-            | Self::CrossRef { span, .. } => span.clone(),
+            | Self::CrossRef { span, .. } => span,
         }
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum BlockElements {
-    Paragraph {
-        content: Vec<InlineElements>,
-    },
-    Heading {
-        content: Vec<InlineElements>,
-        level: u8,
-    },
-    BlockQuote {
-        content: Vec<InlineElements>,
-    },
+pub trait BlockElement<T>: Sized
+where
+    T: InlineElement,
+{
+    fn parse_node(node: &mdast::Node) -> Vec<Self>;
+    fn content(self) -> Vec<T>;
+    fn get_content(&self) -> &[T];
+    fn get_content_mut(&mut self) -> &mut [T];
+    fn build_lines(&self) -> Vec<Line<'static>>;
+
+    fn inner_text(&self) -> String {
+        self.get_content()
+            .iter()
+            .map(|el| el.inner_text().to_string())
+            .collect()
+    }
+    fn line_number(&self, max_len: usize) -> usize {
+        textwrap::wrap(self.inner_text().as_str(), max_len).len()
+    }
 }
 
-impl BlockElements {
-    pub fn parse_node(node: &mdast::Node) -> Vec<BlockElements> {
+pub enum BlockElements<T>
+where
+    T: InlineElement,
+{
+    Paragraph { content: Vec<T> },
+    Heading { content: Vec<T>, level: u8 },
+    BlockQuote { content: Vec<T> },
+}
+
+impl<T> BlockElement<T> for BlockElements<T>
+where
+    T: InlineElement + Clone,
+{
+    fn parse_node(node: &mdast::Node) -> Vec<BlockElements<T>> {
         match node {
             mdast::Node::Root(root) => root
                 .children
@@ -146,73 +188,65 @@ impl BlockElements {
             }],
             mdast::Node::Heading(heading) => vec![Self::Heading {
                 level: heading.depth - 1,
-                content: heading
-                    .children
-                    .iter()
-                    .flat_map(InlineElements::parse_node)
-                    .collect(),
+                content: heading.children.iter().flat_map(T::parse_node).collect(),
             }],
             mdast::Node::Paragraph(paragraph) => vec![Self::Paragraph {
-                content: paragraph
-                    .children
-                    .iter()
-                    .flat_map(InlineElements::parse_node)
-                    .collect(),
+                content: paragraph.children.iter().flat_map(T::parse_node).collect(),
             }],
             _ => Vec::new(),
         }
     }
 
-    fn content(self) -> Vec<InlineElements> {
+    fn content(self) -> Vec<T> {
         match self {
-            BlockElements::Paragraph { content }
-            | BlockElements::Heading { content, .. }
-            | BlockElements::BlockQuote { content } => content,
+            Self::Paragraph { content }
+            | Self::Heading { content, .. }
+            | Self::BlockQuote { content } => content,
         }
     }
 
-    fn get_content(&self) -> &[InlineElements] {
+    fn get_content(&self) -> &[T] {
         match self {
-            BlockElements::Paragraph { content }
-            | BlockElements::Heading { content, .. }
-            | BlockElements::BlockQuote { content } => content,
+            Self::Paragraph { content }
+            | Self::Heading { content, .. }
+            | Self::BlockQuote { content } => content,
         }
     }
 
-    pub fn text(&self) -> String {
-        self.get_content()
-            .iter()
-            .map(|el| el.clone().discard_style())
-            .collect()
+    fn get_content_mut(&mut self) -> &mut [T] {
+        match self {
+            Self::Paragraph { content }
+            | Self::Heading { content, .. }
+            | Self::BlockQuote { content } => content,
+        }
     }
 
-    pub fn lines(&self, max_len: usize) -> usize {
-        textwrap::wrap(self.text().as_str(), max_len).len()
-    }
-
-    pub fn build_lines(&self) -> Vec<Line<'static>> {
+    fn build_lines(&self) -> Vec<Line<'static>> {
         match self {
             Self::Paragraph { content } => {
                 vec![Line::from(
                     content
                         .iter()
-                        .map(InlineElements::build_span)
+                        .cloned()
+                        .map(InlineElement::into_span)
                         .collect::<Vec<Span<'static>>>(),
                 )]
             }
             BlockElements::Heading { content, level } => vec![Line::from(
                 content
                     .iter()
-                    .map(|el| el.clone().richify(HEADING_STYLE[*level as usize]))
-                    .map(|el| el.build_span())
+                    .cloned()
+                    .map(|el| ChainInlineElement::patch_style(el, HEADING_STYLE[*level as usize]))
+                    .map(InlineElement::into_span)
                     .collect::<Vec<Span<'static>>>(),
             )
             .alignment(HEADER_ALIGNEMENT[*level as usize])],
             BlockElements::BlockQuote { content } => vec![Line::from(
                 content
                     .iter()
-                    .map(|el| el.clone().richify(BLOCKQUOTE_STYLE))
-                    .map(|el| el.build_span())
+                    .cloned()
+                    .map(|el| ChainInlineElement::patch_style(el, BLOCKQUOTE_STYLE))
+                    .map(InlineElement::into_span)
                     .collect::<Vec<Span<'static>>>(),
             )
             .alignment(BLOCKQUOTE_ALIGNEMENT)],
