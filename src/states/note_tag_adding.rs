@@ -25,7 +25,7 @@ pub fn run_note_tag_adding_state(
                 note,
             },
         mut tag_name,
-        ..
+        valid,
     }: NoteTagAddingStateData,
     key_code: KeyCode,
     notebook: &Notebook,
@@ -76,7 +76,7 @@ pub fn run_note_tag_adding_state(
                         tags,
                         note,
                     },
-                    valid: Tag::tag_exists(tag_name.as_str(), notebook.db())?,
+                    valid: false,
                     tag_name,
                 })
             }
@@ -87,7 +87,7 @@ pub fn run_note_tag_adding_state(
                 tags,
                 note,
             },
-            valid: Tag::tag_exists(tag_name.as_str(), notebook.db())?,
+            valid,
             tag_name,
         }),
     })

@@ -4,6 +4,7 @@ use std::{env, fs};
 
 use anyhow::Result;
 use log::info;
+use rusqlite::Connection;
 use scopeguard::defer;
 
 use crossterm::event::KeyCode;
@@ -18,6 +19,7 @@ use ratatui::widgets::{
 };
 use ratatui::Frame;
 
+use crate::helpers::{TryFromDatabase, TryIntoDatabase};
 use crate::markdown::{lines, parse, render};
 use crate::note::{Note, NoteData};
 use crate::notebook::Notebook;
@@ -31,6 +33,15 @@ use crate::states::{State, Terminal};
 pub struct NoteViewingStateData {
     pub note_data: NoteData,
     pub scroll: usize,
+}
+
+impl TryFromDatabase<Note> for NoteViewingStateData {
+    fn try_from_database(note: Note, db: &Connection) -> Result<Self> {
+        Ok(NoteViewingStateData {
+            note_data: note.try_into_database(db)?,
+            scroll: 0,
+        })
+    }
 }
 
 pub fn run_note_viewing_state(

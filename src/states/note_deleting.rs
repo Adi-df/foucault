@@ -1,7 +1,7 @@
 use anyhow::Result;
+use log::info;
 
 use crossterm::event::KeyCode;
-use log::info;
 use ratatui::widgets::Block;
 
 use crate::helpers::draw_yes_no_prompt;

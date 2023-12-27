@@ -13,7 +13,6 @@ use ratatui::widgets::{
 use crate::helpers::TryIntoDatabase;
 use crate::note::{Note, NoteSummary};
 use crate::notebook::Notebook;
-use crate::states::note_viewing::NoteViewingStateData;
 use crate::states::{State, Terminal};
 
 #[derive(Debug)]
@@ -27,7 +26,7 @@ pub fn run_note_managing_state(
     NotesManagingStateData {
         mut pattern,
         selected,
-        mut notes,
+        notes,
     }: NotesManagingStateData,
     key_code: KeyCode,
     notebook: &Notebook,
@@ -42,10 +41,7 @@ pub fn run_note_managing_state(
             if let Some(note) = Note::load(note_summary.id, notebook.db())? {
                 info!("Open note {}", note_summary.name);
 
-                State::NoteViewing(NoteViewingStateData {
-                    note_data: note.try_into_database(notebook.db())?,
-                    scroll: 0,
-                })
+                State::NoteViewing(note.try_into_database(notebook.db())?)
             } else {
                 State::NotesManaging(NotesManagingStateData {
                     pattern,

@@ -12,12 +12,11 @@ use ratatui::widgets::{
 use ratatui::Frame;
 
 use crate::notebook::Notebook;
-use crate::tag::Tag;
-
 use crate::states::tag_creating::TagsCreatingStateData;
 use crate::states::tag_deleting::TagsDeletingStateData;
 use crate::states::tag_notes_listing::TagNotesListingStateData;
 use crate::states::{State, Terminal};
+use crate::tag::Tag;
 
 #[derive(Debug)]
 pub struct TagsManagingStateData {

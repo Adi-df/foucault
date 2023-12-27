@@ -8,7 +8,7 @@ use ratatui::widgets::{Block, BorderType, Borders, List, ListState, Padding, Par
 use ratatui::Frame;
 
 use crate::helpers::TryIntoDatabase;
-use crate::note::{Note, NoteData};
+use crate::note::Note;
 use crate::notebook::Notebook;
 use crate::states::note_tag_adding::NoteTagAddingStateData;
 use crate::states::note_tag_deleting::NoteTagDeletingStateData;
