@@ -255,15 +255,7 @@ pub fn draw_viewed_note(
         .padding(Padding::uniform(1));
 
     let content_area = content_block.inner(vertical_layout[1]);
-    let content_len = lines(parsed_content, content_area.width);
-
-    let selected_block = if parsed_content.len() == 0 {
-        0
-    } else {
-        selected.1.rem_euclid(parsed_content.len())
-    };
-
-    let scroll = lines(&parsed_content[..selected_block], content_area.width);
+    let scroll = lines(&parsed_content[..selected.1], content_area.width);
 
     let note_content = render(parsed_content).scroll((scroll.try_into().unwrap(), 0));
 
@@ -278,6 +270,9 @@ pub fn draw_viewed_note(
     frame.render_stateful_widget(
         content_scrollbar,
         vertical_layout[1].inner(&Margin::new(0, 1)),
-        &mut ScrollbarState::new(content_len).position(scroll),
+        &mut ScrollbarState::default()
+            .content_length(parsed_content.len().saturating_sub(1))
+            .viewport_content_length(1)
+            .position(selected.1),
     );
 }
