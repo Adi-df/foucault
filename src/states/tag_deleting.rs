@@ -32,7 +32,10 @@ pub fn run_tag_deleting_state(
                     .swap_remove(tags_managing.selected)
                     .delete(notebook.db())?;
             }
-            State::TagsManaging(tags_managing)
+            State::TagsManaging(TagsManagingStateData::from_pattern(
+                tags_managing.pattern,
+                notebook.db(),
+            )?)
         }
         KeyCode::Tab => State::TagDeleting(TagsDeletingStateData {
             tags_managing,

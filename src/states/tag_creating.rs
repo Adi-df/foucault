@@ -36,12 +36,10 @@ pub fn run_tag_creating_state(
                 })
             } else {
                 Tag::new(name.as_str(), notebook.db())?;
-                State::TagsManaging(TagsManagingStateData {
-                    pattern_editing: false,
-                    selected: 0,
-                    tags: Tag::search_by_name(tags_search.pattern.as_str(), notebook.db())?,
-                    pattern: tags_search.pattern,
-                })
+                State::TagsManaging(TagsManagingStateData::from_pattern(
+                    tags_search.pattern,
+                    notebook.db(),
+                )?)
             }
         }
         KeyCode::Backspace => {

@@ -14,7 +14,6 @@ use crate::states::note_creating::NoteCreatingStateData;
 use crate::states::notes_managing::NotesManagingStateData;
 use crate::states::tags_managing::TagsManagingStateData;
 use crate::states::{State, Terminal};
-use crate::tag::Tag;
 
 pub fn run_nothing_state(key_code: KeyCode, notebook: &Notebook) -> Result<State> {
     Ok(match key_code {
@@ -38,12 +37,7 @@ pub fn run_nothing_state(key_code: KeyCode, notebook: &Notebook) -> Result<State
         }
         KeyCode::Char('t') => {
             info!("Manage tags.");
-            State::TagsManaging(TagsManagingStateData {
-                pattern: String::new(),
-                pattern_editing: false,
-                selected: 0,
-                tags: Tag::search_by_name("", notebook.db())?,
-            })
+            State::TagsManaging(TagsManagingStateData::default(notebook.db())?)
         }
         _ => State::Nothing,
     })

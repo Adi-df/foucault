@@ -11,6 +11,8 @@ use ratatui::widgets::{
 };
 use ratatui::Frame;
 
+use rusqlite::Connection;
+
 use crate::notebook::Notebook;
 use crate::states::tag_creating::TagsCreatingStateData;
 use crate::states::tag_deleting::TagsDeletingStateData;
@@ -24,6 +26,21 @@ pub struct TagsManagingStateData {
     pub pattern_editing: bool,
     pub selected: usize,
     pub tags: Vec<Tag>,
+}
+
+impl TagsManagingStateData {
+    pub fn from_pattern(pattern: String, db: &Connection) -> Result<Self> {
+        Ok(TagsManagingStateData {
+            tags: Tag::search_by_name(pattern.as_str(), db)?,
+            pattern_editing: false,
+            selected: 0,
+            pattern,
+        })
+    }
+
+    pub fn default(db: &Connection) -> Result<Self> {
+        TagsManagingStateData::from_pattern(String::new(), db)
+    }
 }
 
 pub fn run_tags_managing_state(
@@ -74,21 +91,15 @@ pub fn run_tags_managing_state(
         }),
         KeyCode::Backspace if state_data.pattern_editing => {
             state_data.pattern.pop();
-            State::TagsManaging(TagsManagingStateData {
-                tags: Tag::search_by_name(state_data.pattern.as_str(), notebook.db())?,
-                pattern: state_data.pattern,
-                selected: 0,
-                ..state_data
-            })
+            state_data.tags = Tag::search_by_name(state_data.pattern.as_str(), notebook.db())?;
+            state_data.selected = 0;
+            State::TagsManaging(state_data)
         }
         KeyCode::Char(c) if state_data.pattern_editing && !c.is_whitespace() => {
             state_data.pattern.push(c);
-            State::TagsManaging(TagsManagingStateData {
-                selected: 0,
-                tags: Tag::search_by_name(state_data.pattern.as_str(), notebook.db())?,
-                pattern: state_data.pattern,
-                ..state_data
-            })
+            state_data.tags = Tag::search_by_name(state_data.pattern.as_str(), notebook.db())?;
+            state_data.selected = 0;
+            State::TagsManaging(state_data)
         }
         _ => State::TagsManaging(state_data),
     })
