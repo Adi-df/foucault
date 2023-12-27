@@ -7,12 +7,19 @@ use ratatui::widgets::Block;
 use crate::helpers::{draw_text_prompt, TryIntoDatabase};
 use crate::note::Note;
 use crate::notebook::Notebook;
-use crate::states::note_viewing::NoteViewingStateData;
 use crate::states::{State, Terminal};
 
 #[derive(Debug)]
 pub struct NoteCreatingStateData {
     pub name: String,
+}
+
+impl NoteCreatingStateData {
+    pub fn empty() -> Self {
+        NoteCreatingStateData {
+            name: String::new(),
+        }
+    }
 }
 
 pub fn run_note_creating_state(
@@ -26,10 +33,7 @@ pub fn run_note_creating_state(
 
             let new_note = Note::new(name.clone(), String::new(), notebook.db())?;
 
-            State::NoteViewing(NoteViewingStateData {
-                note_data: new_note.try_into_database(notebook.db())?,
-                scroll: 0,
-            })
+            State::NoteViewing(new_note.try_into_database(notebook.db())?)
         }
         KeyCode::Esc => {
             info!("Cancel new note.");

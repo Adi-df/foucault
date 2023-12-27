@@ -9,7 +9,9 @@ use ratatui::widgets::{
     ScrollbarOrientation, ScrollbarState,
 };
 
-use crate::helpers::TryIntoDatabase;
+use rusqlite::Connection;
+
+use crate::helpers::{TryFromDatabase, TryIntoDatabase};
 use crate::note::{Note, NoteSummary};
 use crate::notebook::Notebook;
 use crate::states::{State, Terminal};
@@ -20,6 +22,16 @@ pub struct TagNotesListingStateData {
     pub tag: Tag,
     pub notes: Vec<NoteSummary>,
     pub selected: usize,
+}
+
+impl TryFromDatabase<Tag> for TagNotesListingStateData {
+    fn try_from_database(tag: Tag, db: &Connection) -> Result<Self> {
+        Ok(TagNotesListingStateData {
+            notes: tag.get_notes(db)?,
+            selected: 0,
+            tag,
+        })
+    }
 }
 
 pub fn run_tag_notes_listing_state(

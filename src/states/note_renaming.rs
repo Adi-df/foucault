@@ -15,6 +15,15 @@ pub struct NoteRenamingStateData {
     pub new_name: String,
 }
 
+impl NoteRenamingStateData {
+    pub fn empty(viewing_data: NoteViewingStateData) -> Self {
+        NoteRenamingStateData {
+            viewing_data,
+            new_name: String::new(),
+        }
+    }
+}
+
 pub fn run_note_renaming_state(
     NoteRenamingStateData {
         viewing_data:

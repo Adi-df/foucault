@@ -13,6 +13,7 @@ use ratatui::Frame;
 
 use rusqlite::Connection;
 
+use crate::helpers::TryIntoDatabase;
 use crate::notebook::Notebook;
 use crate::states::tag_creating::TagsCreatingStateData;
 use crate::states::tag_deleting::TagsDeletingStateData;
@@ -38,7 +39,7 @@ impl TagsManagingStateData {
         })
     }
 
-    pub fn default(db: &Connection) -> Result<Self> {
+    pub fn empty(db: &Connection) -> Result<Self> {
         Self::from_pattern(String::new(), db)
     }
 }
@@ -64,26 +65,15 @@ pub fn run_tags_managing_state(
             })
         }
         KeyCode::Char('c') if !state_data.pattern_editing => {
-            State::TagCreating(TagsCreatingStateData {
-                tags_search: state_data,
-                name: String::new(),
-                valid: false,
-            })
+            State::TagCreating(TagsCreatingStateData::empty(state_data))
         }
         KeyCode::Char('d') if !state_data.pattern_editing && !state_data.tags.is_empty() => {
-            State::TagDeleting(TagsDeletingStateData {
-                delete: false,
-                tags_managing: state_data,
-            })
+            State::TagDeleting(TagsDeletingStateData::empty(state_data))
         }
         KeyCode::Enter if !state_data.tags.is_empty() => {
             let tag = state_data.tags.swap_remove(state_data.selected);
 
-            State::TagNotesListing(TagNotesListingStateData {
-                notes: tag.get_notes(notebook.db())?,
-                selected: 0,
-                tag,
-            })
+            State::TagNotesListing(tag.try_into_database(notebook.db())?)
         }
         KeyCode::Tab => State::TagsManaging(TagsManagingStateData {
             pattern_editing: !state_data.pattern_editing,

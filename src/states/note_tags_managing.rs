@@ -7,7 +7,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, List, ListState, Padding, Paragraph};
 use ratatui::Frame;
 
-use crate::helpers::TryIntoDatabase;
+use crate::helpers::{TryFromDatabase, TryIntoDatabase};
 use crate::note::Note;
 use crate::notebook::Notebook;
 use crate::states::note_tag_adding::NoteTagAddingStateData;
@@ -21,6 +21,16 @@ pub struct NoteTagsManagingStateData {
     pub selected: usize,
     pub tags: Vec<Tag>,
     pub note: Note,
+}
+
+impl TryFromDatabase<Note> for NoteTagsManagingStateData {
+    fn try_from_database(note: Note, db: &rusqlite::Connection) -> Result<Self> {
+        Ok(NoteTagsManagingStateData {
+            selected: 0,
+            tags: note.get_tags(db)?,
+            note,
+        })
+    }
 }
 
 pub fn run_note_tags_managing_state(
@@ -38,24 +48,19 @@ pub fn run_note_tags_managing_state(
             scroll: 0,
         }),
         KeyCode::Char('d') if !tags.is_empty() => {
-            State::NoteTagDeleting(NoteTagDeletingStateData {
-                tags_managing: NoteTagsManagingStateData {
-                    selected,
-                    tags,
-                    note,
-                },
-                delete: false,
-            })
-        }
-        KeyCode::Char('a') => State::NoteTagAdding(NoteTagAddingStateData {
-            tags_managing: NoteTagsManagingStateData {
+            State::NoteTagDeleting(NoteTagDeletingStateData::empty(NoteTagsManagingStateData {
                 selected,
                 tags,
                 note,
-            },
-            tag_name: String::new(),
-            valid: false,
-        }),
+            }))
+        }
+        KeyCode::Char('a') => {
+            State::NoteTagAdding(NoteTagAddingStateData::empty(NoteTagsManagingStateData {
+                selected,
+                tags,
+                note,
+            }))
+        }
         KeyCode::Up if selected > 0 => State::NoteTagsManaging(NoteTagsManagingStateData {
             selected: selected - 1,
             tags,

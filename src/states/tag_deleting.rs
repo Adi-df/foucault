@@ -15,6 +15,15 @@ pub struct TagsDeletingStateData {
     pub delete: bool,
 }
 
+impl TagsDeletingStateData {
+    pub fn empty(tags_managing: TagsManagingStateData) -> Self {
+        TagsDeletingStateData {
+            tags_managing,
+            delete: false,
+        }
+    }
+}
+
 pub fn run_tag_deleting_state(
     TagsDeletingStateData {
         mut tags_managing,

@@ -33,7 +33,7 @@ impl NotesManagingStateData {
         })
     }
 
-    pub fn default(db: &Connection) -> Result<Self> {
+    pub fn empty(db: &Connection) -> Result<Self> {
         Self::from_pattern(String::new(), db)
     }
 }

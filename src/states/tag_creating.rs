@@ -16,6 +16,16 @@ pub struct TagsCreatingStateData {
     pub valid: bool,
 }
 
+impl TagsCreatingStateData {
+    pub fn empty(tags_search: TagsManagingStateData) -> Self {
+        TagsCreatingStateData {
+            tags_search,
+            name: String::new(),
+            valid: false,
+        }
+    }
+}
+
 pub fn run_tag_creating_state(
     TagsCreatingStateData {
         tags_search,

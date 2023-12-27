@@ -16,6 +16,16 @@ pub struct NoteTagAddingStateData {
     pub valid: bool,
 }
 
+impl NoteTagAddingStateData {
+    pub fn empty(tags_managing: NoteTagsManagingStateData) -> Self {
+        NoteTagAddingStateData {
+            tags_managing,
+            tag_name: String::new(),
+            valid: false,
+        }
+    }
+}
+
 pub fn run_note_tag_adding_state(
     NoteTagAddingStateData {
         tags_managing:

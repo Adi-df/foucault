@@ -22,17 +22,15 @@ pub fn run_nothing_state(key_code: KeyCode, notebook: &Notebook) -> Result<State
         }
         KeyCode::Char('c') => {
             info!("Create new note.");
-            State::NoteCreating(NoteCreatingStateData {
-                name: String::new(),
-            })
+            State::NoteCreating(NoteCreatingStateData::empty())
         }
         KeyCode::Char('s') => {
             info!("List notes.");
-            State::NotesManaging(NotesManagingStateData::default(notebook.db())?)
+            State::NotesManaging(NotesManagingStateData::empty(notebook.db())?)
         }
         KeyCode::Char('t') => {
             info!("Manage tags.");
-            State::TagsManaging(TagsManagingStateData::default(notebook.db())?)
+            State::TagsManaging(TagsManagingStateData::empty(notebook.db())?)
         }
         _ => State::Nothing,
     })

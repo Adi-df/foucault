@@ -25,7 +25,6 @@ use crate::note::{Note, NoteData};
 use crate::notebook::Notebook;
 use crate::states::note_deleting::NoteDeletingStateData;
 use crate::states::note_renaming::NoteRenamingStateData;
-use crate::states::note_tags_managing::NoteTagsManagingStateData;
 use crate::states::notes_managing::NotesManagingStateData;
 use crate::states::{State, Terminal};
 
@@ -78,25 +77,21 @@ pub fn run_note_viewing_state(
         }
         KeyCode::Char('d') => {
             info!("Not deleting prompt.");
-            State::NoteDeleting(NoteDeletingStateData {
-                viewing_data: NoteViewingStateData { note_data, scroll },
-                delete: false,
-            })
+            State::NoteDeleting(NoteDeletingStateData::empty(NoteViewingStateData {
+                note_data,
+                scroll,
+            }))
         }
         KeyCode::Char('r') => {
             info!("Prompt note new name");
-            State::NoteRenaming(NoteRenamingStateData {
-                viewing_data: NoteViewingStateData { note_data, scroll },
-                new_name: String::new(),
-            })
+            State::NoteRenaming(NoteRenamingStateData::empty(NoteViewingStateData {
+                note_data,
+                scroll,
+            }))
         }
         KeyCode::Char('t') => {
             info!("Manage tags of note {}", note_data.note.name);
-            State::NoteTagsManaging(NoteTagsManagingStateData {
-                selected: 0,
-                tags: note_data.note.get_tags(notebook.db())?,
-                note: note_data.note,
-            })
+            State::NoteTagsManaging(note_data.note.try_into_database(notebook.db())?)
         }
         KeyCode::Up => State::NoteViewing(NoteViewingStateData {
             note_data,

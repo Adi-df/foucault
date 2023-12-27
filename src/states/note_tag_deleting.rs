@@ -3,7 +3,7 @@ use anyhow::Result;
 use crossterm::event::KeyCode;
 use ratatui::widgets::Block;
 
-use crate::helpers::draw_yes_no_prompt;
+use crate::helpers::{draw_yes_no_prompt, TryIntoDatabase};
 use crate::notebook::Notebook;
 use crate::states::note_tags_managing::{draw_note_tags_managing, NoteTagsManagingStateData};
 use crate::states::{State, Terminal};
@@ -12,6 +12,15 @@ use crate::states::{State, Terminal};
 pub struct NoteTagDeletingStateData {
     pub tags_managing: NoteTagsManagingStateData,
     pub delete: bool,
+}
+
+impl NoteTagDeletingStateData {
+    pub fn empty(tags_managing: NoteTagsManagingStateData) -> Self {
+        NoteTagDeletingStateData {
+            tags_managing,
+            delete: false,
+        }
+    }
 }
 
 pub fn run_note_tag_deleting_state(
@@ -38,11 +47,7 @@ pub fn run_note_tag_deleting_state(
                 let tag = tags.swap_remove(selected);
                 note.remove_tag(tag.id, notebook.db())?;
 
-                State::NoteTagsManaging(NoteTagsManagingStateData {
-                    selected: 0,
-                    tags,
-                    note,
-                })
+                State::NoteTagsManaging(note.try_into_database(notebook.db())?)
             } else {
                 State::NoteTagsManaging(NoteTagsManagingStateData {
                     selected,

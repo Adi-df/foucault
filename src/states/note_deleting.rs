@@ -15,6 +15,15 @@ pub struct NoteDeletingStateData {
     pub delete: bool,
 }
 
+impl NoteDeletingStateData {
+    pub fn empty(viewing_data: NoteViewingStateData) -> Self {
+        NoteDeletingStateData {
+            viewing_data,
+            delete: false,
+        }
+    }
+}
+
 pub fn run_note_deleting_state(
     NoteDeletingStateData {
         viewing_data: NoteViewingStateData { note_data, scroll },
