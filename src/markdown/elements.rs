@@ -275,13 +275,16 @@ where
     fn build_lines(&self) -> Vec<Line<'static>> {
         match self {
             Self::Paragraph { content } => {
-                vec![Line::from(
-                    content
-                        .iter()
-                        .cloned()
-                        .map(InlineElement::into_span)
-                        .collect::<Vec<Span<'static>>>(),
-                )]
+                vec![
+                    Line::from(
+                        content
+                            .iter()
+                            .cloned()
+                            .map(InlineElement::into_span)
+                            .collect::<Vec<Span<'static>>>(),
+                    ),
+                    Line::default(),
+                ]
             }
             BlockElements::Heading { content, level } => vec![Line::from(
                 content
@@ -292,15 +295,18 @@ where
                     .collect::<Vec<Span<'static>>>(),
             )
             .alignment(HEADER_ALIGNEMENT[*level as usize])],
-            BlockElements::BlockQuote { content } => vec![Line::from(
-                content
-                    .iter()
-                    .cloned()
-                    .map(|el| ChainInlineElement::patch_style(el, BLOCKQUOTE_STYLE))
-                    .map(InlineElement::into_span)
-                    .collect::<Vec<Span<'static>>>(),
-            )
-            .alignment(BLOCKQUOTE_ALIGNEMENT)],
+            BlockElements::BlockQuote { content } => vec![
+                Line::from(
+                    content
+                        .iter()
+                        .cloned()
+                        .map(|el| ChainInlineElement::patch_style(el, BLOCKQUOTE_STYLE))
+                        .map(InlineElement::into_span)
+                        .collect::<Vec<Span<'static>>>(),
+                )
+                .alignment(BLOCKQUOTE_ALIGNEMENT),
+                Line::default(),
+            ],
         }
     }
 }
