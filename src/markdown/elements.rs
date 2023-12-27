@@ -1,6 +1,6 @@
 use markdown::mdast;
 
-use ratatui::style::{Modifier, Style};
+use ratatui::style::{Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
 
 use crate::markdown::{
@@ -133,6 +133,48 @@ impl InlineElement for InlineElements {
             Self::RichText { span }
             | Self::HyperLink { span, .. }
             | Self::CrossRef { span, .. } => span,
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct SelectableInlineElements {
+    element: InlineElements,
+    selected: bool,
+}
+
+impl From<InlineElements> for SelectableInlineElements {
+    fn from(element: InlineElements) -> Self {
+        Self {
+            element,
+            selected: false,
+        }
+    }
+}
+
+impl InlineElement for SelectableInlineElements {
+    fn parse_node(node: &mdast::Node) -> Vec<Self> {
+        InlineElements::parse_node(node)
+            .into_iter()
+            .map(SelectableInlineElements::from)
+            .collect()
+    }
+
+    fn get_inner_span(&self) -> &Span<'static> {
+        self.element.get_inner_span()
+    }
+
+    fn get_inner_span_mut(&mut self) -> &mut Span<'static> {
+        self.element.get_inner_span_mut()
+    }
+
+    fn into_span(self) -> Span<'static> {
+        let span = self.element.into_span();
+
+        if self.selected {
+            span.underlined()
+        } else {
+            span
         }
     }
 }

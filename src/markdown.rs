@@ -6,7 +6,9 @@ use ratatui::prelude::Alignment;
 use ratatui::style::{Color, Modifier};
 use ratatui::widgets::{Paragraph, Wrap};
 
-use crate::markdown::elements::{BlockElement, BlockElements, InlineElement, InlineElements};
+use crate::markdown::elements::{BlockElement, BlockElements, InlineElement};
+
+use self::elements::SelectableInlineElements;
 
 const HEADER_COLOR: [Color; 6] = [
     Color::Red,
@@ -51,7 +53,7 @@ const RICH_TEXT_COLOR: [Color; 6] = [
     Color::Yellow,    // Blockquote
 ];
 
-pub fn parse(content: &str) -> Vec<BlockElements<InlineElements>> {
+pub fn parse(content: &str) -> Vec<BlockElements<SelectableInlineElements>> {
     BlockElements::parse_node(&to_mdast(content, &ParseOptions::default()).unwrap())
 }
 
