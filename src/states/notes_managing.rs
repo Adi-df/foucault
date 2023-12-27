@@ -82,7 +82,7 @@ pub fn run_note_managing_state(
             selected: selected - 1,
             notes,
         }),
-        KeyCode::Down if selected < notes.len() - 1 => {
+        KeyCode::Down if selected < notes.len().saturating_sub(1) => {
             State::NotesManaging(NotesManagingStateData {
                 pattern,
                 selected: selected + 1,

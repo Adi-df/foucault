@@ -68,7 +68,7 @@ pub fn run_note_tags_managing_state(
             tags,
             note,
         }),
-        KeyCode::Down if selected < tags.len() - 1 => {
+        KeyCode::Down if selected < tags.len().saturating_sub(1) => {
             State::NoteTagsManaging(NoteTagsManagingStateData {
                 selected: selected + 1,
                 tags,

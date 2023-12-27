@@ -1,7 +1,9 @@
 use anyhow::Result;
 
 use rusqlite::{Connection, OptionalExtension};
-use sea_query::{Expr, Iden, Order, Query, SqliteQueryBuilder};
+use sea_query::{ConditionalStatement, Expr, Iden, JoinType, Order, Query, SqliteQueryBuilder};
+
+use crate::note::{Note, NoteCharacters, NoteSummary, NoteTable};
 
 #[derive(Iden)]
 pub struct TagsTable;
@@ -104,5 +106,41 @@ impl Tag {
         .map(|row| -> Result<(i64, String)> { row.map_err(anyhow::Error::from) })
         .map(|row| row.map(|(id, name)| Tag { id, name }))
         .collect()
+    }
+
+    pub fn fetch_notes(id: i64, db: &Connection) -> Result<Vec<NoteSummary>> {
+        db.prepare(
+            Query::select()
+                .from(TagsJoinTable)
+                .columns([
+                    (NoteTable, NoteCharacters::Id),
+                    (NoteTable, NoteCharacters::Name),
+                ])
+                .join(
+                    JoinType::InnerJoin,
+                    NoteTable,
+                    Expr::col((TagsJoinTable, TagsJoinCharacters::NoteId))
+                        .equals((NoteTable, NoteCharacters::Id)),
+                )
+                .and_where(Expr::col(TagsJoinCharacters::TagId).eq(id))
+                .to_string(SqliteQueryBuilder)
+                .as_str(),
+        )?
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
+        .map(|row| row.map_err(anyhow::Error::from))
+        .map(|row| {
+            row.and_then(|(id, name)| {
+                Ok(NoteSummary {
+                    id,
+                    name,
+                    tags: Note::fetch_tags(id, db)?,
+                })
+            })
+        })
+        .collect()
+    }
+
+    pub fn get_notes(&self, db: &Connection) -> Result<Vec<NoteSummary>> {
+        Tag::fetch_notes(self.id, db)
     }
 }

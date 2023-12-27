@@ -17,7 +17,10 @@ use ratatui::{
 
 use crate::{notebook::Notebook, tags::Tag};
 
-use super::{tag_creating::TagsCreatingStateData, tag_deleting::TagsDeletingStateData, State};
+use super::{
+    tag_creating::TagsCreatingStateData, tag_deleting::TagsDeletingStateData,
+    tag_notes_listing::TagNotesListingStateData, State,
+};
 
 #[derive(Debug)]
 pub struct TagsManagingStateData {
@@ -47,6 +50,28 @@ pub fn run_tags_managing_state(
                 ..state_data
             })
         }
+        KeyCode::Char('c') if !state_data.pattern_editing => {
+            State::TagCreating(TagsCreatingStateData {
+                tags_search: state_data,
+                name: String::new(),
+                valid: false,
+            })
+        }
+        KeyCode::Char('d') if !state_data.pattern_editing && !state_data.tags.is_empty() => {
+            State::TagDeleting(TagsDeletingStateData {
+                delete: false,
+                tags_managing: state_data,
+            })
+        }
+        KeyCode::Enter if !state_data.tags.is_empty() => {
+            let tag = state_data.tags.swap_remove(state_data.selected);
+
+            State::TagNotesListing(TagNotesListingStateData {
+                notes: tag.get_notes(notebook.db())?,
+                selected: 0,
+                tag,
+            })
+        }
         KeyCode::Tab => State::TagsManaging(TagsManagingStateData {
             pattern_editing: !state_data.pattern_editing,
             ..state_data
@@ -67,19 +92,6 @@ pub fn run_tags_managing_state(
                 tags: Tag::search_by_name(state_data.pattern.as_str(), notebook.db())?,
                 pattern: state_data.pattern,
                 ..state_data
-            })
-        }
-        KeyCode::Char('c') if !state_data.pattern_editing => {
-            State::TagCreating(TagsCreatingStateData {
-                tags_search: state_data,
-                name: String::new(),
-                valid: false,
-            })
-        }
-        KeyCode::Char('d') if !state_data.pattern_editing && !state_data.tags.is_empty() => {
-            State::TagDeleting(TagsDeletingStateData {
-                delete: false,
-                tags_managing: state_data,
             })
         }
         _ => State::TagsManaging(state_data),

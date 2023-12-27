@@ -9,6 +9,7 @@ mod notes_managing;
 mod nothing;
 mod tag_creating;
 mod tag_deleting;
+mod tag_notes_listing;
 mod tags_managing;
 
 use std::io::Stdout;
@@ -59,6 +60,9 @@ use crate::states::note_tag_deleting::{
 use crate::states::note_tags_managing::{
     draw_note_tags_managing_state, run_note_tags_managing_state,
 };
+use crate::states::tag_notes_listing::{run_tag_notes_listing_state, TagNotesListingStateData};
+
+use self::tag_notes_listing::draw_tag_notes_listing_state;
 
 #[derive(Debug)]
 pub enum State {
@@ -75,6 +79,7 @@ pub enum State {
     TagsManaging(TagsManagingStateData),
     TagCreating(TagsCreatingStateData),
     TagDeleting(TagsDeletingStateData),
+    TagNotesListing(TagNotesListingStateData),
 }
 
 impl State {
@@ -99,6 +104,7 @@ impl State {
             State::TagsManaging(data) => run_tags_managing_state(data, key_code, notebook),
             State::TagCreating(data) => run_tag_creating_state(data, key_code, notebook),
             State::TagDeleting(data) => run_tag_deleting_state(data, key_code, notebook),
+            State::TagNotesListing(data) => run_tag_notes_listing_state(data, key_code, notebook),
             State::Exit => unreachable!(),
         }
     }
@@ -134,6 +140,9 @@ impl State {
             State::TagsManaging(data) => draw_tags_managing_state(data, terminal, main_frame),
             State::TagCreating(data) => draw_tag_creating_state(data, terminal, main_frame),
             State::TagDeleting(data) => draw_tag_deleting_state(data, terminal, main_frame),
+            State::TagNotesListing(data) => {
+                draw_tag_notes_listing_state(data, terminal, main_frame)
+            }
             State::Exit => unreachable!(),
         }
     }
