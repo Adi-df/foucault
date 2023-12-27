@@ -1,20 +1,18 @@
-use std::io::Stdout;
-
 use anyhow::Result;
 
 use crossterm::event::KeyCode;
-use ratatui::prelude::{Constraint, CrosstermBackend, Direction, Layout, Rect};
+use ratatui::prelude::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, List, ListState, Padding, Paragraph};
-use ratatui::{Frame, Terminal};
+use ratatui::Frame;
 
 use crate::note::{Note, NoteData};
 use crate::notebook::Notebook;
 use crate::states::note_tag_adding::NoteTagAddingStateData;
 use crate::states::note_tag_deleting::NoteTagDeletingStateData;
 use crate::states::note_viewing::NoteViewingStateData;
-use crate::states::State;
+use crate::states::{State, Terminal};
 use crate::tag::Tag;
 
 #[derive(Debug)]
@@ -84,7 +82,7 @@ pub fn run_note_tags_managing_state(
 
 pub fn draw_note_tags_managing_state(
     data: &NoteTagsManagingStateData,
-    terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+    terminal: &mut Terminal,
     main_frame: Block,
 ) -> Result<()> {
     terminal

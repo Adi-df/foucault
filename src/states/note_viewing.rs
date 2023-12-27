@@ -1,4 +1,4 @@
-use std::io::{stdout, Stdout};
+use std::io::stdout;
 use std::process::Command;
 use std::{env, fs};
 
@@ -9,14 +9,14 @@ use scopeguard::defer;
 use crossterm::event::KeyCode;
 use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
 use crossterm::ExecutableCommand;
-use ratatui::prelude::{Alignment, Constraint, CrosstermBackend, Direction, Layout, Margin, Rect};
+use ratatui::prelude::{Alignment, Constraint, Direction, Layout, Margin, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::Text;
 use ratatui::widgets::{
     Block, BorderType, Borders, Padding, Paragraph, Row, Scrollbar, ScrollbarOrientation,
     ScrollbarState, Table,
 };
-use ratatui::{Frame, Terminal};
+use ratatui::Frame;
 
 use crate::markdown::{lines, parse, render};
 use crate::note::{Note, NoteData};
@@ -25,7 +25,7 @@ use crate::states::note_deleting::NoteDeletingStateData;
 use crate::states::note_renaming::NoteRenamingStateData;
 use crate::states::note_tags_managing::NoteTagsManagingStateData;
 use crate::states::notes_managing::NotesManagingStateData;
-use crate::states::State;
+use crate::states::{State, Terminal};
 
 #[derive(Debug)]
 pub struct NoteViewingStateData {
@@ -130,7 +130,7 @@ fn edit_note(note: &mut Note, notebook: &Notebook) -> Result<()> {
 
 pub fn draw_note_viewing_state(
     state_data: &NoteViewingStateData,
-    terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+    terminal: &mut Terminal,
     main_frame: Block,
 ) -> Result<()> {
     terminal

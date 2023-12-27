@@ -20,7 +20,7 @@ use crossterm::event::KeyCode;
 use ratatui::prelude::CrosstermBackend;
 use ratatui::style::{Color, Style};
 use ratatui::widgets::{Block, BorderType, Borders, Padding};
-use ratatui::Terminal;
+use ratatui::Terminal as UITerminal;
 
 use crate::notebook::Notebook;
 
@@ -63,6 +63,8 @@ use crate::states::note_tags_managing::{
 use crate::states::tag_notes_listing::{
     draw_tag_notes_listing_state, run_tag_notes_listing_state, TagNotesListingStateData,
 };
+
+pub type Terminal = UITerminal<CrosstermBackend<Stdout>>;
 
 #[derive(Debug)]
 pub enum State {
@@ -109,11 +111,7 @@ impl State {
         }
     }
 
-    pub fn draw(
-        &self,
-        notebook: &Notebook,
-        terminal: &mut Terminal<CrosstermBackend<Stdout>>,
-    ) -> Result<()> {
+    pub fn draw(&self, notebook: &Notebook, terminal: &mut Terminal) -> Result<()> {
         let main_frame = Block::default()
             .title(notebook.name.as_str())
             .padding(Padding::uniform(1))

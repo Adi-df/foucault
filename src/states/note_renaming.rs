@@ -1,17 +1,13 @@
-use std::io::Stdout;
-
 use anyhow::Result;
 use log::info;
 
 use crossterm::event::KeyCode;
-use ratatui::prelude::CrosstermBackend;
 use ratatui::widgets::Block;
-use ratatui::Terminal;
 
 use crate::helpers::draw_text_prompt;
 use crate::notebook::Notebook;
 use crate::states::note_viewing::{draw_viewed_note, NoteViewingStateData};
-use crate::states::State;
+use crate::states::{State, Terminal};
 
 #[derive(Debug)]
 pub struct NoteRenamingStateData {
@@ -68,7 +64,7 @@ pub fn draw_note_renaming_state(
         viewing_data,
         new_name,
     }: &NoteRenamingStateData,
-    terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+    terminal: &mut Terminal,
     main_frame: Block,
 ) -> Result<()> {
     terminal

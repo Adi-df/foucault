@@ -1,16 +1,12 @@
-use std::io::Stdout;
-
 use anyhow::Result;
 
 use crossterm::event::KeyCode;
-use ratatui::prelude::CrosstermBackend;
 use ratatui::widgets::Block;
-use ratatui::Terminal;
 
 use crate::helpers::draw_yes_no_prompt;
 use crate::notebook::Notebook;
 use crate::states::note_tags_managing::{draw_note_tags_managing, NoteTagsManagingStateData};
-use crate::states::State;
+use crate::states::{State, Terminal};
 
 #[derive(Debug)]
 pub struct NoteTagDeletingStateData {
@@ -79,7 +75,7 @@ pub fn draw_note_tag_deleting_state_data(
         tags_managing,
         delete,
     }: &NoteTagDeletingStateData,
-    terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+    terminal: &mut Terminal,
     main_frame: Block,
 ) -> Result<()> {
     terminal

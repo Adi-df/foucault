@@ -1,16 +1,12 @@
-use std::io::Stdout;
-
 use anyhow::Result;
 
 use crossterm::event::KeyCode;
-use ratatui::prelude::CrosstermBackend;
 use ratatui::widgets::Block;
-use ratatui::Terminal;
 
 use crate::helpers::draw_text_prompt;
 use crate::notebook::Notebook;
 use crate::states::note_tags_managing::{draw_note_tags_managing, NoteTagsManagingStateData};
-use crate::states::State;
+use crate::states::{State, Terminal};
 use crate::tag::Tag;
 
 #[derive(Debug)]
@@ -103,7 +99,7 @@ pub fn draw_note_tag_adding_state_data(
         tag_name,
         valid,
     }: &NoteTagAddingStateData,
-    terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+    terminal: &mut Terminal,
     main_frame: Block,
 ) -> Result<()> {
     terminal

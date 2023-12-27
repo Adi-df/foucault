@@ -1,17 +1,13 @@
-use std::io::Stdout;
-
 use anyhow::Result;
 
 use crossterm::event::KeyCode;
 use log::info;
-use ratatui::prelude::CrosstermBackend;
 use ratatui::widgets::Block;
-use ratatui::Terminal;
 
 use crate::helpers::draw_yes_no_prompt;
 use crate::notebook::Notebook;
 use crate::states::note_viewing::{draw_viewed_note, NoteViewingStateData};
-use crate::states::State;
+use crate::states::{State, Terminal};
 
 #[derive(Debug)]
 pub struct NoteDeletingStateData {
@@ -56,7 +52,7 @@ pub fn draw_note_deleting_state(
         viewing_data,
         delete,
     }: &NoteDeletingStateData,
-    terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+    terminal: &mut Terminal,
     main_frame: Block,
 ) -> Result<()> {
     terminal

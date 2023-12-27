@@ -1,18 +1,14 @@
-use std::io::Stdout;
-
 use anyhow::Result;
 use log::info;
 
 use crossterm::event::KeyCode;
-use ratatui::prelude::CrosstermBackend;
 use ratatui::widgets::Block;
-use ratatui::Terminal;
 
 use crate::helpers::draw_text_prompt;
 use crate::note::{Note, NoteData};
 use crate::notebook::Notebook;
 use crate::states::note_viewing::NoteViewingStateData;
-use crate::states::State;
+use crate::states::{State, Terminal};
 
 #[derive(Debug)]
 pub struct NoteCreatingStateData {
@@ -57,7 +53,7 @@ pub fn run_note_creating_state(
 
 pub fn draw_note_creating_state(
     NoteCreatingStateData { name }: &NoteCreatingStateData,
-    terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+    terminal: &mut Terminal,
     main_frame: Block,
 ) -> Result<()> {
     terminal.draw(|frame| {

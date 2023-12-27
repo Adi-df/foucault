@@ -1,16 +1,12 @@
-use std::io::Stdout;
-
 use anyhow::Result;
 
 use crossterm::event::KeyCode;
-use ratatui::prelude::CrosstermBackend;
 use ratatui::widgets::Block;
-use ratatui::Terminal;
 
 use crate::helpers::draw_yes_no_prompt;
 use crate::notebook::Notebook;
 use crate::states::tags_managing::{draw_tags_managing, TagsManagingStateData};
-use crate::states::State;
+use crate::states::{State, Terminal};
 use crate::tag::Tag;
 
 #[derive(Debug)]
@@ -54,7 +50,7 @@ pub fn draw_tag_deleting_state(
         tags_managing,
         delete,
     }: &TagsDeletingStateData,
-    terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+    terminal: &mut Terminal,
     main_frame: Block,
 ) -> Result<()> {
     let Tag { name, .. } = &tags_managing.tags[tags_managing.selected];

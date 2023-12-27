@@ -1,14 +1,11 @@
-use std::io::Stdout;
-
 use anyhow::Result;
 use log::info;
 
 use crossterm::event::KeyCode;
-use ratatui::prelude::{Alignment, CrosstermBackend};
+use ratatui::prelude::Alignment;
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph};
-use ratatui::Terminal;
 
 use crate::helpers::{create_popup_proportion, Capitalize};
 use crate::note::Note;
@@ -16,7 +13,7 @@ use crate::notebook::Notebook;
 use crate::states::note_creating::NoteCreatingStateData;
 use crate::states::notes_managing::NotesManagingStateData;
 use crate::states::tags_managing::TagsManagingStateData;
-use crate::states::State;
+use crate::states::{State, Terminal};
 use crate::tag::Tag;
 
 pub fn run_nothing_state(key_code: KeyCode, notebook: &Notebook) -> Result<State> {
@@ -53,7 +50,7 @@ pub fn run_nothing_state(key_code: KeyCode, notebook: &Notebook) -> Result<State
 }
 
 pub fn draw_nothing_state(
-    terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+    terminal: &mut Terminal,
     notebook: &Notebook,
     main_frame: Block,
 ) -> Result<()> {
