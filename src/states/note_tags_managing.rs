@@ -16,6 +16,8 @@ use crate::states::note_viewing::NoteViewingStateData;
 use crate::states::{State, Terminal};
 use crate::tag::Tag;
 
+use super::tag_notes_listing::TagNotesListingStateData;
+
 #[derive(Debug)]
 pub struct NoteTagsManagingStateData {
     pub selected: usize,
@@ -34,7 +36,7 @@ impl TryFromDatabase<Note> for NoteTagsManagingStateData {
 }
 
 pub fn run_note_tags_managing_state(
-    state_data: NoteTagsManagingStateData,
+    mut state_data: NoteTagsManagingStateData,
     key_code: KeyCode,
     notebook: &Notebook,
 ) -> Result<State> {
@@ -47,6 +49,12 @@ pub fn run_note_tags_managing_state(
             State::NoteTagDeleting(NoteTagDeletingStateData::empty(state_data))
         }
         KeyCode::Char('a') => State::NoteTagAdding(NoteTagAddingStateData::empty(state_data)),
+        KeyCode::Enter if !state_data.tags.is_empty() => {
+            State::TagNotesListing(TagNotesListingStateData::try_from_database(
+                state_data.tags.swap_remove(state_data.selected),
+                notebook.db(),
+            )?)
+        }
         KeyCode::Up if state_data.selected > 0 => {
             State::NoteTagsManaging(NoteTagsManagingStateData {
                 selected: state_data.selected - 1,
