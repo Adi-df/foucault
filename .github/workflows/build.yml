@@ -1,0 +1,26 @@
+name: Build
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install cargo-make
+      uses: davidB/rust-cargo-make@v1
+    - name: Build artifacts
+      run: cargo make pack-all
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: Binaries
+        path: build/*
