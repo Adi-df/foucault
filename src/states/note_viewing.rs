@@ -20,7 +20,7 @@ use ratatui::widgets::{
 use ratatui::Frame;
 
 use crate::helpers::{DiscardResult, TryFromDatabase, TryIntoDatabase};
-use crate::markdown::elements::SelectableInlineElements;
+use crate::markdown::elements::{InlineElements, SelectableInlineElements};
 use crate::markdown::{combine, lines, parse, ParsedMarkdown};
 use crate::note::{Note, NoteData};
 use crate::notebook::Notebook;
@@ -103,6 +103,19 @@ pub fn run_note_viewing_state(
                 state_data.note_data.note,
                 notebook.db(),
             )?)
+        }
+        KeyCode::Enter => {
+            if let Some(element) = state_data.get_current() {
+                match <&InlineElements>::from(element) {
+                    InlineElements::HyperLink { dest, .. } => {
+                        opener::open(dest.as_str())?;
+                        State::NoteViewing(state_data)
+                    }
+                    _ => State::NoteViewing(state_data),
+                }
+            } else {
+                State::NoteViewing(state_data)
+            }
         }
         KeyCode::Up if state_data.selected.1 > 0 => {
             state_data.select_current(false);

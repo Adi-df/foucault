@@ -229,6 +229,12 @@ impl From<InlineElements> for SelectableInlineElements {
     }
 }
 
+impl<'a> From<&'a SelectableInlineElements> for &'a InlineElements {
+    fn from(selectable_element: &'a SelectableInlineElements) -> Self {
+        &selectable_element.element
+    }
+}
+
 impl InlineElement for SelectableInlineElements {
     fn parse_node(node: &mdast::Node) -> Vec<Self> {
         InlineElements::parse_node(node)
