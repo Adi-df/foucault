@@ -623,7 +623,6 @@ dependencies = [
  "hashlink",
  "libsqlite3-sys",
  "smallvec",
- "uuid",
 ]
 
 [[package]]
@@ -659,7 +658,6 @@ checksum = "e40446e3c048cec0802375f52462a05cc774b9ea6af1dffba6c646b7825e4cf9"
 dependencies = [
  "inherent",
  "sea-query-derive",
- "uuid",
 ]
 
 [[package]]
@@ -882,12 +880,6 @@ name = "utf8parse"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "711b9620af191e0cdc7468a8d14e709c3dcdb115b36f838e601583af800a370a"
-
-[[package]]
-name = "uuid"
-version = "1.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e395fcf16a7a3d8127ec99782007af141946b4795001f876d54fb0d55978560"
 
 [[package]]
 name = "vcpkg"

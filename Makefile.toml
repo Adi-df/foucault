@@ -1,0 +1,10 @@
+[tasks.build-linux]
+command = "cross"
+args = ["build", "--target=x86_64-unknown-linux-gnu", "--release"]
+
+[tasks.build-pc]
+command = "cross"
+args = ["build", "--target=x86_64-pc-windows-gnu", "--release"]
+
+[tasks.build-all]
+dependencies = ["build-linux", "build-pc"]
