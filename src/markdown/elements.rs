@@ -116,7 +116,7 @@ impl RenderedBlock {
         Paragraph::new(self.content).wrap(Wrap { trim: true })
     }
 
-    fn into_text(&self) -> String {
+    fn inner_text(&self) -> String {
         self.content
             .iter()
             .map(|line| {
@@ -135,7 +135,7 @@ impl RenderedBlock {
             with paragraph scrolling.
             PS: I know, it's a terrible and buggy workaround...
         */
-        textwrap::wrap(self.into_text().as_str(), max_len).len()
+        textwrap::wrap(self.inner_text().as_str(), max_len).len()
     }
 }
 

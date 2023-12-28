@@ -20,7 +20,6 @@ use ratatui::widgets::{
 use ratatui::Frame;
 
 use crate::helpers::{DiscardResult, TryFromDatabase, TryIntoDatabase};
-use crate::markdown::elements::BlockElement;
 use crate::markdown::{combine, lines, parse, ParsedMarkdown};
 use crate::note::{Note, NoteData};
 use crate::notebook::Notebook;
@@ -39,7 +38,7 @@ pub struct NoteViewingStateData {
 impl TryFromDatabase<Note> for NoteViewingStateData {
     fn try_from_database(note: Note, db: &Connection) -> Result<Self> {
         let mut parsed_content = parse(note.content.as_str());
-        parsed_content.get_mut(0).map(|line| line.select(0, true));
+        parsed_content.select((0, 0), true);
 
         Ok(NoteViewingStateData {
             note_data: note.try_into_database(db)?,
@@ -53,10 +52,8 @@ impl NoteViewingStateData {
     fn parse_content(&mut self) {
         self.parsed_content = parse(self.note_data.note.content.as_str());
     }
-    fn select_content(&mut self, selected: bool) {
-        self.parsed_content
-            .get_mut(self.selected.1)
-            .map(|line| line.select(self.selected.0, selected));
+    fn select_current(&mut self, selected: bool) {
+        self.parsed_content.select(self.selected, selected);
     }
 }
 
@@ -80,7 +77,7 @@ pub fn run_note_viewing_state(
             edit_note(&mut state_data.note_data.note, notebook)?;
             state_data.parse_content();
             state_data.selected = (0, 0);
-            state_data.select_content(true);
+            state_data.select_current(true);
             *force_redraw = true;
             State::NoteViewing(state_data)
         }
@@ -104,44 +101,48 @@ pub fn run_note_viewing_state(
             )?)
         }
         KeyCode::Up if state_data.selected.1 > 0 => {
-            state_data.select_content(false);
+            state_data.select_current(false);
             state_data.selected.1 -= 1;
             state_data.selected.0 = state_data.selected.0.min(
-                state_data.parsed_content[state_data.selected.1]
-                    .len()
+                state_data
+                    .parsed_content
+                    .block_length(state_data.selected.1)
                     .saturating_sub(1),
             );
-            state_data.select_content(true);
+            state_data.select_current(true);
             State::NoteViewing(state_data)
         }
         KeyCode::Down
-            if state_data.selected.1 < state_data.parsed_content.len().saturating_sub(1) =>
+            if state_data.selected.1
+                < state_data.parsed_content.block_count().saturating_sub(1) =>
         {
-            state_data.select_content(false);
+            state_data.select_current(false);
             state_data.selected.1 += 1;
             state_data.selected.0 = state_data.selected.0.min(
-                state_data.parsed_content[state_data.selected.1]
-                    .len()
+                state_data
+                    .parsed_content
+                    .block_length(state_data.selected.1)
                     .saturating_sub(1),
             );
-            state_data.select_content(true);
+            state_data.select_current(true);
             State::NoteViewing(state_data)
         }
         KeyCode::Left if state_data.selected.0 > 0 => {
-            state_data.select_content(false);
+            state_data.select_current(false);
             state_data.selected.0 -= 1;
-            state_data.select_content(true);
+            state_data.select_current(true);
             State::NoteViewing(state_data)
         }
         KeyCode::Right
             if state_data.selected.0
-                < state_data.parsed_content[state_data.selected.1]
-                    .len()
+                < state_data
+                    .parsed_content
+                    .block_length(state_data.selected.1)
                     .saturating_sub(1) =>
         {
-            state_data.select_content(false);
+            state_data.select_current(false);
             state_data.selected.0 += 1;
-            state_data.select_content(true);
+            state_data.select_current(true);
             State::NoteViewing(state_data)
         }
         _ => State::NoteViewing(state_data),
@@ -255,10 +256,7 @@ pub fn draw_viewed_note(
         .padding(Padding::uniform(1));
 
     let content_area = content_block.inner(vertical_layout[1]);
-    let rendered_content = parsed_content
-        .into_iter()
-        .map(BlockElement::render_lines)
-        .collect::<Vec<_>>();
+    let rendered_content = parsed_content.render_blocks();
     let scroll = lines(&rendered_content[..selected.1], content_area.width);
 
     let note_content = combine(&rendered_content)
@@ -277,7 +275,7 @@ pub fn draw_viewed_note(
         content_scrollbar,
         vertical_layout[1].inner(&Margin::new(0, 1)),
         &mut ScrollbarState::default()
-            .content_length(parsed_content.len().saturating_sub(1))
+            .content_length(parsed_content.block_count().saturating_sub(1))
             .viewport_content_length(1)
             .position(selected.1),
     );

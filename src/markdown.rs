@@ -52,10 +52,39 @@ const RICH_TEXT_COLOR: [Color; 6] = [
     Color::Yellow,    // Blockquote
 ];
 
-pub type ParsedMarkdown = Vec<BlockElements<SelectableInlineElements>>;
+pub struct ParsedMarkdown {
+    parsed_content: Vec<BlockElements<SelectableInlineElements>>,
+}
+
+impl ParsedMarkdown {
+    pub fn select(&mut self, el: (usize, usize), selected: bool) {
+        if let Some(block) = self.parsed_content.get_mut(el.1) {
+            block.select(el.0, selected);
+        }
+    }
+
+    pub fn render_blocks(&self) -> Vec<RenderedBlock> {
+        self.parsed_content
+            .iter()
+            .map(BlockElement::render_lines)
+            .collect()
+    }
+
+    pub fn block_count(&self) -> usize {
+        self.parsed_content.len()
+    }
+
+    pub fn block_length(&self, block: usize) -> usize {
+        self.parsed_content[block].len()
+    }
+}
 
 pub fn parse(content: &str) -> ParsedMarkdown {
-    BlockElements::parse_node(&to_mdast(content, &ParseOptions::default()).unwrap())
+    ParsedMarkdown {
+        parsed_content: BlockElements::parse_node(
+            &to_mdast(content, &ParseOptions::default()).unwrap(),
+        ),
+    }
 }
 
 pub fn lines(blocks: &[RenderedBlock], max_len: u16) -> usize {
