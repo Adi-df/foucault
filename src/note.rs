@@ -82,6 +82,28 @@ impl Note {
         .map(|res| res.map(|[name, content]| Note { id, name, content }))
     }
 
+    pub fn load_by_name(name: &str, db: &Connection) -> Result<Option<Self>> {
+        db.query_row(
+            Query::select()
+                .from(NotesTable)
+                .columns([NotesCharacters::Id, NotesCharacters::Content])
+                .and_where(Expr::col(NotesCharacters::Name).eq(name))
+                .to_string(SqliteQueryBuilder)
+                .as_str(),
+            [],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .optional()
+        .map_err(anyhow::Error::from)
+        .map(|res| {
+            res.map(|(id, content)| Note {
+                id,
+                name: name.to_string(),
+                content,
+            })
+        })
+    }
+
     pub fn update(&self, db: &Connection) -> Result<()> {
         db.execute_batch(
             Query::update()

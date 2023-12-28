@@ -111,6 +111,16 @@ pub fn run_note_viewing_state(
                         opener::open(dest.as_str())?;
                         State::NoteViewing(state_data)
                     }
+                    InlineElements::CrossRef { dest, .. } => {
+                        if let Some(note) = Note::load_by_name(dest.as_str(), notebook.db())? {
+                            State::NoteViewing(NoteViewingStateData::try_from_database(
+                                note,
+                                notebook.db(),
+                            )?)
+                        } else {
+                            State::NoteViewing(state_data)
+                        }
+                    }
                     _ => State::NoteViewing(state_data),
                 }
             } else {
