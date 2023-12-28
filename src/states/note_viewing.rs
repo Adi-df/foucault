@@ -21,7 +21,7 @@ use ratatui::Frame;
 
 use crate::helpers::{DiscardResult, TryFromDatabase, TryIntoDatabase};
 use crate::markdown::elements::BlockElement;
-use crate::markdown::{lines, parse, render, ParsedMarkdown};
+use crate::markdown::{combine, lines, parse, ParsedMarkdown};
 use crate::note::{Note, NoteData};
 use crate::notebook::Notebook;
 use crate::states::note_deleting::NoteDeletingStateData;
@@ -255,9 +255,15 @@ pub fn draw_viewed_note(
         .padding(Padding::uniform(1));
 
     let content_area = content_block.inner(vertical_layout[1]);
-    let scroll = lines(&parsed_content[..selected.1], content_area.width);
+    let rendered_content = parsed_content
+        .into_iter()
+        .map(BlockElement::render_lines)
+        .collect::<Vec<_>>();
+    let scroll = lines(&rendered_content[..selected.1], content_area.width);
 
-    let note_content = render(parsed_content).scroll((scroll.try_into().unwrap(), 0));
+    let note_content = combine(&rendered_content)
+        .build_paragraph()
+        .scroll((scroll.try_into().unwrap(), 0));
 
     let content_scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
         .begin_symbol(Some("↑"))

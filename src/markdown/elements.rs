@@ -1,7 +1,10 @@
+use std::ops::Deref;
+
 use markdown::mdast;
 
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
+use ratatui::widgets::{Paragraph, Wrap};
 
 use crate::markdown::{
     BLOCKQUOTE, BLOCKQUOTE_ALIGNEMENT, CROSS_REF, HEADER_ALIGNEMENT, HEADER_COLOR, HEADER_MODIFIER,
@@ -53,11 +56,11 @@ pub trait InlineElement: Sized {
     fn parse_node(node: &mdast::Node) -> Vec<Self>;
     fn get_inner_span(&self) -> &Span<'static>;
     fn get_inner_span_mut(&mut self) -> &mut Span<'static>;
-    fn into_span(self) -> Span<'static> {
-        self.get_inner_span().clone()
-    }
     fn inner_text(&self) -> &str {
         self.get_inner_span().content.as_ref()
+    }
+    fn into_span(self) -> Span<'static> {
+        self.get_inner_span().clone()
     }
 
     fn patch_style(&mut self, style: Style) {
@@ -81,6 +84,74 @@ pub trait ChainInlineElement: InlineElement + Sized {
 }
 
 impl<T> ChainInlineElement for T where T: InlineElement + Sized {}
+
+pub trait BlockElement<T>: Sized
+where
+    T: InlineElement,
+{
+    fn parse_node(node: &mdast::Node) -> Vec<Self>;
+    fn content(self) -> Vec<T>;
+    fn get_content(&self) -> &[T];
+    fn get_content_mut(&mut self) -> &mut [T];
+    fn render_lines(&self) -> RenderedBlock;
+
+    fn len(&self) -> usize {
+        self.get_content().len()
+    }
+    fn inner_text(&self) -> String {
+        self.get_content()
+            .iter()
+            .map(|el| el.inner_text().to_string())
+            .collect()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct RenderedBlock {
+    content: Vec<Line<'static>>,
+}
+
+impl RenderedBlock {
+    pub fn build_paragraph(self) -> Paragraph<'static> {
+        Paragraph::new(self.content).wrap(Wrap { trim: true })
+    }
+
+    fn into_text(&self) -> String {
+        self.content
+            .iter()
+            .map(|line| {
+                line.spans
+                    .iter()
+                    .map(|span| span.content.to_string())
+                    .collect::<String>()
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+    pub fn line_number(&self, max_len: usize) -> usize {
+        /*
+            NOTE: Line count is currently approximated by textwrap
+            as Ratatui wrapping system is pretty much incompatible
+            with paragraph scrolling.
+            PS: I know, it's a terrible and buggy workaround...
+        */
+        textwrap::wrap(self.into_text().as_str(), max_len).len()
+    }
+}
+
+impl From<Vec<Line<'static>>> for RenderedBlock {
+    fn from(content: Vec<Line<'static>>) -> Self {
+        Self { content }
+    }
+}
+
+impl Deref for RenderedBlock {
+    type Target = [Line<'static>];
+
+    fn deref(&self) -> &Self::Target {
+        self.content.as_slice()
+    }
+}
 
 #[derive(Debug, Clone)]
 pub enum InlineElements {
@@ -179,48 +250,6 @@ impl InlineElement for SelectableInlineElements {
     }
 }
 
-pub trait BlockElement<T>: Sized
-where
-    T: InlineElement,
-{
-    fn parse_node(node: &mdast::Node) -> Vec<Self>;
-    fn content(self) -> Vec<T>;
-    fn get_content(&self) -> &[T];
-    fn get_content_mut(&mut self) -> &mut [T];
-    fn build_lines(&self) -> Vec<Line<'static>>;
-
-    fn len(&self) -> usize {
-        self.get_content().len()
-    }
-    fn inner_text(&self) -> String {
-        self.get_content()
-            .iter()
-            .map(|el| el.inner_text().to_string())
-            .collect()
-    }
-    fn into_text(&self) -> String {
-        self.build_lines()
-            .into_iter()
-            .map(|line| {
-                line.spans
-                    .into_iter()
-                    .map(|span| span.content.to_string())
-                    .collect::<String>()
-            })
-            .collect::<Vec<_>>()
-            .join("\n")
-    }
-    fn line_number(&self, max_len: usize) -> usize {
-        /*
-            NOTE: Line count is currently approximated by textwrap
-            as Ratatui wrapping system is pretty much incompatible
-            with paragraph scrolling.
-            PS: I know, it's a terrible and buggy workaround...
-        */
-        textwrap::wrap(self.into_text().as_str(), max_len).len()
-    }
-}
-
 pub enum BlockElements<T>
 where
     T: InlineElement,
@@ -315,7 +344,7 @@ where
         }
     }
 
-    fn build_lines(&self) -> Vec<Line<'static>> {
+    fn render_lines(&self) -> RenderedBlock {
         match self {
             Self::Paragraph { content } => {
                 vec![
@@ -356,6 +385,15 @@ where
                     .chain(content.iter().cloned().map(InlineElement::into_span))
                     .collect::<Vec<_>>(),
             )],
+        }
+        .into()
+    }
+}
+
+impl BlockElements<SelectableInlineElements> {
+    pub fn select(&mut self, el: usize, selected: bool) {
+        if let Some(el) = self.get_content_mut().get_mut(el) {
+            el.selected = selected;
         }
     }
 }
@@ -408,12 +446,4 @@ fn parse_cross_links(text: &str) -> Vec<InlineElements> {
     }
 
     spans
-}
-
-impl BlockElements<SelectableInlineElements> {
-    pub fn select(&mut self, el: usize, selected: bool) {
-        if let Some(el) = self.get_content_mut().get_mut(el) {
-            el.selected = selected;
-        }
-    }
 }
