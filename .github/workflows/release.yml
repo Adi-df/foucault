@@ -1,6 +1,12 @@
 name: Prepare release
 on:
-  workflow_dispatch
+  workflow_dispatch:
+  push:
+    tags:
+      - '*'
+
+permissions:
+  contents: write
 
 env:
   CARGO_TERM_COLOR: always
@@ -63,6 +69,7 @@ jobs:
       - name: Prepare release
         uses: softprops/action-gh-release@v1
         with:
+          draft: true
           files: |
             x86_64-unknown-linux-gnu
             x86_64-pc-windows-mscv.exe
