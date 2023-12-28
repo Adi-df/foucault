@@ -104,6 +104,19 @@ impl Note {
         })
     }
 
+    pub fn note_exists(name: &str, db: &Connection) -> Result<bool> {
+        db.prepare(
+            Query::select()
+                .from(NotesTable)
+                .column(NotesCharacters::Id)
+                .and_where(Expr::col(NotesCharacters::Name).eq(name))
+                .to_string(SqliteQueryBuilder)
+                .as_str(),
+        )?
+        .exists([])
+        .map_err(anyhow::Error::from)
+    }
+
     pub fn update(&self, db: &Connection) -> Result<()> {
         db.execute_batch(
             Query::update()

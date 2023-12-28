@@ -96,7 +96,12 @@ impl Notebook {
                         .primary_key()
                         .auto_increment(),
                 )
-                .col(ColumnDef::new(NotesCharacters::Name).string().not_null())
+                .col(
+                    ColumnDef::new(NotesCharacters::Name)
+                        .string()
+                        .unique_key()
+                        .not_null(),
+                )
                 .col(ColumnDef::new(NotesCharacters::Content).text())
                 .build(SqliteQueryBuilder)
                 .as_str(),
@@ -112,7 +117,12 @@ impl Notebook {
                         .primary_key()
                         .auto_increment(),
                 )
-                .col(ColumnDef::new(TagsCharacters::Name).string().not_null())
+                .col(
+                    ColumnDef::new(TagsCharacters::Name)
+                        .string()
+                        .unique_key()
+                        .not_null(),
+                )
                 .build(SqliteQueryBuilder)
                 .as_str(),
         )?;
