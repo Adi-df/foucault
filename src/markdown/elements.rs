@@ -1,6 +1,6 @@
 use markdown::mdast;
 
-use ratatui::style::{Modifier, Style, Stylize};
+use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
 
 use crate::markdown::{
@@ -216,6 +216,7 @@ where
     Paragraph { content: Vec<T> },
     Heading { content: Vec<T>, level: u8 },
     BlockQuote { content: Vec<T> },
+    ListItem { content: Vec<T> },
 }
 
 impl<T> BlockElement<T> for BlockElements<T>
@@ -244,6 +245,25 @@ where
             mdast::Node::Paragraph(paragraph) => vec![Self::Paragraph {
                 content: paragraph.children.iter().flat_map(T::parse_node).collect(),
             }],
+            mdast::Node::List(list) => list
+                .children
+                .iter()
+                .filter_map(|el| {
+                    if let mdast::Node::ListItem(item) = el {
+                        Some(item)
+                    } else {
+                        None
+                    }
+                })
+                .map(|item| Self::ListItem {
+                    content: item
+                        .children
+                        .iter()
+                        .flat_map(BlockElements::parse_node)
+                        .flat_map(BlockElements::content)
+                        .collect(),
+                })
+                .collect(),
             _ => Vec::new(),
         }
     }
@@ -252,7 +272,8 @@ where
         match self {
             Self::Paragraph { content }
             | Self::Heading { content, .. }
-            | Self::BlockQuote { content } => content,
+            | Self::BlockQuote { content }
+            | Self::ListItem { content } => content,
         }
     }
 
@@ -260,7 +281,8 @@ where
         match self {
             Self::Paragraph { content }
             | Self::Heading { content, .. }
-            | Self::BlockQuote { content } => content,
+            | Self::BlockQuote { content }
+            | Self::ListItem { content } => content,
         }
     }
 
@@ -268,7 +290,8 @@ where
         match self {
             Self::Paragraph { content }
             | Self::Heading { content, .. }
-            | Self::BlockQuote { content } => content,
+            | Self::BlockQuote { content }
+            | Self::ListItem { content } => content,
         }
     }
 
@@ -292,7 +315,7 @@ where
                     .cloned()
                     .map(|el| ChainInlineElement::patch_style(el, HEADING_STYLE[*level as usize]))
                     .map(InlineElement::into_span)
-                    .collect::<Vec<Span<'static>>>(),
+                    .collect::<Vec<_>>(),
             )
             .alignment(HEADER_ALIGNEMENT[*level as usize])],
             BlockElements::BlockQuote { content } => vec![
@@ -302,11 +325,17 @@ where
                         .cloned()
                         .map(|el| ChainInlineElement::patch_style(el, BLOCKQUOTE_STYLE))
                         .map(InlineElement::into_span)
-                        .collect::<Vec<Span<'static>>>(),
+                        .collect::<Vec<_>>(),
                 )
                 .alignment(BLOCKQUOTE_ALIGNEMENT),
                 Line::default(),
             ],
+            BlockElements::ListItem { content } => vec![Line::from(
+                [Span::raw("  - ").style(Style::default().fg(Color::Blue))]
+                    .into_iter()
+                    .chain(content.iter().cloned().map(InlineElement::into_span))
+                    .collect::<Vec<_>>(),
+            )],
         }
     }
 }
