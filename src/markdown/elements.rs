@@ -214,6 +214,12 @@ pub struct SelectableInlineElements {
     selected: bool,
 }
 
+impl SelectableInlineElements {
+    pub fn select(&mut self, selected: bool) {
+        self.selected = selected;
+    }
+}
+
 impl From<InlineElements> for SelectableInlineElements {
     fn from(element: InlineElements) -> Self {
         Self {
@@ -387,14 +393,6 @@ where
             )],
         }
         .into()
-    }
-}
-
-impl BlockElements<SelectableInlineElements> {
-    pub fn select(&mut self, el: usize, selected: bool) {
-        if let Some(el) = self.get_content_mut().get_mut(el) {
-            el.selected = selected;
-        }
     }
 }
 

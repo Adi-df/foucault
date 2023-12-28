@@ -57,9 +57,19 @@ pub struct ParsedMarkdown {
 }
 
 impl ParsedMarkdown {
+    pub fn get_element(&self, el: (usize, usize)) -> Option<&SelectableInlineElements> {
+        if let Some(block) = &self.parsed_content.get(el.1) {
+            block.get_content().get(el.0)
+        } else {
+            None
+        }
+    }
+
     pub fn select(&mut self, el: (usize, usize), selected: bool) {
         if let Some(block) = self.parsed_content.get_mut(el.1) {
-            block.select(el.0, selected);
+            if let Some(element) = block.get_content_mut().get_mut(el.0) {
+                element.select(selected);
+            }
         }
     }
 

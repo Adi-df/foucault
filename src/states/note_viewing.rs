@@ -20,6 +20,7 @@ use ratatui::widgets::{
 use ratatui::Frame;
 
 use crate::helpers::{DiscardResult, TryFromDatabase, TryIntoDatabase};
+use crate::markdown::elements::SelectableInlineElements;
 use crate::markdown::{combine, lines, parse, ParsedMarkdown};
 use crate::note::{Note, NoteData};
 use crate::notebook::Notebook;
@@ -49,8 +50,11 @@ impl TryFromDatabase<Note> for NoteViewingStateData {
 }
 
 impl NoteViewingStateData {
-    fn parse_content(&mut self) {
+    fn re_parse_content(&mut self) {
         self.parsed_content = parse(self.note_data.note.content.as_str());
+    }
+    fn get_current(&self) -> Option<&SelectableInlineElements> {
+        self.parsed_content.get_element(self.selected)
     }
     fn select_current(&mut self, selected: bool) {
         self.parsed_content.select(self.selected, selected);
@@ -75,7 +79,7 @@ pub fn run_note_viewing_state(
         KeyCode::Char('e') => {
             info!("Edit note {}", state_data.note_data.note.name);
             edit_note(&mut state_data.note_data.note, notebook)?;
-            state_data.parse_content();
+            state_data.re_parse_content();
             state_data.selected = (0, 0);
             state_data.select_current(true);
             *force_redraw = true;
