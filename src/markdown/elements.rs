@@ -198,6 +198,18 @@ where
             .map(|el| el.inner_text().to_string())
             .collect()
     }
+    fn into_text(&self) -> String {
+        self.build_lines()
+            .into_iter()
+            .map(|line| {
+                line.spans
+                    .into_iter()
+                    .map(|span| span.content.to_string())
+                    .collect::<String>()
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
     fn line_number(&self, max_len: usize) -> usize {
         /*
             NOTE: Line count is currently approximated by textwrap
@@ -205,7 +217,7 @@ where
             with paragraph scrolling.
             PS: I know, it's a terrible and buggy workaround...
         */
-        textwrap::wrap(self.inner_text().as_str(), max_len).len()
+        textwrap::wrap(self.into_text().as_str(), max_len).len()
     }
 }
 
@@ -240,10 +252,18 @@ where
             }],
             mdast::Node::Heading(heading) => vec![Self::Heading {
                 level: heading.depth - 1,
-                content: heading.children.iter().flat_map(T::parse_node).collect(),
+                content: heading
+                    .children
+                    .iter()
+                    .flat_map(InlineElement::parse_node)
+                    .collect(),
             }],
             mdast::Node::Paragraph(paragraph) => vec![Self::Paragraph {
-                content: paragraph.children.iter().flat_map(T::parse_node).collect(),
+                content: paragraph
+                    .children
+                    .iter()
+                    .flat_map(InlineElement::parse_node)
+                    .collect(),
             }],
             mdast::Node::List(list) => list
                 .children
