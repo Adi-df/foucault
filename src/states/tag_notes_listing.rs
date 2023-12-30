@@ -43,7 +43,7 @@ pub fn run_tag_notes_listing_state(
         KeyCode::Esc => State::Nothing,
         KeyCode::Enter if !state_data.notes.is_empty() => {
             let summary = &state_data.notes[state_data.selected];
-            if let Some(note) = Note::load(summary.id, notebook.db())? {
+            if let Some(note) = Note::load_by_id(summary.id, notebook.db())? {
                 State::NoteViewing(NoteViewingStateData::try_from_database(
                     note,
                     notebook.db(),

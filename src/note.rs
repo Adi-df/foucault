@@ -66,7 +66,7 @@ impl Note {
         })
     }
 
-    pub fn load(id: i64, db: &Connection) -> Result<Option<Self>> {
+    pub fn load_by_id(id: i64, db: &Connection) -> Result<Option<Self>> {
         db.query_row(
             Query::select()
                 .from(NotesTable)
@@ -143,18 +143,6 @@ impl Note {
         .map_err(anyhow::Error::from)
     }
 
-    pub fn add_tag(&self, tag: &Tag, db: &Connection) -> Result<()> {
-        db.execute_batch(
-            Query::insert()
-                .into_table(TagsJoinTable)
-                .columns([TagsJoinCharacters::NoteId, TagsJoinCharacters::TagId])
-                .values([self.id.into(), tag.id.into()])?
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-        )
-        .map_err(anyhow::Error::from)
-    }
-
     pub fn fetch_tags(id: i64, db: &Connection) -> Result<Vec<Tag>> {
         db.prepare(
             Query::select()
@@ -181,6 +169,37 @@ impl Note {
         .collect()
     }
 
+    pub fn get_tags(&self, db: &Connection) -> Result<Vec<Tag>> {
+        Self::fetch_tags(self.id, db)
+    }
+
+    pub fn add_tag(&self, tag: &Tag, db: &Connection) -> Result<()> {
+        db.execute_batch(
+            Query::insert()
+                .into_table(TagsJoinTable)
+                .columns([TagsJoinCharacters::NoteId, TagsJoinCharacters::TagId])
+                .values([self.id.into(), tag.id.into()])?
+                .to_string(SqliteQueryBuilder)
+                .as_str(),
+        )
+        .map_err(anyhow::Error::from)
+    }
+
+    pub fn remove_tag(&self, id: i64, db: &Connection) -> Result<()> {
+        db.execute_batch(
+            Query::delete()
+                .from_table(TagsJoinTable)
+                .and_where(
+                    Expr::col(TagsJoinCharacters::TagId)
+                        .eq(id)
+                        .and(Expr::col(TagsJoinCharacters::NoteId).eq(self.id)),
+                )
+                .to_string(SqliteQueryBuilder)
+                .as_str(),
+        )
+        .map_err(anyhow::Error::from)
+    }
+
     pub fn fetch_links(id: i64, db: &Connection) -> Result<Vec<i64>> {
         db.prepare(
             Query::select()
@@ -195,23 +214,27 @@ impl Note {
         .collect()
     }
 
-    pub fn get_tags(&self, db: &Connection) -> Result<Vec<Tag>> {
-        Self::fetch_tags(self.id, db)
-    }
-
     pub fn get_links(&self, db: &Connection) -> Result<Vec<i64>> {
         Self::fetch_links(self.id, db)
     }
 
-    pub fn remove_tag(&self, id: i64, db: &Connection) -> Result<()> {
+    pub fn clear_links(&self, db: &Connection) -> Result<()> {
         db.execute_batch(
             Query::delete()
-                .from_table(TagsJoinTable)
-                .and_where(
-                    Expr::col(TagsJoinCharacters::TagId)
-                        .eq(id)
-                        .and(Expr::col(TagsJoinCharacters::NoteId).eq(self.id)),
-                )
+                .from_table(LinksTable)
+                .and_where(Expr::col(LinksCharacters::Left).eq(self.id))
+                .to_string(SqliteQueryBuilder)
+                .as_str(),
+        )
+        .map_err(anyhow::Error::from)
+    }
+
+    pub fn add_link(&self, link: i64, db: &Connection) -> Result<()> {
+        db.execute_batch(
+            Query::insert()
+                .into_table(LinksTable)
+                .columns([LinksCharacters::Left, LinksCharacters::Right])
+                .values([self.id.into(), link.into()])?
                 .to_string(SqliteQueryBuilder)
                 .as_str(),
         )
@@ -251,17 +274,6 @@ impl Note {
         .collect()
     }
 
-    pub fn clear_links(&self, db: &Connection) -> Result<()> {
-        db.execute_batch(
-            Query::delete()
-                .from_table(LinksTable)
-                .and_where(Expr::col(LinksCharacters::Left).eq(self.id))
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-        )
-        .map_err(anyhow::Error::from)
-    }
-
     pub fn get_id_by_name(link: &str, db: &Connection) -> Result<Option<i64>> {
         db.query_row(
             Query::select()
@@ -276,23 +288,11 @@ impl Note {
         .optional()
         .map_err(anyhow::Error::from)
     }
-
-    pub fn add_link(&self, link: i64, db: &Connection) -> Result<()> {
-        db.execute_batch(
-            Query::insert()
-                .into_table(LinksTable)
-                .columns([LinksCharacters::Left, LinksCharacters::Right])
-                .values([self.id.into(), link.into()])?
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-        )
-        .map_err(anyhow::Error::from)
-    }
 }
 
 impl TryFromDatabase<NoteSummary> for Note {
     fn try_from_database(note_summary: NoteSummary, db: &Connection) -> Result<Self> {
-        if let Some(note) = Note::load(note_summary.id, db)? {
+        if let Some(note) = Note::load_by_id(note_summary.id, db)? {
             Ok(note)
         } else {
             Err(NoteError::NoteDoesNotExist.into())

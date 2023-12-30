@@ -50,7 +50,7 @@ pub fn run_note_managing_state(
         }
         KeyCode::Enter if !state_data.notes.is_empty() => {
             let note_summary = &state_data.notes[state_data.selected];
-            if let Some(note) = Note::load(note_summary.id, notebook.db())? {
+            if let Some(note) = Note::load_by_id(note_summary.id, notebook.db())? {
                 info!("Open note {}", note_summary.name);
 
                 State::NoteViewing(NoteViewingStateData::try_from_database(
