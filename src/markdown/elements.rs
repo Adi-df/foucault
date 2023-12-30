@@ -208,10 +208,19 @@ impl InlineElement for InlineElements {
     }
 }
 
+impl InlineElements {
+    pub fn link_dest(&self) -> Option<&str> {
+        match self {
+            Self::CrossRef { dest, .. } => Some(dest),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct SelectableInlineElements {
-    element: InlineElements,
-    selected: bool,
+    pub element: InlineElements,
+    pub selected: bool,
 }
 
 impl SelectableInlineElements {

@@ -39,6 +39,14 @@ pub struct NoteViewingStateData {
 impl TryFromDatabase<Note> for NoteViewingStateData {
     fn try_from_database(note: Note, db: &Connection) -> Result<Self> {
         let mut parsed_content = parse(note.content.as_str());
+        note.clear_links(db)?;
+        parsed_content
+            .list_links()
+            .into_iter()
+            .filter_map(|link| Note::get_id_by_name(link, db).transpose())
+            .map(|res| res.and_then(|link| note.add_link(link, db)))
+            .collect::<Result<()>>()?;
+
         parsed_content.select((0, 0), true);
 
         Ok(NoteViewingStateData {

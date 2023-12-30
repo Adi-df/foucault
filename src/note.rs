@@ -8,7 +8,7 @@ use rusqlite::{Connection, OptionalExtension};
 use sea_query::{Expr, Iden, JoinType, Order, Query, SqliteQueryBuilder};
 
 use crate::helpers::TryFromDatabase;
-use crate::links::LinksCharacters;
+use crate::links::{LinksCharacters, LinksTable};
 use crate::tag::{Tag, TagsCharacters, TagsJoinCharacters, TagsJoinTable, TagsTable};
 
 #[derive(Iden)]
@@ -249,6 +249,44 @@ impl Note {
             })
         })
         .collect()
+    }
+
+    pub fn clear_links(&self, db: &Connection) -> Result<()> {
+        db.execute_batch(
+            Query::delete()
+                .from_table(LinksTable)
+                .and_where(Expr::col(LinksCharacters::Left).eq(self.id))
+                .to_string(SqliteQueryBuilder)
+                .as_str(),
+        )
+        .map_err(anyhow::Error::from)
+    }
+
+    pub fn get_id_by_name(link: &str, db: &Connection) -> Result<Option<i64>> {
+        db.query_row(
+            Query::select()
+                .from(NotesTable)
+                .columns([NotesCharacters::Id])
+                .and_where(Expr::col(NotesCharacters::Name).eq(link))
+                .to_string(SqliteQueryBuilder)
+                .as_str(),
+            [],
+            |row| row.get(0),
+        )
+        .optional()
+        .map_err(anyhow::Error::from)
+    }
+
+    pub fn add_link(&self, link: i64, db: &Connection) -> Result<()> {
+        db.execute_batch(
+            Query::insert()
+                .into_table(LinksTable)
+                .columns([LinksCharacters::Left, LinksCharacters::Right])
+                .values([self.id.into(), link.into()])?
+                .to_string(SqliteQueryBuilder)
+                .as_str(),
+        )
+        .map_err(anyhow::Error::from)
     }
 }
 

@@ -73,6 +73,15 @@ impl ParsedMarkdown {
         }
     }
 
+    pub fn list_links(&self) -> Vec<&str> {
+        self.parsed_content
+            .iter()
+            .flat_map(|block| block.get_content().iter())
+            .map(|el| &el.element)
+            .filter_map(|el| el.link_dest())
+            .collect()
+    }
+
     pub fn render_blocks(&self) -> Vec<RenderedBlock> {
         self.parsed_content
             .iter()
