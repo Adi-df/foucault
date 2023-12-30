@@ -48,9 +48,8 @@ pub fn run_note_tag_adding_state(
             if let Some(tag) = Tag::load_by_name(state_data.tag_name.as_str(), notebook.db())? {
                 state_data
                     .note_tags_managing_data
-                    .note
-                    .add_tag(&tag, notebook.db())?;
-                state_data.note_tags_managing_data.tags.push(tag);
+                    .note_data
+                    .add_tag(tag, notebook.db())?;
                 State::NoteTagsManaging(state_data.note_tags_managing_data)
             } else {
                 state_data.valid = false;

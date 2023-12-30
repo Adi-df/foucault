@@ -8,29 +8,26 @@ use ratatui::widgets::{Block, BorderType, Borders, List, ListState, Padding, Par
 use ratatui::Frame;
 
 use crate::helpers::{DiscardResult, TryFromDatabase};
-use crate::note::Note;
+use crate::note::NoteData;
 use crate::notebook::Notebook;
 use crate::states::note_tag_adding::NoteTagAddingStateData;
 use crate::states::note_tag_deleting::NoteTagDeletingStateData;
 use crate::states::note_viewing::NoteViewingStateData;
 use crate::states::{State, Terminal};
-use crate::tag::Tag;
 
 use super::tag_notes_listing::TagNotesListingStateData;
 
 pub struct NoteTagsManagingStateData {
+    pub note_data: NoteData,
     pub selected: usize,
-    pub tags: Vec<Tag>,
-    pub note: Note,
 }
 
-impl TryFromDatabase<Note> for NoteTagsManagingStateData {
-    fn try_from_database(note: Note, db: &rusqlite::Connection) -> Result<Self> {
-        Ok(NoteTagsManagingStateData {
+impl From<NoteData> for NoteTagsManagingStateData {
+    fn from(note_data: NoteData) -> Self {
+        NoteTagsManagingStateData {
+            note_data,
             selected: 0,
-            tags: note.get_tags(db)?,
-            note,
-        })
+        }
     }
 }
 
@@ -40,17 +37,14 @@ pub fn run_note_tags_managing_state(
     notebook: &Notebook,
 ) -> Result<State> {
     Ok(match key_code {
-        KeyCode::Esc => State::NoteViewing(NoteViewingStateData::try_from_database(
-            state_data.note,
-            notebook.db(),
-        )?),
-        KeyCode::Char('d') if !state_data.tags.is_empty() => {
+        KeyCode::Esc => State::NoteViewing(NoteViewingStateData::from(state_data.note_data)),
+        KeyCode::Char('d') if !state_data.note_data.tags.is_empty() => {
             State::NoteTagDeleting(NoteTagDeletingStateData::empty(state_data))
         }
         KeyCode::Char('a') => State::NoteTagAdding(NoteTagAddingStateData::empty(state_data)),
-        KeyCode::Enter if !state_data.tags.is_empty() => {
+        KeyCode::Enter if !state_data.note_data.tags.is_empty() => {
             State::TagNotesListing(TagNotesListingStateData::try_from_database(
-                state_data.tags.swap_remove(state_data.selected),
+                state_data.note_data.tags.swap_remove(state_data.selected),
                 notebook.db(),
             )?)
         }
@@ -60,7 +54,9 @@ pub fn run_note_tags_managing_state(
                 ..state_data
             })
         }
-        KeyCode::Down if state_data.selected < state_data.tags.len().saturating_sub(1) => {
+        KeyCode::Down
+            if state_data.selected < state_data.note_data.tags.len().saturating_sub(1) =>
+        {
             State::NoteTagsManaging(NoteTagsManagingStateData {
                 selected: state_data.selected + 1,
                 ..state_data
@@ -89,8 +85,7 @@ pub fn draw_note_tags_managing_state(
 pub fn draw_note_tags_managing(
     frame: &mut Frame,
     NoteTagsManagingStateData {
-        note,
-        tags,
+        note_data,
         selected,
     }: &NoteTagsManagingStateData,
     main_rect: Rect,
@@ -102,7 +97,7 @@ pub fn draw_note_tags_managing(
     .split(main_rect);
 
     let note_name = Paragraph::new(Line::from(vec![
-        Span::raw(note.name.as_str()).style(Style::default().fg(Color::Green))
+        Span::raw(note_data.note.name.as_str()).style(Style::default().fg(Color::Green))
     ]))
     .block(
         Block::new()
@@ -113,16 +108,21 @@ pub fn draw_note_tags_managing(
             .padding(Padding::uniform(1)),
     );
 
-    let note_tags = List::new(tags.iter().map(|tag| Span::raw(tag.name.as_str())))
-        .highlight_symbol(">> ")
-        .highlight_style(Style::default().fg(Color::Black).bg(Color::White))
-        .block(
-            Block::new()
-                .title("Note Tags")
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(Color::Yellow)),
-        );
+    let note_tags = List::new(
+        note_data
+            .tags
+            .iter()
+            .map(|tag| Span::raw(tag.name.as_str())),
+    )
+    .highlight_symbol(">> ")
+    .highlight_style(Style::default().fg(Color::Black).bg(Color::White))
+    .block(
+        Block::new()
+            .title("Note Tags")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::default().fg(Color::Yellow)),
+    );
 
     frame.render_widget(note_name, vertical_layout[0]);
     frame.render_stateful_widget(

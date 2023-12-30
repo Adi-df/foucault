@@ -36,24 +36,24 @@ pub struct NoteViewingStateData {
     pub selected: (usize, usize),
 }
 
-impl TryFromDatabase<Note> for NoteViewingStateData {
-    fn try_from_database(note: Note, db: &Connection) -> Result<Self> {
-        let mut parsed_content = parse(note.content.as_str());
-        note.clear_links(db)?;
-        parsed_content
-            .list_links()
-            .into_iter()
-            .filter_map(|link| Note::get_id_by_name(link, db).transpose())
-            .map(|res| res.and_then(|link| note.add_link(link, db)))
-            .collect::<Result<()>>()?;
-
+impl From<NoteData> for NoteViewingStateData {
+    fn from(note_data: NoteData) -> Self {
+        let mut parsed_content = parse(note_data.note.content.as_str());
         parsed_content.select((0, 0), true);
-
-        Ok(NoteViewingStateData {
-            note_data: note.try_into_database(db)?,
+        NoteViewingStateData {
+            note_data,
             parsed_content,
             selected: (0, 0),
-        })
+        }
+    }
+}
+
+impl TryFromDatabase<Note> for NoteViewingStateData {
+    fn try_from_database(note: Note, db: &Connection) -> Result<Self> {
+        let mut note_data: NoteData = note.try_into_database(db)?;
+        note_data.fetch_tags(db)?;
+        note_data.fetch_links(db)?;
+        Ok(NoteViewingStateData::from(note_data))
     }
 }
 
@@ -66,6 +66,17 @@ impl NoteViewingStateData {
     }
     fn select_current(&mut self, selected: bool) {
         self.parsed_content.select(self.selected, selected);
+    }
+
+    fn update_links(&mut self, db: &Connection) -> Result<()> {
+        self.note_data.clear_links(db)?;
+        self.parsed_content
+            .list_links()
+            .into_iter()
+            .filter_map(|link| Note::get_id_by_name(link, db).transpose())
+            .map(|res| res.and_then(|link| self.note_data.add_link(link, db)))
+            .collect::<Result<()>>()?;
+        Ok(())
     }
 }
 
@@ -88,6 +99,7 @@ pub fn run_note_viewing_state(
             info!("Edit note {}", state_data.note_data.note.name);
             edit_note(&mut state_data.note_data.note, notebook)?;
             state_data.re_parse_content();
+            state_data.update_links(notebook.db())?;
             state_data.selected = (0, 0);
             state_data.select_current(true);
             *force_redraw = true;
@@ -107,10 +119,7 @@ pub fn run_note_viewing_state(
         }
         KeyCode::Char('t') => {
             info!("Manage tags of note {}", state_data.note_data.note.name);
-            State::NoteTagsManaging(NoteTagsManagingStateData::try_from_database(
-                state_data.note_data.note,
-                notebook.db(),
-            )?)
+            State::NoteTagsManaging(NoteTagsManagingStateData::from(state_data.note_data))
         }
         KeyCode::Enter => {
             if let Some(element) = state_data.get_current() {

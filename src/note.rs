@@ -240,10 +240,6 @@ impl NoteData {
         Ok(())
     }
 
-    pub fn get_tags(&self, db: &Connection) -> &[Tag] {
-        self.tags.as_slice()
-    }
-
     pub fn add_tag(&mut self, tag: Tag, db: &Connection) -> Result<()> {
         let tag_id = tag.id;
         self.tags.push(tag);
@@ -277,10 +273,6 @@ impl NoteData {
     pub fn fetch_links(&mut self, db: &Connection) -> Result<()> {
         self.links = Note::list_links(self.note.id, db)?;
         Ok(())
-    }
-
-    pub fn get_links(&self) -> &[i64] {
-        self.links.as_slice()
     }
 
     pub fn clear_links(&mut self, db: &Connection) -> Result<()> {

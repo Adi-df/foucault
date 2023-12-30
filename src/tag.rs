@@ -134,7 +134,7 @@ impl Tag {
                 Ok(NoteSummary {
                     id,
                     name,
-                    tags: Note::fetch_tags(id, db)?,
+                    tags: Note::list_tags(id, db)?,
                 })
             })
         })

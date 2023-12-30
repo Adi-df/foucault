@@ -27,7 +27,7 @@ pub struct NotesManagingStateData {
 impl NotesManagingStateData {
     pub fn from_pattern(pattern: String, db: &Connection) -> Result<Self> {
         Ok(NotesManagingStateData {
-            notes: Note::search_by_name(pattern.as_str(), db)?,
+            notes: NoteSummary::search_by_name(pattern.as_str(), db)?,
             selected: 0,
             pattern,
         })
@@ -52,7 +52,6 @@ pub fn run_note_managing_state(
             let note_summary = &state_data.notes[state_data.selected];
             if let Some(note) = Note::load_by_id(note_summary.id, notebook.db())? {
                 info!("Open note {}", note_summary.name);
-
                 State::NoteViewing(NoteViewingStateData::try_from_database(
                     note,
                     notebook.db(),
@@ -63,14 +62,16 @@ pub fn run_note_managing_state(
         }
         KeyCode::Backspace => {
             state_data.pattern.pop();
-            state_data.notes = Note::search_by_name(state_data.pattern.as_str(), notebook.db())?;
+            state_data.notes =
+                NoteSummary::search_by_name(state_data.pattern.as_str(), notebook.db())?;
             state_data.selected = 0;
 
             State::NotesManaging(state_data)
         }
         KeyCode::Char(c) => {
             state_data.pattern.push(c);
-            state_data.notes = Note::search_by_name(state_data.pattern.as_str(), notebook.db())?;
+            state_data.notes =
+                NoteSummary::search_by_name(state_data.pattern.as_str(), notebook.db())?;
             state_data.selected = 0;
 
             State::NotesManaging(state_data)
