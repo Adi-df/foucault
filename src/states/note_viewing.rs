@@ -19,7 +19,7 @@ use ratatui::widgets::{
 };
 use ratatui::Frame;
 
-use crate::helpers::{DiscardResult, TryFromDatabase, TryIntoDatabase};
+use crate::helpers::{DiscardResult, TryFromDatabase};
 use crate::markdown::elements::{InlineElements, SelectableInlineElements};
 use crate::markdown::{combine, lines, parse, ParsedMarkdown};
 use crate::note::{Note, NoteData};
@@ -50,10 +50,9 @@ impl From<NoteData> for NoteViewingStateData {
 
 impl TryFromDatabase<Note> for NoteViewingStateData {
     fn try_from_database(note: Note, db: &Connection) -> Result<Self> {
-        let mut note_data: NoteData = note.try_into_database(db)?;
-        note_data.fetch_tags(db)?;
-        note_data.fetch_links(db)?;
-        Ok(NoteViewingStateData::from(note_data))
+        Ok(NoteViewingStateData::from(NoteData::try_from_database(
+            note, db,
+        )?))
     }
 }
 
@@ -121,11 +120,13 @@ pub fn run_note_viewing_state(
         KeyCode::Char('e') => {
             info!("Edit note {}", state_data.note_data.note.name);
             edit_note(&mut state_data.note_data.note, notebook)?;
+
             state_data.re_parse_content();
             state_data.update_links(notebook.db())?;
             state_data.selected = (0, 0);
             state_data.select_current(true);
             *force_redraw = true;
+
             State::NoteViewing(state_data)
         }
         KeyCode::Char('s') => {

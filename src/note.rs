@@ -235,11 +235,6 @@ impl NoteSummary {
 }
 
 impl NoteData {
-    pub fn fetch_tags(&mut self, db: &Connection) -> Result<()> {
-        self.tags = Note::list_tags(self.note.id, db)?;
-        Ok(())
-    }
-
     pub fn add_tag(&mut self, tag: Tag, db: &Connection) -> Result<()> {
         let tag_id = tag.id;
         self.tags.push(tag);
@@ -268,11 +263,6 @@ impl NoteData {
                 .as_str(),
         )
         .map_err(anyhow::Error::from)
-    }
-
-    pub fn fetch_links(&mut self, db: &Connection) -> Result<()> {
-        self.links = Note::list_links(self.note.id, db)?;
-        Ok(())
     }
 
     pub fn add_link(&mut self, link: i64, db: &Connection) -> Result<()> {
