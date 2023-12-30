@@ -45,13 +45,13 @@ pub fn run_note_managing_state(
 ) -> Result<State> {
     Ok(match key_code {
         KeyCode::Esc => {
-            info!("Stop note searching.");
+            info!("Stop notes managing.");
             State::Nothing
         }
         KeyCode::Enter if !state_data.notes.is_empty() => {
             let note_summary = &state_data.notes[state_data.selected];
             if let Some(note) = Note::load_by_id(note_summary.id, notebook.db())? {
-                info!("Open note {}", note_summary.name);
+                info!("Open note {}.", note_summary.name);
                 State::NoteViewing(NoteViewingStateData::try_from_database(
                     note,
                     notebook.db(),

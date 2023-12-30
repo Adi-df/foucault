@@ -17,19 +17,19 @@ use crate::states::{State, Terminal};
 pub fn run_nothing_state(key_code: KeyCode, notebook: &Notebook) -> Result<State> {
     Ok(match key_code {
         KeyCode::Esc | KeyCode::Char('q') => {
-            info!("Quit notebook.");
+            info!("Quit foucault.");
             State::Exit
         }
         KeyCode::Char('c') => {
-            info!("Create new note.");
+            info!("Open new note prompt.");
             State::NoteCreating(NoteCreatingStateData::empty())
         }
         KeyCode::Char('s') => {
-            info!("List notes.");
+            info!("Open notes listing.");
             State::NotesManaging(NotesManagingStateData::empty(notebook.db())?)
         }
         KeyCode::Char('t') => {
-            info!("Manage tags.");
+            info!("Open tags manager.");
             State::TagsManaging(TagsManagingStateData::empty(notebook.db())?)
         }
         _ => State::Nothing,

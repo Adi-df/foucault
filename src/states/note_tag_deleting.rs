@@ -1,4 +1,5 @@
 use anyhow::Result;
+use log::info;
 
 use crossterm::event::KeyCode;
 use ratatui::widgets::Block;
@@ -31,13 +32,29 @@ pub fn run_note_tag_deleting_state(
     notebook: &Notebook,
 ) -> Result<State> {
     Ok(match key_code {
-        KeyCode::Esc => State::NoteTagsManaging(note_tags_managing_data),
+        KeyCode::Esc => {
+            info!(
+                "Cancel delting tag {} from note {}",
+                note_tags_managing_data
+                    .get_selected()
+                    .expect("A tag should be selected.")
+                    .name,
+                note_tags_managing_data.note_data.note.name
+            );
+            State::NoteTagsManaging(note_tags_managing_data)
+        }
         KeyCode::Enter => {
             if delete {
                 let tag = note_tags_managing_data
                     .note_data
                     .tags
                     .swap_remove(note_tags_managing_data.selected);
+
+                info!(
+                    "Remove tag {} from note {}.",
+                    tag.name, note_tags_managing_data.note_data.note.name
+                );
+
                 note_tags_managing_data
                     .note_data
                     .remove_tag(&tag, notebook.db())?;

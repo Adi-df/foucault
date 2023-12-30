@@ -34,7 +34,7 @@ pub fn run_note_creating_state(
             if Note::note_exists(name.as_str(), notebook.db())? {
                 State::NoteCreating(NoteCreatingStateData { name, valid: false })
             } else {
-                info!("Complete note creation : {}.", name.as_str());
+                info!("Create note : {}.", name.as_str());
 
                 let new_note = Note::new(name.clone(), String::new(), notebook.db())?;
 
@@ -45,7 +45,7 @@ pub fn run_note_creating_state(
             }
         }
         KeyCode::Esc => {
-            info!("Cancel new note.");
+            info!("Cancel note creation.");
             State::Nothing
         }
         KeyCode::Backspace => {

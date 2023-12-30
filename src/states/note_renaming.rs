@@ -33,10 +33,18 @@ pub fn run_note_renaming_state(
 ) -> Result<State> {
     Ok(match key_code {
         KeyCode::Esc => {
-            info!("Cancel renaming");
+            info!(
+                "Cancel renaming note {}",
+                note_viewing_data.note_data.note.name
+            );
             State::NoteViewing(note_viewing_data)
         }
         KeyCode::Enter => {
+            // TODO: !!IMPORTANT BUG!! : Prevent from renaming to an already taken name
+            info!(
+                "Renaming note {} to {}.",
+                note_viewing_data.note_data.note.name, new_name
+            );
             note_viewing_data.note_data.note.name = new_name;
             note_viewing_data.note_data.note.update(notebook.db())?;
             State::NoteViewing(note_viewing_data)

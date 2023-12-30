@@ -41,6 +41,10 @@ impl TagsManagingStateData {
     pub fn empty(db: &Connection) -> Result<Self> {
         Self::from_pattern(String::new(), db)
     }
+
+    pub fn get_selected(&self) -> Option<&Tag> {
+        self.tags.get(self.selected)
+    }
 }
 
 pub fn run_tags_managing_state(
@@ -64,12 +68,15 @@ pub fn run_tags_managing_state(
             })
         }
         KeyCode::Char('c') if !state_data.pattern_editing => {
+            info!("Open tag creating prompt.");
             State::TagCreating(TagsCreatingStateData::empty(state_data))
         }
         KeyCode::Char('d') if !state_data.pattern_editing && !state_data.tags.is_empty() => {
+            info!("Open tag deleting prompt.");
             State::TagDeleting(TagsDeletingStateData::empty(state_data))
         }
         KeyCode::Enter if !state_data.tags.is_empty() => {
+            info!("Open tag notes listing.");
             let tag = state_data.tags.swap_remove(state_data.selected);
 
             State::TagNotesListing(TagNotesListingStateData::try_from_database(

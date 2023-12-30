@@ -1,4 +1,5 @@
 use anyhow::Result;
+use log::info;
 
 use crossterm::event::KeyCode;
 use ratatui::prelude::{Constraint, Direction, Layout, Rect};
@@ -14,6 +15,7 @@ use crate::states::note_tag_adding::NoteTagAddingStateData;
 use crate::states::note_tag_deleting::NoteTagDeletingStateData;
 use crate::states::note_viewing::NoteViewingStateData;
 use crate::states::{State, Terminal};
+use crate::tag::Tag;
 
 use super::tag_notes_listing::TagNotesListingStateData;
 
@@ -31,18 +33,51 @@ impl From<NoteData> for NoteTagsManagingStateData {
     }
 }
 
+impl NoteTagsManagingStateData {
+    pub fn get_selected(&self) -> Option<&Tag> {
+        self.note_data.tags.get(self.selected)
+    }
+}
+
 pub fn run_note_tags_managing_state(
     mut state_data: NoteTagsManagingStateData,
     key_code: KeyCode,
     notebook: &Notebook,
 ) -> Result<State> {
     Ok(match key_code {
-        KeyCode::Esc => State::NoteViewing(NoteViewingStateData::from(state_data.note_data)),
+        KeyCode::Esc => {
+            info!(
+                "Cancel note {} tags managing.",
+                state_data.note_data.note.name
+            );
+            State::NoteViewing(NoteViewingStateData::from(state_data.note_data))
+        }
         KeyCode::Char('d') if !state_data.note_data.tags.is_empty() => {
+            info!(
+                "Open note {} tag {} deleting prompt.",
+                state_data.note_data.note.name,
+                state_data
+                    .get_selected()
+                    .expect("A tag should be selected.")
+                    .name
+            );
             State::NoteTagDeleting(NoteTagDeletingStateData::empty(state_data))
         }
-        KeyCode::Char('a') => State::NoteTagAdding(NoteTagAddingStateData::empty(state_data)),
+        KeyCode::Char('a') => {
+            info!(
+                "Open note {} tag adding prompt.",
+                state_data.note_data.note.name
+            );
+            State::NoteTagAdding(NoteTagAddingStateData::empty(state_data))
+        }
         KeyCode::Enter if !state_data.note_data.tags.is_empty() => {
+            info!(
+                "Open tag {} notes listing.",
+                state_data
+                    .get_selected()
+                    .expect("A tag should be selected.")
+                    .name
+            );
             State::TagNotesListing(TagNotesListingStateData::try_from_database(
                 state_data.note_data.tags.swap_remove(state_data.selected),
                 notebook.db(),

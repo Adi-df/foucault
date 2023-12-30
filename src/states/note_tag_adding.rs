@@ -1,4 +1,5 @@
 use anyhow::Result;
+use log::info;
 
 use crossterm::event::KeyCode;
 use ratatui::widgets::Block;
@@ -31,7 +32,13 @@ pub fn run_note_tag_adding_state(
     notebook: &Notebook,
 ) -> Result<State> {
     Ok(match key_code {
-        KeyCode::Esc => State::NoteTagsManaging(state_data.note_tags_managing_data),
+        KeyCode::Esc => {
+            info!(
+                "Cancel tag adding to note {}.",
+                state_data.note_tags_managing_data.note_data.note.name
+            );
+            State::NoteTagsManaging(state_data.note_tags_managing_data)
+        }
         KeyCode::Char(c) if !c.is_whitespace() => {
             state_data.tag_name.push(c);
             state_data.valid = Tag::tag_exists(state_data.tag_name.as_str(), notebook.db())?;
@@ -46,6 +53,10 @@ pub fn run_note_tag_adding_state(
         }
         KeyCode::Enter => {
             if let Some(tag) = Tag::load_by_name(state_data.tag_name.as_str(), notebook.db())? {
+                info!(
+                    "Add tag {} to note {}.",
+                    tag.name, state_data.note_tags_managing_data.note_data.note.name
+                );
                 state_data
                     .note_tags_managing_data
                     .note_data

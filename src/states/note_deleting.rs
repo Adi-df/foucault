@@ -33,7 +33,10 @@ pub fn run_note_deleting_state(
 ) -> Result<State> {
     Ok(match key_code {
         KeyCode::Esc => {
-            info!("Cancel deleting");
+            info!(
+                "Cancel deleting note {}.",
+                note_viewing_data.note_data.note.name
+            );
             State::NoteViewing(note_viewing_data)
         }
         KeyCode::Tab => State::NoteDeleting(NoteDeletingStateData {
@@ -42,9 +45,14 @@ pub fn run_note_deleting_state(
         }),
         KeyCode::Enter => {
             if delete {
+                info!("Delete note {}.", note_viewing_data.note_data.note.name);
                 note_viewing_data.note_data.note.delete(notebook.db())?;
                 State::Nothing
             } else {
+                info!(
+                    "Cancel deleting note {}.",
+                    note_viewing_data.note_data.note.name
+                );
                 State::NoteViewing(note_viewing_data)
             }
         }

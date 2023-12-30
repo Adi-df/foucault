@@ -1,4 +1,5 @@
 use anyhow::Result;
+use log::info;
 
 use crossterm::event::KeyCode;
 use ratatui::prelude::{Constraint, Direction, Layout, Margin};
@@ -40,10 +41,14 @@ pub fn run_tag_notes_listing_state(
     notebook: &Notebook,
 ) -> Result<State> {
     Ok(match key_code {
-        KeyCode::Esc => State::Nothing,
+        KeyCode::Esc => {
+            info!("Cancel tag {} note listing.", state_data.tag.name);
+            State::Nothing
+        }
         KeyCode::Enter if !state_data.notes.is_empty() => {
             let summary = &state_data.notes[state_data.selected];
             if let Some(note) = Note::load_by_id(summary.id, notebook.db())? {
+                info!("Open note {} viewing.", note.name);
                 State::NoteViewing(NoteViewingStateData::try_from_database(
                     note,
                     notebook.db(),

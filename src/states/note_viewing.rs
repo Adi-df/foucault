@@ -111,11 +111,11 @@ pub fn run_note_viewing_state(
 ) -> Result<State> {
     Ok(match key_code {
         KeyCode::Esc => {
-            info!("Stop note viewing.");
+            info!("Stop viewing of note {}.", state_data.note_data.note.name);
             State::Nothing
         }
         KeyCode::Char('q') => {
-            info!("Quit notebook.");
+            info!("Quit foucault.");
             State::Exit
         }
         KeyCode::Char('e') => {
@@ -129,22 +129,32 @@ pub fn run_note_viewing_state(
             State::NoteViewing(state_data)
         }
         KeyCode::Char('s') => {
-            info!("List notes.");
+            info!("Enter notes listing.");
             State::NotesManaging(NotesManagingStateData::empty(notebook.db())?)
         }
         KeyCode::Char('d') => {
-            info!("Not deleting prompt.");
+            info!(
+                "Open deleting prompt for note {}.",
+                state_data.note_data.note.name
+            );
             State::NoteDeleting(NoteDeletingStateData::empty(state_data))
         }
         KeyCode::Char('r') => {
-            info!("Prompt note new name");
+            info!(
+                "Open renaming prompt for note {}.",
+                state_data.note_data.note.name
+            );
             State::NoteRenaming(NoteRenamingStateData::empty(state_data))
         }
         KeyCode::Char('t') => {
-            info!("Manage tags of note {}", state_data.note_data.note.name);
+            info!(
+                "Open tags manager for note {}",
+                state_data.note_data.note.name
+            );
             State::NoteTagsManaging(NoteTagsManagingStateData::from(state_data.note_data))
         }
         KeyCode::Enter => {
+            info!("Try to trigger element action.");
             if let Some(element) = state_data.get_current() {
                 match <&InlineElements>::from(element) {
                     InlineElements::HyperLink { dest, .. } => {
