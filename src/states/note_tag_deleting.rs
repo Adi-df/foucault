@@ -40,7 +40,7 @@ pub fn run_note_tag_deleting_state(
                     .swap_remove(note_tags_managing_data.selected);
                 note_tags_managing_data
                     .note_data
-                    .remove_tag(tag, notebook.db())?;
+                    .remove_tag(&tag, notebook.db())?;
 
                 State::NoteTagsManaging(note_tags_managing_data)
             } else {

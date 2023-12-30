@@ -254,7 +254,7 @@ impl NoteData {
         .map_err(anyhow::Error::from)
     }
 
-    pub fn remove_tag(&mut self, tag: Tag, db: &Connection) -> Result<()> {
+    pub fn remove_tag(&mut self, tag: &Tag, db: &Connection) -> Result<()> {
         self.tags.retain(|t| t.id != tag.id);
         db.execute_batch(
             Query::delete()
@@ -275,18 +275,6 @@ impl NoteData {
         Ok(())
     }
 
-    pub fn clear_links(&mut self, db: &Connection) -> Result<()> {
-        self.links = Vec::new();
-        db.execute_batch(
-            Query::delete()
-                .from_table(LinksTable)
-                .and_where(Expr::col(LinksCharacters::Left).eq(self.note.id))
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-        )
-        .map_err(anyhow::Error::from)
-    }
-
     pub fn add_link(&mut self, link: i64, db: &Connection) -> Result<()> {
         self.links.push(link);
         db.execute_batch(
@@ -294,6 +282,22 @@ impl NoteData {
                 .into_table(LinksTable)
                 .columns([LinksCharacters::Left, LinksCharacters::Right])
                 .values([self.note.id.into(), link.into()])?
+                .to_string(SqliteQueryBuilder)
+                .as_str(),
+        )
+        .map_err(anyhow::Error::from)
+    }
+
+    pub fn remove_link(&mut self, link: i64, db: &Connection) -> Result<()> {
+        self.links.retain(|l| *l != link);
+        db.execute_batch(
+            Query::delete()
+                .from_table(LinksTable)
+                .and_where(
+                    Expr::col(LinksCharacters::Left)
+                        .eq(self.note.id)
+                        .and(Expr::col(LinksCharacters::Right).eq(link)),
+                )
                 .to_string(SqliteQueryBuilder)
                 .as_str(),
         )

@@ -68,14 +68,37 @@ impl NoteViewingStateData {
         self.parsed_content.select(self.selected, selected);
     }
 
-    fn update_links(&mut self, db: &Connection) -> Result<()> {
-        self.note_data.clear_links(db)?;
+    fn compute_links(&self, db: &Connection) -> Result<Vec<i64>> {
         self.parsed_content
             .list_links()
             .into_iter()
             .filter_map(|link| Note::get_id_by_name(link, db).transpose())
-            .map(|res| res.and_then(|link| self.note_data.add_link(link, db)))
-            .collect::<Result<()>>()?;
+            .collect::<Result<Vec<i64>>>()
+    }
+    fn update_links(&mut self, db: &Connection) -> Result<()> {
+        let computed_links = self.compute_links(db)?;
+
+        let removed: Vec<i64> = self
+            .note_data
+            .links
+            .iter()
+            .copied()
+            .filter(|link| !computed_links.contains(link))
+            .collect();
+
+        for link in removed {
+            self.note_data.remove_link(link, db)?;
+        }
+
+        let added: Vec<i64> = computed_links
+            .into_iter()
+            .filter(|link| !self.note_data.links.contains(link))
+            .collect();
+
+        for link in added {
+            self.note_data.add_link(link, db)?;
+        }
+
         Ok(())
     }
 }
