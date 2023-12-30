@@ -5,6 +5,7 @@ use crossterm::event::KeyCode;
 use ratatui::widgets::Block;
 
 use crate::helpers::{draw_text_prompt, DiscardResult};
+use crate::note::Note;
 use crate::notebook::Notebook;
 use crate::states::note_viewing::{draw_viewed_note, NoteViewingStateData};
 use crate::states::{State, Terminal};
@@ -12,6 +13,7 @@ use crate::states::{State, Terminal};
 pub struct NoteRenamingStateData {
     pub note_viewing_data: NoteViewingStateData,
     pub new_name: String,
+    pub valid: bool,
 }
 
 impl NoteRenamingStateData {
@@ -19,15 +21,13 @@ impl NoteRenamingStateData {
         NoteRenamingStateData {
             note_viewing_data,
             new_name: String::new(),
+            valid: false,
         }
     }
 }
 
 pub fn run_note_renaming_state(
-    NoteRenamingStateData {
-        mut note_viewing_data,
-        mut new_name,
-    }: NoteRenamingStateData,
+    mut state_data: NoteRenamingStateData,
     key_code: KeyCode,
     notebook: &Notebook,
 ) -> Result<State> {
@@ -35,46 +35,50 @@ pub fn run_note_renaming_state(
         KeyCode::Esc => {
             info!(
                 "Cancel renaming note {}",
-                note_viewing_data.note_data.note.name
+                state_data.note_viewing_data.note_data.note.name
             );
-            State::NoteViewing(note_viewing_data)
+            State::NoteViewing(state_data.note_viewing_data)
         }
-        KeyCode::Enter => {
-            // TODO: !!IMPORTANT BUG!! : Prevent from renaming to an already taken name
-            info!(
-                "Renaming note {} to {}.",
-                note_viewing_data.note_data.note.name, new_name
-            );
-            note_viewing_data.note_data.note.name = new_name;
-            note_viewing_data.note_data.note.update(notebook.db())?;
-            State::NoteViewing(note_viewing_data)
+        KeyCode::Enter if !state_data.new_name.is_empty() => {
+            if Note::note_exists(state_data.new_name.as_str(), notebook.db())? {
+                State::NoteRenaming(NoteRenamingStateData {
+                    valid: false,
+                    ..state_data
+                })
+            } else {
+                info!(
+                    "Renaming note {} to {}.",
+                    state_data.note_viewing_data.note_data.note.name, state_data.new_name
+                );
+                state_data.note_viewing_data.note_data.note.name = state_data.new_name;
+                state_data
+                    .note_viewing_data
+                    .note_data
+                    .note
+                    .update(notebook.db())?;
+                State::NoteViewing(state_data.note_viewing_data)
+            }
         }
 
         KeyCode::Backspace => {
-            new_name.pop();
-            State::NoteRenaming(NoteRenamingStateData {
-                note_viewing_data,
-                new_name,
-            })
+            state_data.new_name.pop();
+            state_data.valid = !Note::note_exists(state_data.new_name.as_str(), notebook.db())?;
+            State::NoteRenaming(state_data)
         }
         KeyCode::Char(c) => {
-            new_name.push(c);
-            State::NoteRenaming(NoteRenamingStateData {
-                note_viewing_data,
-                new_name,
-            })
+            state_data.new_name.push(c);
+            state_data.valid = !Note::note_exists(state_data.new_name.as_str(), notebook.db())?;
+            State::NoteRenaming(state_data)
         }
-        _ => State::NoteRenaming(NoteRenamingStateData {
-            note_viewing_data,
-            new_name,
-        }),
+        _ => State::NoteRenaming(state_data),
     })
 }
 
 pub fn draw_note_renaming_state(
     NoteRenamingStateData {
-        note_viewing_data: viewing_data,
+        note_viewing_data,
         new_name,
+        valid,
     }: &NoteRenamingStateData,
     terminal: &mut Terminal,
     main_frame: Block,
@@ -83,8 +87,8 @@ pub fn draw_note_renaming_state(
         .draw(|frame| {
             let main_rect = main_frame.inner(frame.size());
 
-            draw_viewed_note(frame, viewing_data, main_rect);
-            draw_text_prompt(frame, "Rename note", new_name, true, main_rect);
+            draw_viewed_note(frame, note_viewing_data, main_rect);
+            draw_text_prompt(frame, "Rename note", new_name, *valid, main_rect);
 
             frame.render_widget(main_frame, frame.size());
         })
