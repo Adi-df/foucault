@@ -152,21 +152,6 @@ impl Note {
         .map_err(anyhow::Error::from)
     }
 
-    pub fn get_id_by_name(link: &str, db: &Connection) -> Result<Option<i64>> {
-        db.query_row(
-            Query::select()
-                .from(NotesTable)
-                .columns([NotesCharacters::Id])
-                .and_where(Expr::col(NotesCharacters::Name).eq(link))
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-            [],
-            |row| row.get(0),
-        )
-        .optional()
-        .map_err(anyhow::Error::from)
-    }
-
     pub fn list_tags(id: i64, db: &Connection) -> Result<Vec<Tag>> {
         db.prepare(
             Query::select()
@@ -197,12 +182,12 @@ impl Note {
         db.prepare(
             Query::select()
                 .from(TagsJoinTable)
-                .columns([LinksCharacters::Right])
-                .and_where(Expr::col(LinksCharacters::Left).eq(id))
+                .columns([LinksCharacters::ToName])
+                .and_where(Expr::col(LinksCharacters::FromId).eq(id))
                 .to_string(SqliteQueryBuilder)
                 .as_str(),
         )?
-        .query_map([], |row| row.get::<_, i64>(0))?
+        .query_map([], |row| row.get(0))?
         .map(|row| {
             row.map_err(anyhow::Error::from)
                 .map(|to| Link { from: id, to })
@@ -268,15 +253,15 @@ impl NoteData {
         .map_err(anyhow::Error::from)
     }
 
-    pub fn add_link(&mut self, to: i64, db: &Connection) -> Result<()> {
+    pub fn add_link(&mut self, to: &str, db: &Connection) -> Result<()> {
         self.links.push(Link {
             from: self.note.id,
-            to,
+            to: to.to_string(),
         });
         db.execute_batch(
             Query::insert()
                 .into_table(LinksTable)
-                .columns([LinksCharacters::Left, LinksCharacters::Right])
+                .columns([LinksCharacters::FromId, LinksCharacters::ToName])
                 .values([self.note.id.into(), to.into()])?
                 .to_string(SqliteQueryBuilder)
                 .as_str(),
@@ -284,15 +269,15 @@ impl NoteData {
         .map_err(anyhow::Error::from)
     }
 
-    pub fn remove_link(&mut self, link: i64, db: &Connection) -> Result<()> {
-        self.links.retain(|l| l.to != link);
+    pub fn remove_link(&mut self, to: &str, db: &Connection) -> Result<()> {
+        self.links.retain(|l| l.to != to);
         db.execute_batch(
             Query::delete()
                 .from_table(LinksTable)
                 .and_where(
-                    Expr::col(LinksCharacters::Left)
+                    Expr::col(LinksCharacters::FromId)
                         .eq(self.note.id)
-                        .and(Expr::col(LinksCharacters::Right).eq(link)),
+                        .and(Expr::col(LinksCharacters::ToName).eq(to)),
                 )
                 .to_string(SqliteQueryBuilder)
                 .as_str(),

@@ -1,5 +1,5 @@
-#[deny(clippy::pedantic)]
-#[allow(clippy::module_name_repetitions)]
+#![deny(clippy::pedantic)]
+#![allow(clippy::module_name_repetitions)]
 mod explore;
 mod helpers;
 mod links;

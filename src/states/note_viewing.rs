@@ -68,21 +68,18 @@ impl NoteViewingStateData {
         self.parsed_content.select(self.selected, selected);
     }
 
-    fn compute_links(&self, db: &Connection) -> Result<Vec<Link>> {
+    fn compute_links(&self) -> Vec<Link> {
         self.parsed_content
             .list_links()
             .into_iter()
-            .filter_map(|link| Note::get_id_by_name(link, db).transpose())
-            .map(|link_res| {
-                link_res.map(|to| Link {
-                    from: self.note_data.note.id,
-                    to,
-                })
+            .map(|to| Link {
+                from: self.note_data.note.id,
+                to: to.to_string(),
             })
             .collect()
     }
     fn update_links(&mut self, db: &Connection) -> Result<()> {
-        let computed_links = self.compute_links(db)?;
+        let computed_links = self.compute_links();
 
         let removed: Vec<Link> = self
             .note_data
@@ -93,7 +90,7 @@ impl NoteViewingStateData {
             .collect();
 
         for link in removed {
-            self.note_data.remove_link(link.to, db)?;
+            self.note_data.remove_link(link.to.as_str(), db)?;
         }
 
         let added: Vec<Link> = computed_links
@@ -102,7 +99,7 @@ impl NoteViewingStateData {
             .collect();
 
         for link in added {
-            self.note_data.add_link(link.to, db)?;
+            self.note_data.add_link(link.to.as_str(), db)?;
         }
 
         Ok(())

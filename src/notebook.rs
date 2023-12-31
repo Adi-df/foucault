@@ -175,18 +175,11 @@ impl Notebook {
                         .primary_key()
                         .auto_increment(),
                 )
-                .col(ColumnDef::new(LinksCharacters::Left).integer().not_null())
-                .col(ColumnDef::new(LinksCharacters::Right).integer().not_null())
+                .col(ColumnDef::new(LinksCharacters::FromId).integer().not_null())
+                .col(ColumnDef::new(LinksCharacters::ToName).string().not_null())
                 .foreign_key(
                     ForeignKey::create()
-                        .from(LinksTable, LinksCharacters::Left)
-                        .to(NotesTable, NotesCharacters::Id)
-                        .on_update(ForeignKeyAction::Cascade)
-                        .on_delete(ForeignKeyAction::Cascade),
-                )
-                .foreign_key(
-                    ForeignKey::create()
-                        .from(LinksTable, LinksCharacters::Right)
+                        .from(LinksTable, LinksCharacters::FromId)
                         .to(NotesTable, NotesCharacters::Id)
                         .on_update(ForeignKeyAction::Cascade)
                         .on_delete(ForeignKeyAction::Cascade),
@@ -206,7 +199,7 @@ impl Notebook {
         let notebook_path = dir.join(name);
 
         if !notebook_path.exists() {
-            error!("No notebook named \"{name}\" exists.");
+            error!("No notebook named {name} exists.");
             return Err(SuppressionError::NoNotebookExists {
                 name: name.to_owned(),
             }
