@@ -5,9 +5,9 @@ use anyhow::Result;
 use thiserror::Error;
 
 use rusqlite::{Connection, OptionalExtension};
-use sea_query::{Expr, Iden, JoinType, Order, Query, SqliteQueryBuilder};
+use sea_query::{ColumnDef, Expr, Iden, JoinType, Order, Query, SqliteQueryBuilder, Table};
 
-use crate::helpers::TryFromDatabase;
+use crate::helpers::{DiscardResult, TryFromDatabase};
 use crate::links::{Link, LinksCharacters, LinksTable};
 use crate::tag::{Tag, TagsCharacters, TagsJoinCharacters, TagsJoinTable, TagsTable};
 
@@ -319,5 +319,31 @@ impl TryFromDatabase<Note> for NoteData {
             links: Note::list_links(note.id, db)?,
             note,
         })
+    }
+}
+
+impl NotesTable {
+    pub fn create(db: &Connection) -> Result<()> {
+        db.execute_batch(
+            Table::create()
+                .if_not_exists()
+                .table(NotesTable)
+                .col(
+                    ColumnDef::new(NotesCharacters::Id)
+                        .integer()
+                        .primary_key()
+                        .auto_increment(),
+                )
+                .col(
+                    ColumnDef::new(NotesCharacters::Name)
+                        .string()
+                        .unique_key()
+                        .not_null(),
+                )
+                .col(ColumnDef::new(NotesCharacters::Content).text())
+                .build(SqliteQueryBuilder)
+                .as_str(),
+        )
+        .discard_result()
     }
 }

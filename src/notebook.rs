@@ -6,11 +6,10 @@ use log::error;
 use thiserror::Error;
 
 use rusqlite::Connection;
-use sea_query::{ColumnDef, ForeignKey, ForeignKeyAction, SqliteQueryBuilder, Table};
 
-use crate::links::{LinksCharacters, LinksTable};
-use crate::note::{NotesCharacters, NotesTable};
-use crate::tag::{TagsCharacters, TagsJoinCharacters, TagsJoinTable, TagsTable};
+use crate::links::LinksTable;
+use crate::note::NotesTable;
+use crate::tag::{TagsJoinTable, TagsTable};
 
 pub struct Notebook {
     pub name: String,
@@ -85,108 +84,10 @@ impl Notebook {
         });
 
         // Initialize
-
-        database.execute_batch(
-            Table::create()
-                .if_not_exists()
-                .table(NotesTable)
-                .col(
-                    ColumnDef::new(NotesCharacters::Id)
-                        .integer()
-                        .primary_key()
-                        .auto_increment(),
-                )
-                .col(
-                    ColumnDef::new(NotesCharacters::Name)
-                        .string()
-                        .unique_key()
-                        .not_null(),
-                )
-                .col(ColumnDef::new(NotesCharacters::Content).text())
-                .build(SqliteQueryBuilder)
-                .as_str(),
-        )?;
-
-        database.execute_batch(
-            Table::create()
-                .if_not_exists()
-                .table(TagsTable)
-                .col(
-                    ColumnDef::new(TagsCharacters::Id)
-                        .integer()
-                        .primary_key()
-                        .auto_increment(),
-                )
-                .col(
-                    ColumnDef::new(TagsCharacters::Name)
-                        .string()
-                        .unique_key()
-                        .not_null(),
-                )
-                .build(SqliteQueryBuilder)
-                .as_str(),
-        )?;
-
-        database.execute_batch(
-            Table::create()
-                .if_not_exists()
-                .table(TagsJoinTable)
-                .col(
-                    ColumnDef::new(TagsJoinCharacters::Id)
-                        .integer()
-                        .primary_key()
-                        .auto_increment(),
-                )
-                .col(
-                    ColumnDef::new(TagsJoinCharacters::NoteId)
-                        .integer()
-                        .not_null(),
-                )
-                .col(
-                    ColumnDef::new(TagsJoinCharacters::TagId)
-                        .integer()
-                        .not_null(),
-                )
-                .foreign_key(
-                    ForeignKey::create()
-                        .from(TagsJoinTable, TagsJoinCharacters::NoteId)
-                        .to(NotesTable, NotesCharacters::Id)
-                        .on_update(ForeignKeyAction::Cascade)
-                        .on_delete(ForeignKeyAction::Cascade),
-                )
-                .foreign_key(
-                    ForeignKey::create()
-                        .from(TagsJoinTable, TagsJoinCharacters::TagId)
-                        .to(TagsTable, TagsCharacters::Id)
-                        .on_update(ForeignKeyAction::Cascade)
-                        .on_delete(ForeignKeyAction::Cascade),
-                )
-                .build(SqliteQueryBuilder)
-                .as_str(),
-        )?;
-
-        database.execute_batch(
-            Table::create()
-                .if_not_exists()
-                .table(LinksTable)
-                .col(
-                    ColumnDef::new(LinksCharacters::Id)
-                        .integer()
-                        .primary_key()
-                        .auto_increment(),
-                )
-                .col(ColumnDef::new(LinksCharacters::FromId).integer().not_null())
-                .col(ColumnDef::new(LinksCharacters::ToName).string().not_null())
-                .foreign_key(
-                    ForeignKey::create()
-                        .from(LinksTable, LinksCharacters::FromId)
-                        .to(NotesTable, NotesCharacters::Id)
-                        .on_update(ForeignKeyAction::Cascade)
-                        .on_delete(ForeignKeyAction::Cascade),
-                )
-                .build(SqliteQueryBuilder)
-                .as_str(),
-        )?;
+        NotesTable::create(&database)?;
+        TagsTable::create(&database)?;
+        TagsJoinTable::create(&database)?;
+        LinksTable::create(&database)?;
 
         Ok(Notebook {
             name: name.to_owned(),

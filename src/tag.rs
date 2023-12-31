@@ -1,8 +1,12 @@
 use anyhow::Result;
 
 use rusqlite::{Connection, OptionalExtension};
-use sea_query::{Expr, Iden, JoinType, Order, Query, SqliteQueryBuilder};
+use sea_query::{
+    ColumnDef, Expr, ForeignKey, ForeignKeyAction, Iden, JoinType, Order, Query,
+    SqliteQueryBuilder, Table,
+};
 
+use crate::helpers::DiscardResult;
 use crate::note::{Note, NoteSummary, NotesCharacters, NotesTable};
 
 #[derive(Iden)]
@@ -143,5 +147,73 @@ impl Tag {
 
     pub fn get_notes(&self, db: &Connection) -> Result<Vec<NoteSummary>> {
         Tag::fetch_notes(self.id, db)
+    }
+}
+
+impl TagsTable {
+    pub fn create(db: &Connection) -> Result<()> {
+        db.execute_batch(
+            Table::create()
+                .if_not_exists()
+                .table(TagsTable)
+                .col(
+                    ColumnDef::new(TagsCharacters::Id)
+                        .integer()
+                        .primary_key()
+                        .auto_increment(),
+                )
+                .col(
+                    ColumnDef::new(TagsCharacters::Name)
+                        .string()
+                        .unique_key()
+                        .not_null(),
+                )
+                .build(SqliteQueryBuilder)
+                .as_str(),
+        )
+        .discard_result()
+    }
+}
+
+impl TagsJoinTable {
+    pub fn create(db: &Connection) -> Result<()> {
+        db.execute_batch(
+            Table::create()
+                .if_not_exists()
+                .table(TagsJoinTable)
+                .col(
+                    ColumnDef::new(TagsJoinCharacters::Id)
+                        .integer()
+                        .primary_key()
+                        .auto_increment(),
+                )
+                .col(
+                    ColumnDef::new(TagsJoinCharacters::NoteId)
+                        .integer()
+                        .not_null(),
+                )
+                .col(
+                    ColumnDef::new(TagsJoinCharacters::TagId)
+                        .integer()
+                        .not_null(),
+                )
+                .foreign_key(
+                    ForeignKey::create()
+                        .from(TagsJoinTable, TagsJoinCharacters::NoteId)
+                        .to(NotesTable, NotesCharacters::Id)
+                        .on_update(ForeignKeyAction::Cascade)
+                        .on_delete(ForeignKeyAction::Cascade),
+                )
+                .foreign_key(
+                    ForeignKey::create()
+                        .from(TagsJoinTable, TagsJoinCharacters::TagId)
+                        .to(TagsTable, TagsCharacters::Id)
+                        .on_update(ForeignKeyAction::Cascade)
+                        .on_delete(ForeignKeyAction::Cascade),
+                )
+                .build(SqliteQueryBuilder)
+                .as_str(),
+        )
+        .discard_result()
     }
 }
