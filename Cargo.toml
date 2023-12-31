@@ -17,7 +17,7 @@ markdown = "1.0.0-alpha.16"
 crossterm = "0.27.0"
 ratatui = "0.25.0"
 rusqlite = { version = "0.29.0", features = ["bundled"] }
-sea-query = { version="0.30.5"}
-sea-query-rusqlite = { version="0.4.0" }
+sea-query = "0.30.5"
+sea-query-rusqlite = "0.4.0"
 textwrap = "0.16.0"
 opener = "0.6.1"
