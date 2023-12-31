@@ -8,10 +8,18 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  RUSTFALGS: "-Dwarnings"
 
 jobs:
-  build:
+  clippy:
+    runs-on: ubuntu-latest
 
+    steps:
+      - uses: actions/checkout@v3
+      - name: Clippy Check
+        run: cargo clippy --all-targets --all-features
+
+  build:
     runs-on: ubuntu-latest
 
     steps:
