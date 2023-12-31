@@ -8,7 +8,7 @@ use rusqlite::{Connection, OptionalExtension};
 use sea_query::{Expr, Iden, JoinType, Order, Query, SqliteQueryBuilder};
 
 use crate::helpers::TryFromDatabase;
-use crate::links::{LinksCharacters, LinksTable};
+use crate::links::{Link, LinksCharacters, LinksTable};
 use crate::tag::{Tag, TagsCharacters, TagsJoinCharacters, TagsJoinTable, TagsTable};
 
 #[derive(Iden)]
@@ -39,7 +39,7 @@ pub struct NoteSummary {
 pub struct NoteData {
     pub note: Note,
     pub tags: Vec<Tag>,
-    pub links: Vec<i64>,
+    pub links: Vec<Link>,
 }
 
 #[derive(Debug, Error)]
@@ -193,7 +193,7 @@ impl Note {
         .collect::<Result<Vec<Tag>>>()
     }
 
-    pub fn list_links(id: i64, db: &Connection) -> Result<Vec<i64>> {
+    pub fn list_links(id: i64, db: &Connection) -> Result<Vec<Link>> {
         db.prepare(
             Query::select()
                 .from(TagsJoinTable)
@@ -203,8 +203,11 @@ impl Note {
                 .as_str(),
         )?
         .query_map([], |row| row.get::<_, i64>(0))?
-        .map(|row| row.map_err(anyhow::Error::from))
-        .collect::<Result<Vec<i64>>>()
+        .map(|row| {
+            row.map_err(anyhow::Error::from)
+                .map(|to| Link { from: id, to })
+        })
+        .collect()
     }
 }
 
@@ -265,13 +268,16 @@ impl NoteData {
         .map_err(anyhow::Error::from)
     }
 
-    pub fn add_link(&mut self, link: i64, db: &Connection) -> Result<()> {
-        self.links.push(link);
+    pub fn add_link(&mut self, to: i64, db: &Connection) -> Result<()> {
+        self.links.push(Link {
+            from: self.note.id,
+            to,
+        });
         db.execute_batch(
             Query::insert()
                 .into_table(LinksTable)
                 .columns([LinksCharacters::Left, LinksCharacters::Right])
-                .values([self.note.id.into(), link.into()])?
+                .values([self.note.id.into(), to.into()])?
                 .to_string(SqliteQueryBuilder)
                 .as_str(),
         )
@@ -279,7 +285,7 @@ impl NoteData {
     }
 
     pub fn remove_link(&mut self, link: i64, db: &Connection) -> Result<()> {
-        self.links.retain(|l| *l != link);
+        self.links.retain(|l| l.to != link);
         db.execute_batch(
             Query::delete()
                 .from_table(LinksTable)

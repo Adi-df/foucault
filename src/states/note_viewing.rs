@@ -20,6 +20,7 @@ use ratatui::widgets::{
 use ratatui::Frame;
 
 use crate::helpers::{DiscardResult, TryFromDatabase};
+use crate::links::Link;
 use crate::markdown::elements::{InlineElements, SelectableInlineElements};
 use crate::markdown::{combine, lines, parse, ParsedMarkdown};
 use crate::note::{Note, NoteData};
@@ -67,35 +68,41 @@ impl NoteViewingStateData {
         self.parsed_content.select(self.selected, selected);
     }
 
-    fn compute_links(&self, db: &Connection) -> Result<Vec<i64>> {
+    fn compute_links(&self, db: &Connection) -> Result<Vec<Link>> {
         self.parsed_content
             .list_links()
             .into_iter()
             .filter_map(|link| Note::get_id_by_name(link, db).transpose())
-            .collect::<Result<Vec<i64>>>()
+            .map(|link_res| {
+                link_res.map(|to| Link {
+                    from: self.note_data.note.id,
+                    to,
+                })
+            })
+            .collect()
     }
     fn update_links(&mut self, db: &Connection) -> Result<()> {
         let computed_links = self.compute_links(db)?;
 
-        let removed: Vec<i64> = self
+        let removed: Vec<Link> = self
             .note_data
             .links
             .iter()
-            .copied()
             .filter(|link| !computed_links.contains(link))
+            .cloned()
             .collect();
 
         for link in removed {
-            self.note_data.remove_link(link, db)?;
+            self.note_data.remove_link(link.to, db)?;
         }
 
-        let added: Vec<i64> = computed_links
+        let added: Vec<Link> = computed_links
             .into_iter()
             .filter(|link| !self.note_data.links.contains(link))
             .collect();
 
         for link in added {
-            self.note_data.add_link(link, db)?;
+            self.note_data.add_link(link.to, db)?;
         }
 
         Ok(())
@@ -238,10 +245,10 @@ fn edit_note(note: &mut Note, notebook: &Notebook) -> Result<()> {
 
     stdout()
         .execute(LeaveAlternateScreen)
-        .expect("Leave foucault screen");
+        .expect("Leave foucault screen.");
 
     defer! {
-        stdout().execute(EnterAlternateScreen).expect("Return to foucault");
+        stdout().execute(EnterAlternateScreen).expect("Return to foucault.");
     }
 
     Command::new(editor)

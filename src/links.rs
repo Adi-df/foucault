@@ -9,3 +9,9 @@ pub enum LinksCharacters {
     Left,
     Right,
 }
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Link {
+    pub from: i64,
+    pub to: i64,
+}
