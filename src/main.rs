@@ -1,5 +1,6 @@
 #![deny(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
+#![allow(clippy::too_many_lines)]
 mod explore;
 mod helpers;
 mod links;
