@@ -4,7 +4,7 @@ use markdown::mdast;
 
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Paragraph, Wrap};
+use ratatui::widgets::Paragraph;
 
 use crate::markdown::{
     BLOCKQUOTE, BLOCKQUOTE_ALIGNEMENT, CROSS_REF, HEADER_ALIGNEMENT, HEADER_COLOR, HEADER_MODIFIER,
@@ -66,19 +66,11 @@ pub trait InlineElement: Sized {
     fn patch_style(&mut self, style: Style) {
         self.get_inner_span_mut().patch_style(style);
     }
-    fn set_style(&mut self, style: Style) {
-        let span = self.get_inner_span_mut();
-        *span = span.clone().style(style);
-    }
 }
 
 pub trait ChainInlineElement: InlineElement + Sized {
     fn patch_style(mut self, style: Style) -> Self {
         InlineElement::patch_style(&mut self, style);
-        self
-    }
-    fn set_style(mut self, style: Style) -> Self {
-        InlineElement::set_style(&mut self, style);
         self
     }
 }
@@ -98,12 +90,6 @@ where
     fn len(&self) -> usize {
         self.get_content().len()
     }
-    fn inner_text(&self) -> String {
-        self.get_content()
-            .iter()
-            .map(|el| el.inner_text().to_string())
-            .collect()
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -113,29 +99,65 @@ pub struct RenderedBlock {
 
 impl RenderedBlock {
     pub fn build_paragraph(self) -> Paragraph<'static> {
-        Paragraph::new(self.content).wrap(Wrap { trim: true })
+        Paragraph::new(self.content)
     }
 
-    fn inner_text(&self) -> String {
-        self.content
-            .iter()
-            .map(|line| {
-                line.spans
-                    .iter()
-                    .map(|span| span.content.to_string())
-                    .collect::<String>()
+    pub fn wrap_lines(self, max_len: usize) -> Self {
+        let new_content: Vec<Line<'static>> = self
+            .content
+            .into_iter()
+            .flat_map(|line| {
+                let mut new_lines: Vec<Line<'static>> = vec![Line::from(Vec::new())];
+                let mut current_size: usize = 0;
+
+                for span in &line.spans {
+                    if current_size + span.width() < max_len {
+                        new_lines.last_mut().unwrap().spans.push(span.clone());
+                        current_size += span.width();
+                    } else if span.width() < max_len {
+                        new_lines.push(Line::from(vec![span.clone()]));
+                        current_size = span.width();
+                    } else {
+                        new_lines.last_mut().unwrap().spans.push(
+                            Span::raw(
+                                span.content
+                                    .chars()
+                                    .take(max_len - current_size)
+                                    .collect::<String>(),
+                            )
+                            .style(span.style),
+                        );
+
+                        let remaining = span
+                            .content
+                            .chars()
+                            .skip(max_len - current_size)
+                            .collect::<String>();
+                        new_lines.extend(textwrap::wrap(&remaining, max_len).into_iter().map(
+                            |content| {
+                                Line::from(vec![Span::raw((*content).to_owned()).style(span.style)])
+                            },
+                        ));
+                        current_size = new_lines
+                            .last()
+                            .unwrap()
+                            .spans
+                            .iter()
+                            .map(|s| s.content.len())
+                            .sum();
+                    }
+                }
+
+                new_lines.into_iter()
             })
-            .collect::<Vec<_>>()
-            .join("\n")
+            .collect();
+        Self {
+            content: new_content,
+        }
     }
-    pub fn line_number(&self, max_len: usize) -> usize {
-        /*
-            NOTE: Line count is currently approximated by textwrap
-            as Ratatui wrapping system is pretty much incompatible
-            with paragraph scrolling.
-            PS: I know, it's a terrible and buggy workaround...
-        */
-        textwrap::wrap(self.inner_text().as_str(), max_len).len()
+
+    pub fn line_count(&self) -> usize {
+        self.content.len()
     }
 }
 

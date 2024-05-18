@@ -144,19 +144,6 @@ pub trait TryFromDatabase<T>: Sized {
     fn try_from_database(value: T, db: &Connection) -> Result<Self>;
 }
 
-pub trait TryIntoDatabase<T> {
-    fn try_into_database(self, db: &Connection) -> Result<T>;
-}
-
-impl<T, U> TryIntoDatabase<T> for U
-where
-    T: TryFromDatabase<U>,
-{
-    fn try_into_database(self, db: &Connection) -> Result<T> {
-        T::try_from_database(self, db)
-    }
-}
-
 pub trait DiscardResult {
     fn discard_result(self) -> Result<()>;
 }

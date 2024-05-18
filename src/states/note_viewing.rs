@@ -338,8 +338,8 @@ pub fn draw_viewed_note(
         .padding(Padding::uniform(1));
 
     let content_area = content_block.inner(vertical_layout[1]);
-    let rendered_content = parsed_content.render_blocks();
-    let scroll = lines(&rendered_content[..selected.1], content_area.width);
+    let rendered_content = parsed_content.render_blocks(content_area.width as usize);
+    let scroll = lines(&rendered_content[..selected.1]);
 
     let note_content = combine(&rendered_content)
         .build_paragraph()

@@ -82,10 +82,11 @@ impl ParsedMarkdown {
             .collect()
     }
 
-    pub fn render_blocks(&self) -> Vec<RenderedBlock> {
+    pub fn render_blocks(&self, max_len: usize) -> Vec<RenderedBlock> {
         self.parsed_content
             .iter()
             .map(BlockElement::render_lines)
+            .map(|block| block.wrap_lines(max_len))
             .collect()
     }
 
@@ -106,11 +107,8 @@ pub fn parse(content: &str) -> ParsedMarkdown {
     }
 }
 
-pub fn lines(blocks: &[RenderedBlock], max_len: u16) -> usize {
-    blocks
-        .iter()
-        .map(|block| block.line_number(max_len as usize))
-        .sum()
+pub fn lines(blocks: &[RenderedBlock]) -> usize {
+    blocks.iter().map(RenderedBlock::line_count).sum()
 }
 
 pub fn combine(blocks: &[RenderedBlock]) -> RenderedBlock {
