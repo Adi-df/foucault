@@ -74,7 +74,7 @@ jobs:
           name: foucault-x86_64-apple-darwin
 
       - name: Prepare release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           draft: true
           files: |
