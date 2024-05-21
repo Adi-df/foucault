@@ -56,6 +56,11 @@ pub trait InlineElement: Sized {
     fn parse_node(node: &mdast::Node) -> Vec<Self>;
     fn get_inner_span(&self) -> &Span<'static>;
     fn get_inner_span_mut(&mut self) -> &mut Span<'static>;
+
+    fn is_empty(&self) -> bool {
+        self.get_inner_span().content.is_empty()
+    }
+
     fn inner_text(&self) -> &str {
         self.get_inner_span().content.as_ref()
     }
@@ -189,12 +194,14 @@ impl InlineElement for InlineElements {
                 .children
                 .iter()
                 .flat_map(InlineElements::parse_node)
+                .filter(|el| !el.is_empty())
                 .map(|el| ChainInlineElement::patch_style(el, ITALIC_STYLE))
                 .collect(),
             mdast::Node::Strong(strong) => strong
                 .children
                 .iter()
                 .flat_map(InlineElements::parse_node)
+                .filter(|el| !el.is_empty())
                 .map(|el| ChainInlineElement::patch_style(el, STRONG_STYLE))
                 .collect(),
             mdast::Node::Link(link) => vec![InlineElements::HyperLink {
@@ -202,6 +209,7 @@ impl InlineElement for InlineElements {
                     link.children
                         .iter()
                         .flat_map(InlineElements::parse_node)
+                        .filter(|el| !el.is_empty())
                         .map(|el| el.inner_text().to_string())
                         .collect::<String>(),
                 )
@@ -479,6 +487,8 @@ fn parse_cross_links(text: &str) -> Vec<InlineElements> {
             span: Span::raw(current_span),
         });
     }
+
+    spans.retain(|el| !el.is_empty());
 
     spans
 }
