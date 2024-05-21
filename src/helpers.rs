@@ -134,9 +134,13 @@ where
 {
     fn capitalize(&'a self) -> String {
         let inner_str: &'a str = self.into();
-        let mut formated_string = inner_str[0..1].to_uppercase();
-        formated_string.push_str(&inner_str[1..]);
-        formated_string
+        if let Some(b) = inner_str.chars().nth(1) {
+            let mut formated_string = b.to_uppercase().to_string();
+            formated_string.extend(inner_str.chars().skip(1));
+            formated_string
+        } else {
+            String::new()
+        }
     }
 }
 
