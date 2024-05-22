@@ -153,7 +153,10 @@ impl RenderedBlock {
                     }
                 }
 
-                new_lines.into_iter()
+                new_lines.into_iter().map(move |l| Line {
+                    alignment: line.alignment,
+                    ..l
+                })
             })
             .collect();
         Self {
