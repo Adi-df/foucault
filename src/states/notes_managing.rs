@@ -3,7 +3,7 @@ use log::info;
 
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::prelude::{Constraint, Direction, Layout, Margin};
-use ratatui::style::{Color, Modifier, Style};
+use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{
     Block, BorderType, Borders, List, ListState, Padding, Paragraph, Scrollbar,
@@ -125,17 +125,30 @@ pub fn draw_note_managing_state(
                     .padding(Padding::uniform(1)),
             );
 
-            let list_results = List::new(notes.iter().map(|note| Span::raw(note.name.as_str())))
-                .highlight_symbol(">> ")
-                .highlight_style(Style::default().bg(Color::White).fg(Color::Black))
-                .block(
-                    Block::new()
-                        .title("Results")
-                        .borders(Borders::ALL)
-                        .border_type(BorderType::Rounded)
-                        .border_style(Style::default().fg(Color::Yellow))
-                        .padding(Padding::uniform(2)),
-                );
+            let list_results = List::new(notes.iter().map(|note| {
+                info!("Test {note:?}");
+                let pattern_start = note
+                    .name
+                    .to_lowercase()
+                    .find(pattern.as_str())
+                    .expect("The search pattern should have matched");
+                let pattern_end = pattern_start + pattern.len();
+                Line::from(vec![
+                    Span::raw(&note.name.as_str()[..pattern_start]),
+                    Span::raw(&note.name.as_str()[pattern_start..pattern_end]).underlined(),
+                    Span::raw(&note.name.as_str()[pattern_end..]),
+                ])
+            }))
+            .highlight_symbol(">> ")
+            .highlight_style(Style::default().bg(Color::White).fg(Color::Black))
+            .block(
+                Block::new()
+                    .title("Results")
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Rounded)
+                    .border_style(Style::default().fg(Color::Yellow))
+                    .padding(Padding::uniform(2)),
+            );
 
             let notes_scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
                 .begin_symbol(Some("↑"))
