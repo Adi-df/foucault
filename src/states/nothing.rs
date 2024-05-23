@@ -1,7 +1,7 @@
 use anyhow::Result;
 use log::info;
 
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::prelude::Alignment;
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
@@ -14,8 +14,8 @@ use crate::states::notes_managing::NotesManagingStateData;
 use crate::states::tags_managing::TagsManagingStateData;
 use crate::states::{State, Terminal};
 
-pub fn run_nothing_state(key_code: KeyCode, notebook: &Notebook) -> Result<State> {
-    Ok(match key_code {
+pub fn run_nothing_state(key_event: KeyEvent, notebook: &Notebook) -> Result<State> {
+    Ok(match key_event.code {
         KeyCode::Esc | KeyCode::Char('q') => {
             info!("Quit foucault.");
             State::Exit

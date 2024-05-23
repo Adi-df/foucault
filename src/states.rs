@@ -16,7 +16,7 @@ use std::io::Stdout;
 
 use anyhow::Result;
 
-use crossterm::event::KeyCode;
+use crossterm::event::KeyEvent;
 use ratatui::prelude::CrosstermBackend;
 use ratatui::style::{Color, Style};
 use ratatui::widgets::{Block, BorderType, Borders, Padding};
@@ -86,26 +86,28 @@ pub enum State {
 impl State {
     pub fn run(
         self,
-        key_code: KeyCode,
+        key_event: KeyEvent,
         notebook: &Notebook,
         force_redraw: &mut bool,
     ) -> Result<Self> {
         match self {
-            State::Nothing => run_nothing_state(key_code, notebook),
-            State::NotesManaging(data) => run_note_managing_state(data, key_code, notebook),
-            State::NoteCreating(data) => run_note_creating_state(data, key_code, notebook),
+            State::Nothing => run_nothing_state(key_event, notebook),
+            State::NotesManaging(data) => run_note_managing_state(data, key_event, notebook),
+            State::NoteCreating(data) => run_note_creating_state(data, key_event, notebook),
             State::NoteViewing(data) => {
-                run_note_viewing_state(data, key_code, notebook, force_redraw)
+                run_note_viewing_state(data, key_event, notebook, force_redraw)
             }
-            State::NoteDeleting(data) => run_note_deleting_state(data, key_code, notebook),
-            State::NoteRenaming(data) => run_note_renaming_state(data, key_code, notebook),
-            State::NoteTagsManaging(data) => run_note_tags_managing_state(data, key_code, notebook),
-            State::NoteTagAdding(data) => run_note_tag_adding_state(data, key_code, notebook),
-            State::NoteTagDeleting(data) => run_note_tag_deleting_state(data, key_code, notebook),
-            State::TagsManaging(data) => run_tags_managing_state(data, key_code, notebook),
-            State::TagCreating(data) => run_tag_creating_state(data, key_code, notebook),
-            State::TagDeleting(data) => run_tag_deleting_state(data, key_code, notebook),
-            State::TagNotesListing(data) => run_tag_notes_listing_state(data, key_code, notebook),
+            State::NoteDeleting(data) => run_note_deleting_state(data, key_event, notebook),
+            State::NoteRenaming(data) => run_note_renaming_state(data, key_event, notebook),
+            State::NoteTagsManaging(data) => {
+                run_note_tags_managing_state(data, key_event, notebook)
+            }
+            State::NoteTagAdding(data) => run_note_tag_adding_state(data, key_event, notebook),
+            State::NoteTagDeleting(data) => run_note_tag_deleting_state(data, key_event, notebook),
+            State::TagsManaging(data) => run_tags_managing_state(data, key_event, notebook),
+            State::TagCreating(data) => run_tag_creating_state(data, key_event, notebook),
+            State::TagDeleting(data) => run_tag_deleting_state(data, key_event, notebook),
+            State::TagNotesListing(data) => run_tag_notes_listing_state(data, key_event, notebook),
             State::Exit => unreachable!(),
         }
     }

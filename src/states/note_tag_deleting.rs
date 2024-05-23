@@ -1,7 +1,7 @@
 use anyhow::Result;
 use log::info;
 
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::Block;
 
 use crate::helpers::draw_yes_no_prompt;
@@ -28,10 +28,10 @@ pub fn run_note_tag_deleting_state(
         mut note_tags_managing_data,
         delete,
     }: NoteTagDeletingStateData,
-    key_code: KeyCode,
+    key_event: KeyEvent,
     notebook: &Notebook,
 ) -> Result<State> {
-    Ok(match key_code {
+    Ok(match key_event.code {
         KeyCode::Esc => {
             info!(
                 "Cancel delting tag {} from note {}",

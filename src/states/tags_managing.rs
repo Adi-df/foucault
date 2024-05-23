@@ -1,7 +1,7 @@
 use anyhow::Result;
 use log::info;
 
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::prelude::{Constraint, Direction, Layout, Margin, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
@@ -49,10 +49,10 @@ impl TagsManagingStateData {
 
 pub fn run_tags_managing_state(
     mut state_data: TagsManagingStateData,
-    key_code: KeyCode,
+    key_event: KeyEvent,
     notebook: &Notebook,
 ) -> Result<State> {
-    Ok(match key_code {
+    Ok(match key_event.code {
         KeyCode::Esc => {
             info!("Stop tags managing.");
             State::Nothing

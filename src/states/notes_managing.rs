@@ -1,7 +1,7 @@
 use anyhow::Result;
 use log::info;
 
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::prelude::{Constraint, Direction, Layout, Margin};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
@@ -40,10 +40,10 @@ impl NotesManagingStateData {
 
 pub fn run_note_managing_state(
     mut state_data: NotesManagingStateData,
-    key_code: KeyCode,
+    key_event: KeyEvent,
     notebook: &Notebook,
 ) -> Result<State> {
-    Ok(match key_code {
+    Ok(match key_event.code {
         KeyCode::Esc => {
             info!("Stop notes managing.");
             State::Nothing

@@ -1,7 +1,7 @@
 use anyhow::Result;
 use log::info;
 
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::Block;
 
 use crate::helpers::{draw_text_prompt, DiscardResult, TryFromDatabase};
@@ -26,10 +26,10 @@ impl NoteCreatingStateData {
 
 pub fn run_note_creating_state(
     NoteCreatingStateData { mut name, valid }: NoteCreatingStateData,
-    key_code: KeyCode,
+    key_event: KeyEvent,
     notebook: &Notebook,
 ) -> Result<State> {
-    Ok(match key_code {
+    Ok(match key_event.code {
         KeyCode::Enter if !name.is_empty() => {
             if Note::note_exists(name.as_str(), notebook.db())? {
                 State::NoteCreating(NoteCreatingStateData { name, valid: false })

@@ -1,7 +1,7 @@
 use anyhow::Result;
 use log::info;
 
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::Block;
 
 use crate::helpers::{draw_yes_no_prompt, DiscardResult};
@@ -28,10 +28,10 @@ pub fn run_note_deleting_state(
         note_viewing_data,
         delete,
     }: NoteDeletingStateData,
-    key_code: KeyCode,
+    key_event: KeyEvent,
     notebook: &Notebook,
 ) -> Result<State> {
-    Ok(match key_code {
+    Ok(match key_event.code {
         KeyCode::Esc => {
             info!(
                 "Cancel deleting note {}.",

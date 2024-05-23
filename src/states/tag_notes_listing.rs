@@ -1,7 +1,7 @@
 use anyhow::Result;
 use log::info;
 
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::prelude::{Constraint, Direction, Layout, Margin};
 use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
@@ -37,10 +37,10 @@ impl TryFromDatabase<Tag> for TagNotesListingStateData {
 
 pub fn run_tag_notes_listing_state(
     state_data: TagNotesListingStateData,
-    key_code: KeyCode,
+    key_event: KeyEvent,
     notebook: &Notebook,
 ) -> Result<State> {
-    Ok(match key_code {
+    Ok(match key_event.code {
         KeyCode::Esc => {
             info!("Cancel tag {} note listing.", state_data.tag.name);
             State::Nothing

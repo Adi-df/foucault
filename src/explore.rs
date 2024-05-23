@@ -40,7 +40,7 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
             if event::poll(Duration::from_millis(50))? {
                 if let Event::Key(key) = event::read()? {
                     if key.kind == KeyEventKind::Press {
-                        state = state.run(key.code, notebook, &mut forced_redraw)?;
+                        state = state.run(key, notebook, &mut forced_redraw)?;
                     }
                 }
             }

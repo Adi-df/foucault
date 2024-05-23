@@ -1,7 +1,7 @@
 use anyhow::Result;
 use log::info;
 
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::Block;
 
 use crate::helpers::{draw_text_prompt, DiscardResult};
@@ -28,10 +28,10 @@ impl NoteRenamingStateData {
 
 pub fn run_note_renaming_state(
     mut state_data: NoteRenamingStateData,
-    key_code: KeyCode,
+    key_event: KeyEvent,
     notebook: &Notebook,
 ) -> Result<State> {
-    Ok(match key_code {
+    Ok(match key_event.code {
         KeyCode::Esc => {
             info!(
                 "Cancel renaming note {}",
