@@ -7,7 +7,7 @@ use log::info;
 use rusqlite::Connection;
 use scopeguard::defer;
 
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{KeyCode, KeyEvent};
 use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
 use crossterm::ExecutableCommand;
 use ratatui::prelude::{Alignment, Constraint, Direction, Layout, Margin, Rect};
@@ -121,7 +121,7 @@ pub fn run_note_viewing_state(
             info!("Quit foucault.");
             State::Exit
         }
-        KeyCode::Char('e') if matches!(key_event.modifiers, KeyModifiers::NONE) => {
+        KeyCode::Char('e') => {
             info!("Edit note {}", state_data.note_data.note.name);
             edit_note(&mut state_data.note_data.note, notebook)?;
 
@@ -224,6 +224,22 @@ pub fn run_note_viewing_state(
         {
             state_data.select_current(false);
             state_data.selected.0 += 1;
+            state_data.select_current(true);
+            State::NoteViewing(state_data)
+        }
+        KeyCode::Char('g') => {
+            state_data.select_current(false);
+            state_data.selected = (0, 0);
+            state_data.select_current(true);
+            State::NoteViewing(state_data)
+        }
+        KeyCode::Char('E') => {
+            state_data.select_current(false);
+            state_data.selected.1 = state_data.parsed_content.block_count().saturating_sub(1);
+            state_data.selected.0 = state_data
+                .parsed_content
+                .block_length(state_data.selected.1)
+                .saturating_sub(1);
             state_data.select_current(true);
             State::NoteViewing(state_data)
         }
