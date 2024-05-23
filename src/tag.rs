@@ -103,7 +103,7 @@ impl Tag {
                 .from(TagsTable)
                 .columns([TagsCharacters::Id, TagsCharacters::Name])
                 .order_by(TagsCharacters::Id, Order::Desc)
-                .and_where(Expr::col(TagsCharacters::Name).like(format!("{pattern}%")))
+                .and_where(Expr::col(TagsCharacters::Name).like(format!("%{pattern}%")))
                 .to_string(SqliteQueryBuilder)
                 .as_str(),
         )?

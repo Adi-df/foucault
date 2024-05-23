@@ -3,7 +3,7 @@ use log::info;
 
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::prelude::{Constraint, Direction, Layout, Margin, Rect};
-use ratatui::style::{Color, Modifier, Style};
+use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{
     Block, BorderType, Borders, List, ListState, Padding, Paragraph, Scrollbar,
@@ -181,17 +181,29 @@ pub fn draw_tags_managing(
             .padding(Padding::uniform(1)),
     );
 
-    let list_results = List::new(tags.iter().map(|tag| Span::raw(tag.name.as_str())))
-        .highlight_symbol(">> ")
-        .highlight_style(Style::default().bg(Color::White).fg(Color::Black))
-        .block(
-            Block::new()
-                .title("Tags")
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(Color::Yellow))
-                .padding(Padding::uniform(2)),
-        );
+    let list_results = List::new(tags.iter().map(|tag| {
+        let pattern_start = tag
+            .name
+            .to_lowercase()
+            .find(pattern)
+            .expect("The pattern should match listed tags");
+        let pattern_end = pattern_start + pattern.len();
+        Line::from(vec![
+            Span::raw(&tag.name[..pattern_start]),
+            Span::raw(&tag.name[pattern_start..pattern_end]).underlined(),
+            Span::raw(&tag.name[pattern_end..]),
+        ])
+    }))
+    .highlight_symbol(">> ")
+    .highlight_style(Style::default().bg(Color::White).fg(Color::Black))
+    .block(
+        Block::new()
+            .title("Tags")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::default().fg(Color::Yellow))
+            .padding(Padding::uniform(2)),
+    );
 
     let tags_scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
         .begin_symbol(Some("↑"))

@@ -130,13 +130,13 @@ pub fn draw_note_managing_state(
                 let pattern_start = note
                     .name
                     .to_lowercase()
-                    .find(pattern.as_str())
+                    .find(pattern)
                     .expect("The search pattern should have matched");
                 let pattern_end = pattern_start + pattern.len();
                 Line::from(vec![
-                    Span::raw(&note.name.as_str()[..pattern_start]),
-                    Span::raw(&note.name.as_str()[pattern_start..pattern_end]).underlined(),
-                    Span::raw(&note.name.as_str()[pattern_end..]),
+                    Span::raw(&note.name[..pattern_start]),
+                    Span::raw(&note.name[pattern_start..pattern_end]).underlined(),
+                    Span::raw(&note.name[pattern_end..]),
                 ])
             }))
             .highlight_symbol(">> ")
