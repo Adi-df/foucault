@@ -18,6 +18,7 @@ use anyhow::Result;
 use log::{error, info};
 
 use clap::{Parser, Subcommand};
+use question::{Answer, Question};
 
 use crate::explore::explore;
 use crate::notebook::Notebook;
@@ -72,6 +73,7 @@ fn main() -> Result<()> {
             Commands::Create { name } => {
                 info!("Create notebook {name}.");
                 Notebook::new_notebook(name.trim(), &app_dir_path)?;
+                println!("Notebook {name} was successfully created.");
             }
             Commands::Open { name } => {
                 info!("Open notebook {name}.");
@@ -79,7 +81,20 @@ fn main() -> Result<()> {
             }
             Commands::Delete { name } => {
                 info!("Delete notebook {name}.");
-                Notebook::delete_notebook(name, &app_dir_path)?;
+                if matches!(
+                    Question::new(&format!(
+                        "Are you sure you want to delete notebook {name} ?",
+                    ))
+                    .default(Answer::NO)
+                    .show_defaults()
+                    .confirm(),
+                    Answer::YES
+                ) {
+                    println!("Proceed.");
+                    Notebook::delete_notebook(name, &app_dir_path)?;
+                } else {
+                    println!("Cancel.");
+                }
             }
         }
     } else {
