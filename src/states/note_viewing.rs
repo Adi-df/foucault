@@ -182,7 +182,7 @@ pub fn run_note_viewing_state(
                 State::NoteViewing(state_data)
             }
         }
-        KeyCode::Up if state_data.selected.1 > 0 => {
+        KeyCode::Up | KeyCode::Char('k') if state_data.selected.1 > 0 => {
             state_data.select_current(false);
             state_data.selected.1 -= 1;
             state_data.selected.0 = state_data.selected.0.min(
@@ -194,7 +194,7 @@ pub fn run_note_viewing_state(
             state_data.select_current(true);
             State::NoteViewing(state_data)
         }
-        KeyCode::Down
+        KeyCode::Down | KeyCode::Char('j')
             if state_data.selected.1
                 < state_data.parsed_content.block_count().saturating_sub(1) =>
         {
@@ -209,13 +209,13 @@ pub fn run_note_viewing_state(
             state_data.select_current(true);
             State::NoteViewing(state_data)
         }
-        KeyCode::Left if state_data.selected.0 > 0 => {
+        KeyCode::Left | KeyCode::Char('h') if state_data.selected.0 > 0 => {
             state_data.select_current(false);
             state_data.selected.0 -= 1;
             state_data.select_current(true);
             State::NoteViewing(state_data)
         }
-        KeyCode::Right
+        KeyCode::Right | KeyCode::Char('l')
             if state_data.selected.0
                 < state_data
                     .parsed_content
