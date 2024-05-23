@@ -203,7 +203,7 @@ impl NoteSummary {
                 .from(NotesTable)
                 .columns([NotesCharacters::Id, NotesCharacters::Name])
                 .order_by(NotesCharacters::Name, Order::Asc)
-                .and_where(Expr::col(NotesCharacters::Name).like(format!("{pattern}%")))
+                .and_where(Expr::col(NotesCharacters::Name).like(format!("%{pattern}%")))
                 .to_string(SqliteQueryBuilder)
                 .as_str(),
         )?
