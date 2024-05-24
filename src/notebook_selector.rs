@@ -1,8 +1,8 @@
 use std::ffi::OsString;
-use std::fs;
 use std::io::stdout;
 use std::path::Path;
 use std::time::Duration;
+use std::{env, fs};
 
 use anyhow::Result;
 use log::info;
@@ -36,6 +36,7 @@ pub fn open_selector(dir: &Path) -> Result<Option<String>> {
     // Retreive notebooks
 
     let notebooks = fs::read_dir(dir)?
+        .chain(fs::read_dir(env::current_dir()?)?)
         .filter_map(|file| {
             file.map_err(anyhow::Error::from)
                 .map(|file| {

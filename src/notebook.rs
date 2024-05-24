@@ -1,5 +1,5 @@
-use std::fs;
 use std::path::{Path, PathBuf};
+use std::{env, fs};
 
 use anyhow::Result;
 use log::error;
@@ -45,15 +45,22 @@ impl Notebook {
     }
 
     pub fn open_notebook(name: &str, dir: &Path) -> Result<Self> {
-        let notebook_path = dir.join(format!("{name}.book"));
+        let notebook_path = {
+            let app_dir_notebook_path = dir.join(format!("{name}.book"));
+            let current_dir_notebook_path = env::current_dir()?.join(format!("{name}.book"));
 
-        if !notebook_path.exists() {
-            error!("The notebook \"{name}\" was not found.");
-            return Err(OpeningError::NotebookNotFound {
-                name: name.to_owned(),
+            if app_dir_notebook_path.exists() {
+                app_dir_notebook_path
+            } else if current_dir_notebook_path.exists() {
+                current_dir_notebook_path
+            } else {
+                error!("The notebook \"{name}\" was not found.");
+                return Err(OpeningError::NotebookNotFound {
+                    name: name.to_owned(),
+                }
+                .into());
             }
-            .into());
-        }
+        };
 
         let database = Connection::open(&notebook_path).unwrap_or_else(|_| {
             error!("Unable to open the notebook \"{name}\".");
