@@ -36,13 +36,24 @@ pub fn open_selector(dir: &Path) -> Result<Option<String>> {
     // Retreive notebooks
 
     let notebooks = fs::read_dir(dir)?
-        .map(|file| {
-            file.map_err(anyhow::Error::from).and_then(|file| {
-                file.path()
+        .filter_map(|file| {
+            file.map_err(anyhow::Error::from)
+                .map(|file| {
+                    let file_path = file.path();
+                    match file_path.extension() {
+                        Some(extension) if extension == "book" => Some(file_path),
+                        _ => None,
+                    }
+                })
+                .transpose()
+        })
+        .map(|file_path| {
+            file_path.and_then(|file_path| {
+                file_path
                     .file_stem()
                     .ok_or(
                         NotebookSelectorError::InvalidNotebookName {
-                            name: file.file_name(),
+                            name: file_path.file_name().unwrap().to_os_string(),
                         }
                         .into(),
                     )
