@@ -45,7 +45,7 @@ impl Notebook {
     }
 
     pub fn open_notebook(name: &str, dir: &Path) -> Result<Self> {
-        let notebook_path = dir.join(name);
+        let notebook_path = dir.join(format!("{name}.book"));
 
         if !notebook_path.exists() {
             error!("The notebook \"{name}\" was not found.");
@@ -68,7 +68,7 @@ impl Notebook {
     }
 
     pub fn new_notebook(name: &str, dir: &Path) -> Result<Self> {
-        let notebook_path = dir.join(name);
+        let notebook_path = dir.join(format!("{name}.book"));
 
         if notebook_path.exists() {
             error!("A notebook named \"{name}\" already exists.");
@@ -97,7 +97,7 @@ impl Notebook {
     }
 
     pub fn delete_notebook(name: &str, dir: &Path) -> Result<()> {
-        let notebook_path = dir.join(name);
+        let notebook_path = dir.join(format!("{name}.book"));
 
         if !notebook_path.exists() {
             error!("No notebook named {name} exists.");

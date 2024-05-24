@@ -38,9 +38,22 @@ pub fn open_selector(dir: &Path) -> Result<Option<String>> {
     let notebooks = fs::read_dir(dir)?
         .map(|file| {
             file.map_err(anyhow::Error::from).and_then(|file| {
-                file.file_name()
-                    .into_string()
-                    .map_err(|e| NotebookSelectorError::InvalidNotebookName { name: e }.into())
+                file.path()
+                    .file_stem()
+                    .ok_or(
+                        NotebookSelectorError::InvalidNotebookName {
+                            name: file.file_name(),
+                        }
+                        .into(),
+                    )
+                    .and_then(|stem| {
+                        stem.to_os_string().into_string().map_err(|e| {
+                            NotebookSelectorError::InvalidNotebookName {
+                                name: e.to_os_string(),
+                            }
+                            .into()
+                        })
+                    })
             })
         })
         .collect::<Result<Vec<String>>>()?;
