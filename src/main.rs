@@ -11,8 +11,8 @@ mod notebook_selector;
 mod states;
 mod tag;
 
-use std::fs;
 use std::path::PathBuf;
+use std::{env, fs};
 
 use anyhow::Result;
 use log::{error, info};
@@ -37,9 +37,17 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    Create { name: String },
-    Open { name: String },
-    Delete { name: String },
+    Create {
+        name: String,
+        #[arg(short, long)]
+        local: bool,
+    },
+    Open {
+        name: String,
+    },
+    Delete {
+        name: String,
+    },
 }
 
 fn main() -> Result<()> {
@@ -70,9 +78,16 @@ fn main() -> Result<()> {
 
     if let Some(command) = &cli.command {
         match command {
-            Commands::Create { name } => {
+            Commands::Create { name, local } => {
                 info!("Create notebook {name}.");
-                Notebook::new_notebook(name.trim(), &app_dir_path)?;
+                if *local {
+                    Notebook::new_notebook(
+                        name.trim(),
+                        &env::current_dir().expect("The current directory isn't accessible"),
+                    )?;
+                } else {
+                    Notebook::new_notebook(name.trim(), &app_dir_path)?;
+                };
                 println!("Notebook {name} was successfully created.");
             }
             Commands::Open { name } => {
