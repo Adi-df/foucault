@@ -60,10 +60,7 @@ pub fn open_selector(dir: &Path) -> Result<Option<String>> {
                     )
                     .and_then(|stem| {
                         stem.to_os_string().into_string().map_err(|e| {
-                            NotebookSelectorError::InvalidNotebookName {
-                                name: e.to_os_string(),
-                            }
-                            .into()
+                            NotebookSelectorError::InvalidNotebookName { name: e.clone() }.into()
                         })
                     })
             })
