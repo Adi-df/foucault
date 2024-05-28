@@ -121,9 +121,6 @@ impl RenderedBlock {
                     if current_size + span.width() < max_len {
                         new_lines.last_mut().unwrap().spans.push(span.clone());
                         current_size += span.width();
-                    } else if span.width() < max_len {
-                        new_lines.push(Line::from(vec![span.clone()]));
-                        current_size = span.width();
                     } else {
                         new_lines.last_mut().unwrap().spans.push(
                             Span::raw(
@@ -140,7 +137,7 @@ impl RenderedBlock {
                             .chars()
                             .skip(max_len - current_size)
                             .collect::<String>();
-                        new_lines.extend(textwrap::wrap(&remaining, max_len).into_iter().map(
+                        new_lines.extend(bwrap::wrap!(&remaining, max_len).lines().map(
                             |content| {
                                 Line::from(vec![Span::raw((*content).to_owned()).style(span.style)])
                             },
