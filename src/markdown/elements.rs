@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::ops::Deref;
 
 use markdown::mdast;
@@ -53,6 +54,7 @@ const HEADING_STYLE: [Style; 6] = [
 ];
 
 pub trait InlineElement: Sized {
+    fn raw<T: Into<Cow<'static, str>>>(content: T) -> Self;
     fn parse_node(node: &mdast::Node) -> Vec<Self>;
     fn get_inner_span(&self) -> &Span<'static>;
     fn get_inner_span_mut(&mut self) -> &mut Span<'static>;
@@ -185,12 +187,19 @@ impl Deref for RenderedBlock {
 
 #[derive(Debug, Clone)]
 pub enum InlineElements {
+    RawText { span: Span<'static> },
     RichText { span: Span<'static> },
     HyperLink { span: Span<'static>, dest: String },
     CrossRef { span: Span<'static>, dest: String },
 }
 
 impl InlineElement for InlineElements {
+    fn raw<T: Into<Cow<'static, str>>>(content: T) -> Self {
+        Self::RawText {
+            span: Span::raw(content),
+        }
+    }
+
     fn parse_node(node: &mdast::Node) -> Vec<InlineElements> {
         match node {
             mdast::Node::Emphasis(italic) => italic
@@ -226,7 +235,8 @@ impl InlineElement for InlineElements {
 
     fn get_inner_span(&self) -> &Span<'static> {
         match self {
-            Self::RichText { span }
+            Self::RawText { span }
+            | Self::RichText { span }
             | Self::HyperLink { span, .. }
             | Self::CrossRef { span, .. } => span,
         }
@@ -234,7 +244,8 @@ impl InlineElement for InlineElements {
 
     fn get_inner_span_mut(&mut self) -> &mut Span<'static> {
         match self {
-            Self::RichText { span }
+            Self::RawText { span }
+            | Self::RichText { span }
             | Self::HyperLink { span, .. }
             | Self::CrossRef { span, .. } => span,
         }
@@ -278,6 +289,13 @@ impl<'a> From<&'a SelectableInlineElements> for &'a InlineElements {
 }
 
 impl InlineElement for SelectableInlineElements {
+    fn raw<T: Into<Cow<'static, str>>>(content: T) -> Self {
+        Self {
+            element: InlineElements::raw(content),
+            selected: false,
+        }
+    }
+
     fn parse_node(node: &mdast::Node) -> Vec<Self> {
         InlineElements::parse_node(node)
             .into_iter()
@@ -312,6 +330,7 @@ where
     Heading { content: Vec<T>, level: u8 },
     BlockQuote { content: Vec<T> },
     ListItem { content: Vec<T> },
+    UnformatedText { content: Vec<T> },
 }
 
 impl<T> BlockElement<T> for BlockElements<T>
@@ -367,6 +386,14 @@ where
                         .collect(),
                 })
                 .collect(),
+            mdast::Node::Code(code) if code.lang.is_none() => vec![Self::UnformatedText {
+                content: code
+                    .value
+                    .lines()
+                    .map(String::from)
+                    .map(InlineElement::raw)
+                    .collect(),
+            }],
             _ => Vec::new(),
         }
     }
@@ -376,7 +403,8 @@ where
             Self::Paragraph { content }
             | Self::Heading { content, .. }
             | Self::BlockQuote { content }
-            | Self::ListItem { content } => content,
+            | Self::ListItem { content }
+            | Self::UnformatedText { content } => content,
         }
     }
 
@@ -385,7 +413,8 @@ where
             Self::Paragraph { content }
             | Self::Heading { content, .. }
             | Self::BlockQuote { content }
-            | Self::ListItem { content } => content,
+            | Self::ListItem { content }
+            | Self::UnformatedText { content } => content,
         }
     }
 
@@ -394,7 +423,8 @@ where
             Self::Paragraph { content }
             | Self::Heading { content, .. }
             | Self::BlockQuote { content }
-            | Self::ListItem { content } => content,
+            | Self::ListItem { content }
+            | Self::UnformatedText { content } => content,
         }
     }
 
@@ -439,6 +469,12 @@ where
                     .chain(content.iter().cloned().map(InlineElement::into_span))
                     .collect::<Vec<_>>(),
             )],
+            BlockElements::UnformatedText { content } => content
+                .iter()
+                .cloned()
+                .map(InlineElement::into_span)
+                .map(|span| Line::from(vec![span]))
+                .collect(),
         }
         .into()
     }

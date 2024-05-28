@@ -176,7 +176,7 @@ pub fn run_note_viewing_state(
                             State::NoteViewing(state_data)
                         }
                     }
-                    InlineElements::RichText { .. } => State::NoteViewing(state_data),
+                    _ => State::NoteViewing(state_data),
                 }
             } else {
                 State::NoteViewing(state_data)
