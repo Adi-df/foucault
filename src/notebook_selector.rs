@@ -93,7 +93,7 @@ pub fn open_selector(dir: &Path) -> Result<Option<String>> {
                         }
                         KeyCode::Up | KeyCode::Char('k') if selected > 0 => selected -= 1,
                         KeyCode::Down | KeyCode::Char('j') if selected < notebooks.len() - 1 => {
-                            selected += 1
+                            selected += 1;
                         }
                         KeyCode::Enter => {
                             break Ok(Some(notebooks[selected].clone()));
