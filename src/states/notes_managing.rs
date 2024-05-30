@@ -130,7 +130,7 @@ pub fn draw_note_managing_state(
                 let pattern_start = note
                     .name
                     .to_lowercase()
-                    .find(pattern)
+                    .find(&pattern.to_lowercase())
                     .expect("The search pattern should have matched");
                 let pattern_end = pattern_start + pattern.len();
                 Line::from(vec![
