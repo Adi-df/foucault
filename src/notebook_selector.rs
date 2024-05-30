@@ -91,8 +91,10 @@ pub fn open_selector(dir: &Path) -> Result<Option<String>> {
                             info!("Quit notebook selector.");
                             break Ok(None);
                         }
-                        KeyCode::Up if selected > 0 => selected -= 1,
-                        KeyCode::Down if selected < notebooks.len() - 1 => selected += 1,
+                        KeyCode::Up | KeyCode::Char('k') if selected > 0 => selected -= 1,
+                        KeyCode::Down | KeyCode::Char('j') if selected < notebooks.len() - 1 => {
+                            selected += 1
+                        }
                         KeyCode::Enter => {
                             break Ok(Some(notebooks[selected].clone()));
                         }
