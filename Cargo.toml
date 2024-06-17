@@ -21,4 +21,3 @@ sea-query = "0.30.5"
 sea-query-rusqlite = "0.4.0"
 opener = "0.6.1"
 question = "0.2.2"
-bwrap = { version = "1.3.0", features = ["use_std"] }

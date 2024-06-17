@@ -136,12 +136,14 @@ impl RenderedBlock {
                             .content
                             .chars()
                             .skip(max_len - current_size)
-                            .collect::<String>();
-                        new_lines.extend(bwrap::wrap!(&remaining, max_len).lines().map(
-                            |content| {
-                                Line::from(vec![Span::raw((*content).to_owned()).style(span.style)])
-                            },
-                        ));
+                            .collect::<Vec<char>>();
+
+                        new_lines.extend(remaining.chunks(max_len - 1).map(|line| {
+                            Line::from(vec![
+                                Span::raw(String::from_iter(line.iter())).style(span.style)
+                            ])
+                        }));
+
                         current_size = new_lines
                             .last()
                             .unwrap()
