@@ -6,6 +6,7 @@ use markdown::mdast;
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
+use unicode_segmentation::UnicodeSegmentation;
 
 use crate::markdown::{
     BLOCKQUOTE, BLOCKQUOTE_ALIGNEMENT, CROSS_REF, HEADER_ALIGNEMENT, HEADER_COLOR, HEADER_MODIFIER,
@@ -118,39 +119,29 @@ impl RenderedBlock {
                 let mut current_size: usize = 0;
 
                 for span in &line.spans {
-                    if current_size + span.width() < max_len {
-                        new_lines.last_mut().unwrap().spans.push(span.clone());
-                        current_size += span.width();
-                    } else {
-                        new_lines.last_mut().unwrap().spans.push(
-                            Span::raw(
-                                span.content
-                                    .chars()
-                                    .take(max_len - current_size)
-                                    .collect::<String>(),
-                            )
-                            .style(span.style),
-                        );
+                    let mut new_span: String = String::new();
+                    for grapheme in UnicodeSegmentation::graphemes(span.content.as_ref(), true) {
+                        if current_size == max_len {
+                            new_lines
+                                .last_mut()
+                                .unwrap()
+                                .spans
+                                .push(Span::raw(new_span.clone()).style(span.style));
 
-                        let remaining = span
-                            .content
-                            .chars()
-                            .skip(max_len - current_size)
-                            .collect::<Vec<char>>();
+                            new_span = String::new();
+                            new_lines.push(Line::from(vec![Span::raw("").style(span.style)]));
+                            current_size = 0;
+                        }
 
-                        new_lines.extend(remaining.chunks(max_len - 1).map(|line| {
-                            Line::from(vec![
-                                Span::raw(String::from_iter(line.iter())).style(span.style)
-                            ])
-                        }));
-
-                        current_size = new_lines
-                            .last()
+                        new_span.push_str(grapheme);
+                        current_size += 1;
+                    }
+                    if !new_span.is_empty() {
+                        new_lines
+                            .last_mut()
                             .unwrap()
                             .spans
-                            .iter()
-                            .map(|s| s.content.len())
-                            .sum();
+                            .push(Span::raw(new_span).style(span.style));
                     }
                 }
 
