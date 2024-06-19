@@ -121,7 +121,7 @@ impl RenderedBlock {
                 for span in &line.spans {
                     let mut new_span: String = String::new();
                     for grapheme in UnicodeSegmentation::graphemes(span.content.as_ref(), true) {
-                        if current_size == max_len {
+                        if current_size == max_len || grapheme == "\n" || grapheme == "\r\n" {
                             new_lines
                                 .last_mut()
                                 .unwrap()
@@ -129,7 +129,7 @@ impl RenderedBlock {
                                 .push(Span::raw(new_span.clone()).style(span.style));
 
                             new_span = String::new();
-                            new_lines.push(Line::from(vec![Span::raw("").style(span.style)]));
+                            new_lines.push(Line::from(Vec::new()));
                             current_size = 0;
                         }
 
