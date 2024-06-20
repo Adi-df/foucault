@@ -1,7 +1,7 @@
 use anyhow::Result;
 use log::info;
 
-use crossterm::event::{KeyCode, KeyEvent};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::prelude::{Constraint, Direction, Layout, Margin};
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
@@ -60,7 +60,7 @@ pub fn run_note_managing_state(
                 State::NotesManaging(state_data)
             }
         }
-        KeyCode::Backspace => {
+        KeyCode::Backspace if key_event.modifiers == KeyModifiers::NONE => {
             state_data.pattern.pop();
             state_data.notes =
                 NoteSummary::search_by_name(state_data.pattern.as_str(), notebook.db())?;
@@ -68,7 +68,7 @@ pub fn run_note_managing_state(
 
             State::NotesManaging(state_data)
         }
-        KeyCode::Char(c) => {
+        KeyCode::Char(c) if key_event.modifiers == KeyModifiers::NONE => {
             state_data.pattern.push(c);
             state_data.notes =
                 NoteSummary::search_by_name(state_data.pattern.as_str(), notebook.db())?;
