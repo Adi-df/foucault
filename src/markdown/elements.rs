@@ -72,7 +72,7 @@ pub trait InlineElement: Sized {
     }
 
     fn patch_style(&mut self, style: Style) {
-        self.get_inner_span_mut().patch_style(style);
+        *self.get_inner_span_mut() = self.get_inner_span().clone().patch_style(style);
     }
 }
 
