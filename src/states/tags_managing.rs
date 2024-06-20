@@ -1,7 +1,7 @@
 use anyhow::Result;
 use log::info;
 
-use crossterm::event::{KeyCode, KeyEvent};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::prelude::{Constraint, Direction, Layout, Margin, Rect};
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
@@ -23,7 +23,6 @@ use crate::tag::Tag;
 
 pub struct TagsManagingStateData {
     pub pattern: String,
-    pub pattern_editing: bool,
     pub selected: usize,
     pub tags: Vec<Tag>,
 }
@@ -32,7 +31,6 @@ impl TagsManagingStateData {
     pub fn from_pattern(pattern: String, db: &Connection) -> Result<Self> {
         Ok(TagsManagingStateData {
             tags: Tag::search_by_name(pattern.as_str(), db)?,
-            pattern_editing: false,
             selected: 0,
             pattern,
         })
@@ -67,11 +65,14 @@ pub fn run_tags_managing_state(
                 ..state_data
             })
         }
-        KeyCode::Char('c') if !state_data.pattern_editing => {
+        KeyCode::Char('c') if key_event.modifiers.contains(KeyModifiers::CONTROL) => {
             info!("Open tag creating prompt.");
             State::TagCreating(TagsCreatingStateData::empty(state_data))
         }
-        KeyCode::Char('d') if !state_data.pattern_editing && !state_data.tags.is_empty() => {
+        KeyCode::Char('d')
+            if key_event.modifiers.contains(KeyModifiers::CONTROL)
+                && !state_data.tags.is_empty() =>
+        {
             info!("Open tag deleting prompt.");
             State::TagDeleting(TagsDeletingStateData::empty(state_data))
         }
@@ -84,17 +85,13 @@ pub fn run_tags_managing_state(
                 notebook.db(),
             )?)
         }
-        KeyCode::Tab => State::TagsManaging(TagsManagingStateData {
-            pattern_editing: !state_data.pattern_editing,
-            ..state_data
-        }),
-        KeyCode::Backspace if state_data.pattern_editing => {
+        KeyCode::Backspace if key_event.modifiers == KeyModifiers::NONE => {
             state_data.pattern.pop();
             state_data.tags = Tag::search_by_name(state_data.pattern.as_str(), notebook.db())?;
             state_data.selected = 0;
             State::TagsManaging(state_data)
         }
-        KeyCode::Char(c) if state_data.pattern_editing && !c.is_whitespace() => {
+        KeyCode::Char(c) if key_event.modifiers == KeyModifiers::NONE && !c.is_whitespace() => {
             state_data.pattern.push(c);
             state_data.tags = Tag::search_by_name(state_data.pattern.as_str(), notebook.db())?;
             state_data.selected = 0;
@@ -124,7 +121,6 @@ pub fn draw_tags_managing(
     frame: &mut Frame,
     TagsManagingStateData {
         pattern,
-        pattern_editing,
         selected,
         tags,
     }: &TagsManagingStateData,
@@ -135,35 +131,6 @@ pub fn draw_tags_managing(
         [Constraint::Length(5), Constraint::Min(0)],
     )
     .split(main_rect);
-
-    let filter_bar_layout = Layout::new(
-        Direction::Horizontal,
-        [Constraint::Length(10), Constraint::Min(0)],
-    )
-    .split(vertical_layout[0]);
-
-    let filter_editing_active = Paragraph::new(Line::from(vec![Span::raw(if *pattern_editing {
-        "Yes"
-    } else {
-        "No"
-    })
-    .style(
-        Style::default()
-            .fg(if *pattern_editing {
-                Color::Green
-            } else {
-                Color::Red
-            })
-            .add_modifier(Modifier::BOLD),
-    )]))
-    .block(
-        Block::new()
-            .title("Editing")
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(Color::Blue))
-            .padding(Padding::uniform(1)),
-    );
 
     let filter_bar = Paragraph::new(Line::from(vec![
         Span::raw(pattern).style(Style::default().add_modifier(Modifier::UNDERLINED))
@@ -209,8 +176,7 @@ pub fn draw_tags_managing(
         .begin_symbol(Some("↑"))
         .end_symbol(Some("↓"));
 
-    frame.render_widget(filter_editing_active, filter_bar_layout[0]);
-    frame.render_widget(filter_bar, filter_bar_layout[1]);
+    frame.render_widget(filter_bar, vertical_layout[0]);
     frame.render_stateful_widget(
         list_results,
         vertical_layout[1],
