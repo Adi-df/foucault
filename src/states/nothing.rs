@@ -2,10 +2,11 @@ use anyhow::Result;
 use log::info;
 
 use crossterm::event::{KeyCode, KeyEvent};
+use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::prelude::Alignment;
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Paragraph};
+use ratatui::widgets::{Block, BorderType, Borders, Cell, Padding, Paragraph, Row, Table};
 
 use crate::helpers::{create_popup_proportion, Capitalize, DiscardResult};
 use crate::notebook::Notebook;
@@ -47,13 +48,37 @@ pub fn draw_nothing_state(
 
             let title = Paragraph::new(Line::from(vec![Span::raw(notebook.name.capitalize())
                 .style(
-                    Style::default()
+                    Style::new()
                         .fg(Color::Blue)
                         .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
                 )]))
             .alignment(Alignment::Center);
 
-            frame.render_widget(title, create_popup_proportion((40, 10), main_rect));
+            let commands = Table::new(
+                [
+                    Row::new([Cell::from("q"), Cell::from("Quit Foucault")]),
+                    Row::new([Cell::from("c"), Cell::from("Create new note")]),
+                    Row::new([Cell::from("s"), Cell::from("Search through notes")]),
+                    Row::new([Cell::from("t"), Cell::from("Manage tags")]),
+                ],
+                [Constraint::Length(3), Constraint::Fill(1)],
+            )
+            .block(
+                Block::new()
+                    .padding(Padding::uniform(1))
+                    .borders(Borders::all())
+                    .border_type(BorderType::Double)
+                    .border_style(Style::new().fg(Color::White)),
+            );
+
+            let title_layout = Layout::new(
+                Direction::Vertical,
+                [Constraint::Length(1), Constraint::Fill(1)],
+            )
+            .split(create_popup_proportion((40, 30), main_rect));
+
+            frame.render_widget(title, title_layout[0]);
+            frame.render_widget(commands, title_layout[1]);
 
             frame.render_widget(main_frame, frame.size());
         })
