@@ -50,7 +50,7 @@ pub enum TagError {
 
 fn rand_color() -> u32 {
     let [r, g, b] = RandomColor::new().alpha(1.).to_rgb_array();
-    ((r as u32) << 16) + ((g as u32) << 4) + (b as u32)
+    (u32::from(r) << 16) + (u32::from(g) << 4) + u32::from(b)
 }
 
 impl Tag {

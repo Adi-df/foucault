@@ -145,7 +145,7 @@ pub fn draw_note_managing_state(
                     note_line.push(
                         Span::raw(tag.name()).style(Style::new().bg(Color::from_u32(tag.color()))),
                     );
-                    note_line.push(Span::raw(", "))
+                    note_line.push(Span::raw(", "));
                 }
                 if !note.tags().is_empty() {
                     note_line.pop();
