@@ -7,19 +7,19 @@ use log::info;
 use rusqlite::Connection;
 use scopeguard::defer;
 
-use crossterm::event::{KeyCode, KeyEvent};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
 use crossterm::ExecutableCommand;
 use ratatui::prelude::{Alignment, Constraint, Direction, Layout, Margin, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::Text;
 use ratatui::widgets::{
-    Block, BorderType, Borders, Padding, Paragraph, Row, Scrollbar, ScrollbarOrientation,
-    ScrollbarState, Table,
+    Block, BorderType, Borders, Cell, Clear, Padding, Paragraph, Row, Scrollbar,
+    ScrollbarOrientation, ScrollbarState, Table,
 };
 use ratatui::Frame;
 
-use crate::helpers::{DiscardResult, TryFromDatabase};
+use crate::helpers::{create_bottom_line, create_row_help_layout, DiscardResult, TryFromDatabase};
 use crate::links::Link;
 use crate::markdown::elements::{InlineElements, SelectableInlineElements};
 use crate::markdown::{combine, lines, parse, ParsedMarkdown};
@@ -35,6 +35,7 @@ pub struct NoteViewingStateData {
     pub note_data: NoteData,
     pub parsed_content: ParsedMarkdown,
     pub selected: (usize, usize),
+    pub help_display: bool,
 }
 
 impl From<NoteData> for NoteViewingStateData {
@@ -45,6 +46,7 @@ impl From<NoteData> for NoteViewingStateData {
             note_data,
             parsed_content,
             selected: (0, 0),
+            help_display: false,
         }
     }
 }
@@ -120,6 +122,12 @@ pub fn run_note_viewing_state(
         KeyCode::Char('q') => {
             info!("Quit foucault.");
             State::Exit
+        }
+        KeyCode::Char('h') if key_event.modifiers == KeyModifiers::CONTROL => {
+            info!("Toogle help display");
+            state_data.help_display = !state_data.help_display;
+
+            State::NoteViewing(state_data)
         }
         KeyCode::Char('e') => {
             info!("Edit note {}", state_data.note_data.note.name);
@@ -298,6 +306,7 @@ pub fn draw_viewed_note(
         note_data: NoteData { note, tags, .. },
         parsed_content,
         selected,
+        help_display,
     }: &NoteViewingStateData,
     main_rect: Rect,
 ) {
@@ -377,4 +386,26 @@ pub fn draw_viewed_note(
             .viewport_content_length(1)
             .position(selected.1),
     );
+
+    if *help_display {
+        let command_area = create_bottom_line(main_rect);
+        let commands = create_row_help_layout(&[
+            ("e", "Edit"),
+            ("s", "List notes"),
+            ("d", "Delete"),
+            ("t", "Tags"),
+            ("r", "Rename"),
+            ("⏎", "Open link"),
+        ])
+        .block(
+            Block::new()
+                .padding(Padding::uniform(1))
+                .borders(Borders::all())
+                .border_type(BorderType::Double)
+                .border_style(Style::new().fg(Color::White)),
+        );
+
+        frame.render_widget(Clear, command_area);
+        frame.render_widget(commands, command_area);
+    }
 }

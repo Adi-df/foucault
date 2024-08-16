@@ -3,7 +3,7 @@ use anyhow::Result;
 use ratatui::prelude::{Alignment, Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, BorderType, Borders, Clear, Padding, Paragraph};
+use ratatui::widgets::{Block, BorderType, Borders, Cell, Clear, Padding, Paragraph, Row, Table};
 use ratatui::Frame;
 
 use rusqlite::Connection;
@@ -50,6 +50,30 @@ pub fn create_popup_size(size: (u16, u16), rect: Rect) -> Rect {
     )
     .split(vertical[1]);
     horizontal[1]
+}
+
+pub fn create_bottom_line(rect: Rect) -> Rect {
+    let vertical = Layout::new(
+        Direction::Vertical,
+        [Constraint::Percentage(100), Constraint::Min(5)],
+    )
+    .split(rect);
+    vertical[1]
+}
+
+pub fn create_row_help_layout<'a>(help: &[(&'a str, &'a str)]) -> Table<'a> {
+    Table::new(
+        [Row::new(help.iter().flat_map(|(key, def)| {
+            [
+                Cell::from(*key).style(Style::new().bg(Color::Blue).add_modifier(Modifier::BOLD)),
+                Cell::from(*def).style(Style::new().bg(Color::Black)),
+            ]
+        }))],
+        [Constraint::Fill(1), Constraint::Fill(2)]
+            .into_iter()
+            .cycle()
+            .take(help.len() * 2),
+    )
 }
 
 pub fn draw_yes_no_prompt(frame: &mut Frame, choice: bool, title: &str, main_rect: Rect) {
