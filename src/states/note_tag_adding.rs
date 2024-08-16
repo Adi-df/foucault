@@ -41,18 +41,31 @@ pub fn run_note_tag_adding_state(
         }
         KeyCode::Char(c) if !c.is_whitespace() => {
             state_data.tag_name.push(c);
-            state_data.valid = Tag::tag_exists(state_data.tag_name.as_str(), notebook.db())?;
+            state_data.valid = Tag::tag_exists(state_data.tag_name.as_str(), notebook.db())?
+                && !state_data
+                    .note_tags_managing_data
+                    .note_data
+                    .has_tag(&state_data.tag_name);
 
             State::NoteTagAdding(state_data)
         }
         KeyCode::Backspace => {
             state_data.tag_name.pop();
-            state_data.valid = Tag::tag_exists(state_data.tag_name.as_str(), notebook.db())?;
+            state_data.valid = Tag::tag_exists(state_data.tag_name.as_str(), notebook.db())?
+                && !state_data
+                    .note_tags_managing_data
+                    .note_data
+                    .has_tag(&state_data.tag_name);
 
             State::NoteTagAdding(state_data)
         }
-        KeyCode::Enter => {
-            if let Some(tag) = Tag::load_by_name(state_data.tag_name.as_str(), notebook.db())? {
+        KeyCode::Enter => match Tag::load_by_name(state_data.tag_name.as_str(), notebook.db())? {
+            Some(tag)
+                if !state_data
+                    .note_tags_managing_data
+                    .note_data
+                    .has_tag(&tag.name) =>
+            {
                 info!(
                     "Add tag {} to note {}.",
                     tag.name, state_data.note_tags_managing_data.note_data.note.name
@@ -62,12 +75,13 @@ pub fn run_note_tag_adding_state(
                     .note_data
                     .add_tag(tag, notebook.db())?;
                 State::NoteTagsManaging(state_data.note_tags_managing_data)
-            } else {
+            }
+            _ => {
                 state_data.valid = false;
 
                 State::NoteTagAdding(state_data)
             }
-        }
+        },
         _ => State::NoteTagAdding(state_data),
     })
 }

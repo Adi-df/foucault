@@ -253,6 +253,10 @@ impl NoteData {
         .map_err(anyhow::Error::from)
     }
 
+    pub fn has_tag(&self, name: &str) -> bool {
+        self.tags.iter().any(|t| t.name == name)
+    }
+
     pub fn add_link(&mut self, to: &str, db: &Connection) -> Result<()> {
         self.links.push(Link {
             from: self.note.id,

@@ -14,8 +14,8 @@ use ratatui::prelude::{Alignment, Constraint, Direction, Layout, Margin, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::Text;
 use ratatui::widgets::{
-    Block, BorderType, Borders, Cell, Clear, Padding, Paragraph, Row, Scrollbar,
-    ScrollbarOrientation, ScrollbarState, Table,
+    Block, BorderType, Borders, Clear, Padding, Paragraph, Row, Scrollbar, ScrollbarOrientation,
+    ScrollbarState, Table,
 };
 use ratatui::Frame;
 
