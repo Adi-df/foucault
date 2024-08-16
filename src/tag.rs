@@ -1,5 +1,6 @@
 use anyhow::Result;
 
+use random_color::RandomColor;
 use rusqlite::{Connection, OptionalExtension};
 use sea_query::{
     ColumnDef, Expr, ForeignKey, ForeignKeyAction, Iden, JoinType, Order, Query,
@@ -20,6 +21,7 @@ pub struct TagsJoinTable;
 pub enum TagsCharacters {
     Id,
     Name,
+    Color,
 }
 
 #[derive(Iden, Clone, Copy, Debug)]
@@ -33,6 +35,7 @@ pub enum TagsJoinCharacters {
 pub struct Tag {
     id: i64,
     name: String,
+    color: u32,
 }
 
 #[derive(Debug, Error)]
@@ -45,15 +48,21 @@ pub enum TagError {
     DoesNotExists,
 }
 
+fn rand_color() -> u32 {
+    let [r, g, b] = RandomColor::new().alpha(1.).to_rgb_array();
+    ((r as u32) << 16) + ((g as u32) << 4) + (b as u32)
+}
+
 impl Tag {
     pub fn new(name: &str, db: &Connection) -> Result<Self> {
         Tag::validate_new_tag(name, db)?;
 
+        let color = rand_color();
         db.execute_batch(
             Query::insert()
                 .into_table(TagsTable)
-                .columns([TagsCharacters::Name])
-                .values([name.into()])?
+                .columns([TagsCharacters::Name, TagsCharacters::Color])
+                .values([name.into(), color.into()])?
                 .to_string(SqliteQueryBuilder)
                 .as_str(),
         )
@@ -62,6 +71,7 @@ impl Tag {
         Ok(Self {
             id: db.last_insert_rowid(),
             name: name.to_owned(),
+            color,
         })
     }
 
@@ -105,19 +115,20 @@ impl Tag {
         db.query_row(
             Query::select()
                 .from(TagsTable)
-                .columns([TagsCharacters::Id])
+                .columns([TagsCharacters::Id, TagsCharacters::Color])
                 .and_where(Expr::col(TagsCharacters::Name).eq(name))
                 .to_string(SqliteQueryBuilder)
                 .as_str(),
             [],
-            |row| row.get(0),
+            |row| Ok((row.get(0)?, row.get(1)?)),
         )
         .optional()
         .map_err(anyhow::Error::from)
         .map(|res| {
-            res.map(|id| Tag {
+            res.map(|(id, color)| Tag {
                 id,
                 name: name.to_string(),
+                color,
             })
         })
     }
@@ -126,15 +137,19 @@ impl Tag {
         db.prepare(
             Query::select()
                 .from(TagsTable)
-                .columns([TagsCharacters::Id, TagsCharacters::Name])
+                .columns([
+                    TagsCharacters::Id,
+                    TagsCharacters::Name,
+                    TagsCharacters::Color,
+                ])
                 .order_by(TagsCharacters::Id, Order::Desc)
                 .and_where(Expr::col(TagsCharacters::Name).like(format!("%{pattern}%")))
                 .to_string(SqliteQueryBuilder)
                 .as_str(),
         )?
-        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
-        .map(|row| -> Result<(i64, String)> { row.map_err(anyhow::Error::from) })
-        .map(|row| row.map(|(id, name)| Tag { id, name }))
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?
+        .map(|row| -> Result<(i64, String, u32)> { row.map_err(anyhow::Error::from) })
+        .map(|row| row.map(|(id, name, color)| Tag { id, name, color }))
         .collect()
     }
 
@@ -145,6 +160,7 @@ impl Tag {
                 .columns([
                     (TagsTable, TagsCharacters::Id),
                     (TagsTable, TagsCharacters::Name),
+                    (TagsTable, TagsCharacters::Color),
                 ])
                 .join(
                     JoinType::InnerJoin,
@@ -156,9 +172,9 @@ impl Tag {
                 .to_string(SqliteQueryBuilder)
                 .as_str(),
         )?
-        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?
         .map(|row| {
-            row.map(|(id, name)| Self { id, name })
+            row.map(|(id, name, color)| Self { id, name, color })
                 .map_err(anyhow::Error::from)
         })
         .collect()
@@ -169,6 +185,9 @@ impl Tag {
     }
     pub fn name(&self) -> &str {
         &self.name
+    }
+    pub fn color(&self) -> u32 {
+        self.color
     }
 
     pub fn delete(self, db: &Connection) -> Result<()> {
@@ -205,6 +224,7 @@ impl TagsTable {
                         .unique_key()
                         .not_null(),
                 )
+                .col(ColumnDef::new(TagsCharacters::Color).integer().not_null())
                 .build(SqliteQueryBuilder)
                 .as_str(),
         )

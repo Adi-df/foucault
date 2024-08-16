@@ -296,7 +296,13 @@ pub fn draw_viewed_note(
                 .padding(Padding::uniform(1)),
         );
     let note_tags = Table::default()
-        .rows([Row::new(tags.iter().map(|el| Text::raw(el.name())))])
+        .rows([Row::new(tags.iter().map(|tag| {
+            Text::raw(tag.name()).style(
+                Style::new()
+                    .add_modifier(Modifier::BOLD)
+                    .bg(Color::from_u32(tag.color())),
+            )
+        }))])
         .widths(
             [if tags.is_empty() {
                 Constraint::Min(0)

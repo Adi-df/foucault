@@ -121,35 +121,40 @@ pub fn draw_note_managing_state(
             );
 
             let list_results = List::new(notes.iter().map(|note| {
-                info!("Test {note:?}");
                 let pattern_start = note
                     .name()
                     .to_lowercase()
                     .find(&pattern.to_lowercase())
                     .expect("The search pattern should have matched");
                 let pattern_end = pattern_start + pattern.len();
-                Line::from(vec![
-                    Span::raw(&note.name()[..pattern_start]),
-                    Span::raw(&note.name()[pattern_start..pattern_end]).underlined(),
-                    Span::raw(&note.name()[pattern_end..]),
+
+                let mut note_line = vec![
+                    Span::raw(&note.name()[..pattern_start]).bold(),
+                    Span::raw(&note.name()[pattern_start..pattern_end])
+                        .underlined()
+                        .bold(),
+                    Span::raw(&note.name()[pattern_end..]).bold(),
                     Span::raw("    "),
-                    Span::raw(
-                        note.tags()
-                            .iter()
-                            .map(|tag| tag.name())
-                            .collect::<Vec<&str>>()
-                            .join(", "),
-                    ),
-                ])
+                ];
+
+                for tag in note.tags() {
+                    note_line.push(Span::raw(tag.name()).bg(Color::from_u32(tag.color())));
+                    note_line.push(Span::raw(", "))
+                }
+                if !note.tags().is_empty() {
+                    note_line.pop();
+                }
+
+                Line::from(note_line)
             }))
             .highlight_symbol(">> ")
-            .highlight_style(Style::default().bg(Color::White).fg(Color::Black))
+            .highlight_style(Style::new().bg(Color::White).fg(Color::Black))
             .block(
                 Block::new()
                     .title("Results")
                     .borders(Borders::ALL)
                     .border_type(BorderType::Rounded)
-                    .border_style(Style::default().fg(Color::Yellow))
+                    .border_style(Style::new().fg(Color::Yellow))
                     .padding(Padding::uniform(2)),
             );
 
