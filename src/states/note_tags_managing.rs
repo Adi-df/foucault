@@ -1,14 +1,14 @@
 use anyhow::Result;
 use log::info;
 
-use crossterm::event::{KeyCode, KeyEvent};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::prelude::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, BorderType, Borders, List, ListState, Padding, Paragraph};
+use ratatui::widgets::{Block, BorderType, Borders, Clear, List, ListState, Padding, Paragraph};
 use ratatui::Frame;
 
-use crate::helpers::{DiscardResult, TryFromDatabase};
+use crate::helpers::{create_bottom_line, create_row_help_layout, DiscardResult, TryFromDatabase};
 use crate::note::NoteData;
 use crate::notebook::Notebook;
 use crate::states::note_tag_adding::NoteTagAddingStateData;
@@ -22,6 +22,7 @@ use super::tag_notes_listing::TagNotesListingStateData;
 pub struct NoteTagsManagingStateData {
     pub note_data: NoteData,
     pub selected: usize,
+    pub help_display: bool,
 }
 
 impl From<NoteData> for NoteTagsManagingStateData {
@@ -29,6 +30,7 @@ impl From<NoteData> for NoteTagsManagingStateData {
         NoteTagsManagingStateData {
             note_data,
             selected: 0,
+            help_display: false,
         }
     }
 }
@@ -51,6 +53,12 @@ pub fn run_note_tags_managing_state(
                 state_data.note_data.note.name
             );
             State::NoteViewing(NoteViewingStateData::from(state_data.note_data))
+        }
+        KeyCode::Char('h') if key_event.modifiers == KeyModifiers::CONTROL => {
+            info!("Toogle help display.");
+            state_data.help_display = !state_data.help_display;
+
+            State::NoteTagsManaging(state_data)
         }
         KeyCode::Char('d') if !state_data.note_data.tags.is_empty() => {
             info!(
@@ -122,6 +130,7 @@ pub fn draw_note_tags_managing(
     NoteTagsManagingStateData {
         note_data,
         selected,
+        help_display,
     }: &NoteTagsManagingStateData,
     main_rect: Rect,
 ) {
@@ -165,4 +174,23 @@ pub fn draw_note_tags_managing(
         vertical_layout[1],
         &mut ListState::default().with_selected(Some(*selected)),
     );
+
+    if *help_display {
+        let command_area = create_bottom_line(main_rect);
+        let commands = create_row_help_layout(&[
+            ("a", "Add tag"),
+            ("d", "Delete tag"),
+            ("⏎", "List related notes"),
+        ])
+        .block(
+            Block::new()
+                .padding(Padding::uniform(1))
+                .borders(Borders::all())
+                .border_type(BorderType::Double)
+                .border_style(Style::new().fg(Color::White)),
+        );
+
+        frame.render_widget(Clear, command_area);
+        frame.render_widget(commands, command_area);
+    }
 }
