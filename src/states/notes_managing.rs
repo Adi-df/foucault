@@ -132,6 +132,14 @@ pub fn draw_note_managing_state(
                     Span::raw(&note.name()[..pattern_start]),
                     Span::raw(&note.name()[pattern_start..pattern_end]).underlined(),
                     Span::raw(&note.name()[pattern_end..]),
+                    Span::raw("    "),
+                    Span::raw(
+                        note.tags()
+                            .iter()
+                            .map(|tag| tag.name())
+                            .collect::<Vec<&str>>()
+                            .join(", "),
+                    ),
                 ])
             }))
             .highlight_symbol(">> ")
