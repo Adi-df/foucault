@@ -9,7 +9,7 @@ use sea_query::{ColumnDef, Expr, Iden, JoinType, Order, Query, SqliteQueryBuilde
 
 use crate::helpers::DiscardResult;
 use crate::links::{Link, LinksCharacters, LinksTable};
-use crate::tag::{Tag, TagsJoinCharacters, TagsJoinTable};
+use crate::tag::{Tag, TagError, TagsJoinCharacters, TagsJoinTable};
 
 #[derive(Iden)]
 pub struct NotesTable;
@@ -49,7 +49,7 @@ pub enum NoteError {
 
 impl Note {
     pub fn new(name: String, content: String, db: &Connection) -> Result<Self> {
-        Note::validate_name(&name, db)?;
+        Note::validate_new_name(&name, db)?;
 
         db.execute_batch(
             Query::insert()
@@ -67,14 +67,29 @@ impl Note {
         })
     }
 
-    pub fn id(&self) -> i64 {
-        self.id
+    pub fn validate_new_name(name: &str, db: &Connection) -> Result<()> {
+        if name.is_empty() {
+            return Err(NoteError::EmptyName.into());
+        }
+
+        if Note::name_exists(name, db)? {
+            return Err(NoteError::AlreadyExists.into());
+        }
+
+        Ok(())
     }
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-    pub fn content(&self) -> &str {
-        &self.content
+
+    pub fn name_exists(name: &str, db: &Connection) -> Result<bool> {
+        db.prepare(
+            Query::select()
+                .from(NotesTable)
+                .column(NotesCharacters::Id)
+                .and_where(Expr::col(NotesCharacters::Name).eq(name))
+                .to_string(SqliteQueryBuilder)
+                .as_str(),
+        )?
+        .exists([])
+        .map_err(anyhow::Error::from)
     }
 
     pub fn load_by_id(id: i64, db: &Connection) -> Result<Option<Self>> {
@@ -122,31 +137,57 @@ impl Note {
         })
     }
 
-    pub fn validate_name(name: &str, db: &Connection) -> Result<()> {
-        if name.is_empty() {
-            return Err(NoteError::EmptyName.into());
-        }
+    pub fn list_note_links(id: i64, db: &Connection) -> Result<Vec<Link>> {
+        db.prepare(
+            Query::select()
+                .from(TagsJoinTable)
+                .columns([LinksCharacters::ToName])
+                .and_where(Expr::col(LinksCharacters::FromId).eq(id))
+                .to_string(SqliteQueryBuilder)
+                .as_str(),
+        )?
+        .query_map([], |row| row.get(0))?
+        .map(|row| {
+            row.map_err(anyhow::Error::from)
+                .map(|to| Link { from: id, to })
+        })
+        .collect()
+    }
 
-        if db
-            .prepare(
-                Query::select()
-                    .from(NotesTable)
-                    .column(NotesCharacters::Id)
-                    .and_where(Expr::col(NotesCharacters::Name).eq(name))
-                    .to_string(SqliteQueryBuilder)
-                    .as_str(),
-            )?
-            .exists([])
-            .map_err(anyhow::Error::from)?
-        {
-            return Err(NoteError::AlreadyExists.into());
-        }
+    pub fn id(&self) -> i64 {
+        self.id
+    }
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+    pub fn content(&self) -> &str {
+        &self.content
+    }
 
-        Ok(())
+    pub fn links(&self, db: &Connection) -> Result<Vec<Link>> {
+        Note::list_note_links(self.id, db)
+    }
+
+    pub fn tags(&self, db: &Connection) -> Result<Vec<Tag>> {
+        Tag::list_note_tags(self.id, db)
+    }
+
+    pub fn has_tag(&self, tag_id: i64, db: &Connection) -> Result<bool> {
+        db.prepare(
+            Query::select()
+                .from(TagsJoinTable)
+                .columns([TagsJoinCharacters::TagId, TagsJoinCharacters::NoteId])
+                .and_where(Expr::col(TagsJoinCharacters::TagId).eq(tag_id))
+                .and_where(Expr::col(TagsJoinCharacters::NoteId).eq(self.id))
+                .to_string(SqliteQueryBuilder)
+                .as_str(),
+        )?
+        .exists([])
+        .map_err(anyhow::Error::from)
     }
 
     pub fn rename(&mut self, name: String, db: &Connection) -> Result<()> {
-        Note::validate_name(&name, db)?;
+        Note::validate_new_name(&name, db)?;
 
         db.execute_batch(
             Query::update()
@@ -193,25 +234,8 @@ impl Note {
         Ok(())
     }
 
-    pub fn list_links(id: i64, db: &Connection) -> Result<Vec<Link>> {
-        db.prepare(
-            Query::select()
-                .from(TagsJoinTable)
-                .columns([LinksCharacters::ToName])
-                .and_where(Expr::col(LinksCharacters::FromId).eq(id))
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-        )?
-        .query_map([], |row| row.get(0))?
-        .map(|row| {
-            row.map_err(anyhow::Error::from)
-                .map(|to| Link { from: id, to })
-        })
-        .collect()
-    }
-
     pub fn update_links(&self, new_links: &[Link], db: &Connection) -> Result<()> {
-        let current_links = Note::list_links(self.id, db)?;
+        let current_links = self.links(db)?;
 
         let removed = current_links
             .iter()
@@ -246,34 +270,23 @@ impl Note {
         Ok(())
     }
 
-    pub fn validate_new_tag(&self, tag: &Tag, db: &Connection) -> Result<()> {
-        if db
-            .prepare(
-                Query::select()
-                    .from(TagsJoinTable)
-                    .columns([TagsJoinCharacters::TagId, TagsJoinCharacters::NoteId])
-                    .and_where(Expr::col(TagsJoinCharacters::TagId).eq(tag.id()))
-                    .and_where(Expr::col(TagsJoinCharacters::NoteId).eq(self.id))
-                    .to_string(SqliteQueryBuilder)
-                    .as_str(),
-            )?
-            .exists([])
-            .map_err(anyhow::Error::from)?
-        {
+    pub fn validate_new_tag(&self, tag_id: i64, db: &Connection) -> Result<()> {
+        if !Tag::id_exists(tag_id, db)? {
+            Err(TagError::DoesNotExists.into())
+        } else if self.has_tag(tag_id, db)? {
             Err(NoteError::NoteAlreadyTagged.into())
         } else {
             Ok(())
         }
     }
 
-    pub fn add_tag(&self, tag: Tag, db: &Connection) -> Result<()> {
-        self.validate_new_tag(&tag, db)?;
-
+    pub fn add_tag(&self, tag_id: i64, db: &Connection) -> Result<()> {
+        self.validate_new_tag(tag_id, db)?;
         db.execute_batch(
             Query::insert()
                 .into_table(TagsJoinTable)
                 .columns([TagsJoinCharacters::NoteId, TagsJoinCharacters::TagId])
-                .values([self.id.into(), tag.id().into()])?
+                .values([self.id.into(), tag_id.into()])?
                 .to_string(SqliteQueryBuilder)
                 .as_str(),
         )

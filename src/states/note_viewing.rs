@@ -45,7 +45,7 @@ impl NoteViewingStateData {
         let mut parsed_content = parse(note.content());
         parsed_content.select((0, 0), true);
         Ok(NoteViewingStateData {
-            tags: Tag::list_note_tags(note.id(), db)?,
+            tags: note.tags(db)?,
             note,
             parsed_content,
             selected: (0, 0),

@@ -41,15 +41,13 @@ pub enum TagError {
     AlreadyExists,
     #[error("The provided tag name is empty")]
     EmptyName,
+    #[error("No such tag exists")]
+    DoesNotExists,
 }
 
 impl Tag {
     pub fn new(name: &str, db: &Connection) -> Result<Self> {
-        if name.is_empty() {
-            return Err(TagError::EmptyName.into());
-        } else if Tag::exists(name, db)? {
-            return Err(TagError::AlreadyExists.into());
-        }
+        Tag::validate_new_tag(name, db)?;
 
         db.execute_batch(
             Query::insert()
@@ -67,11 +65,40 @@ impl Tag {
         })
     }
 
-    pub fn id(&self) -> i64 {
-        self.id
+    pub fn validate_new_tag(name: &str, db: &Connection) -> Result<()> {
+        if name.is_empty() {
+            Err(TagError::EmptyName.into())
+        } else if Tag::name_exists(name, db)? {
+            Err(TagError::AlreadyExists.into())
+        } else {
+            Ok(())
+        }
     }
-    pub fn name(&self) -> &str {
-        &self.name
+
+    pub fn id_exists(tag_id: i64, db: &Connection) -> Result<bool> {
+        db.prepare(
+            Query::select()
+                .from(TagsTable)
+                .column(TagsCharacters::Id)
+                .and_where(Expr::col(TagsCharacters::Id).eq(tag_id))
+                .to_string(SqliteQueryBuilder)
+                .as_str(),
+        )?
+        .exists([])
+        .map_err(anyhow::Error::from)
+    }
+
+    pub fn name_exists(name: &str, db: &Connection) -> Result<bool> {
+        db.prepare(
+            Query::select()
+                .from(TagsTable)
+                .column(TagsCharacters::Name)
+                .and_where(Expr::col(TagsCharacters::Name).eq(name))
+                .to_string(SqliteQueryBuilder)
+                .as_str(),
+        )?
+        .exists([])
+        .map_err(anyhow::Error::from)
     }
 
     pub fn load_by_name(name: &str, db: &Connection) -> Result<Option<Tag>> {
@@ -93,6 +120,22 @@ impl Tag {
                 name: name.to_string(),
             })
         })
+    }
+
+    pub fn search_by_name(pattern: &str, db: &Connection) -> Result<Vec<Tag>> {
+        db.prepare(
+            Query::select()
+                .from(TagsTable)
+                .columns([TagsCharacters::Id, TagsCharacters::Name])
+                .order_by(TagsCharacters::Id, Order::Desc)
+                .and_where(Expr::col(TagsCharacters::Name).like(format!("%{pattern}%")))
+                .to_string(SqliteQueryBuilder)
+                .as_str(),
+        )?
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
+        .map(|row| -> Result<(i64, String)> { row.map_err(anyhow::Error::from) })
+        .map(|row| row.map(|(id, name)| Tag { id, name }))
+        .collect()
     }
 
     pub fn list_note_tags(note_id: i64, db: &Connection) -> Result<Vec<Self>> {
@@ -121,17 +164,11 @@ impl Tag {
         .collect()
     }
 
-    pub fn exists(name: &str, db: &Connection) -> Result<bool> {
-        db.prepare(
-            Query::select()
-                .from(TagsTable)
-                .column(TagsCharacters::Id)
-                .and_where(Expr::col(TagsCharacters::Name).eq(name))
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-        )?
-        .exists([])
-        .map_err(anyhow::Error::from)
+    pub fn id(&self) -> i64 {
+        self.id
+    }
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
     pub fn delete(self, db: &Connection) -> Result<()> {
@@ -143,22 +180,6 @@ impl Tag {
                 .as_str(),
         )?;
         Ok(())
-    }
-
-    pub fn search_by_name(pattern: &str, db: &Connection) -> Result<Vec<Tag>> {
-        db.prepare(
-            Query::select()
-                .from(TagsTable)
-                .columns([TagsCharacters::Id, TagsCharacters::Name])
-                .order_by(TagsCharacters::Id, Order::Desc)
-                .and_where(Expr::col(TagsCharacters::Name).like(format!("%{pattern}%")))
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-        )?
-        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
-        .map(|row| -> Result<(i64, String)> { row.map_err(anyhow::Error::from) })
-        .map(|row| row.map(|(id, name)| Tag { id, name }))
-        .collect()
     }
 
     pub fn get_related_notes(&self, db: &Connection) -> Result<Vec<NoteSummary>> {

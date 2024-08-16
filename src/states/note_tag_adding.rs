@@ -50,7 +50,7 @@ pub fn run_note_tag_adding_state(
                     state_data
                         .note_tags_managing_data
                         .note
-                        .validate_new_tag(&tag, notebook.db())
+                        .validate_new_tag(tag.id(), notebook.db())
                         .is_ok()
                 } else {
                     false
@@ -67,7 +67,7 @@ pub fn run_note_tag_adding_state(
                 state_data
                     .note_tags_managing_data
                     .note
-                    .validate_new_tag(&tag, notebook.db())
+                    .validate_new_tag(tag.id(), notebook.db())
                     .is_ok()
             } else {
                 false
@@ -80,7 +80,7 @@ pub fn run_note_tag_adding_state(
                 if state_data
                     .note_tags_managing_data
                     .note
-                    .validate_new_tag(&tag, notebook.db())
+                    .validate_new_tag(tag.id(), notebook.db())
                     .is_ok() =>
             {
                 info!(
@@ -91,7 +91,7 @@ pub fn run_note_tag_adding_state(
                 state_data
                     .note_tags_managing_data
                     .note
-                    .add_tag(tag, notebook.db())?;
+                    .add_tag(tag.id(), notebook.db())?;
 
                 State::NoteTagsManaging(NoteTagsManagingStateData::new(
                     state_data.note_tags_managing_data.note,

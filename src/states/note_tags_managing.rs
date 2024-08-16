@@ -30,7 +30,7 @@ pub struct NoteTagsManagingStateData {
 impl NoteTagsManagingStateData {
     pub fn new(note: Note, db: &Connection) -> Result<Self> {
         Ok(NoteTagsManagingStateData {
-            tags: Tag::list_note_tags(note.id(), db)?,
+            tags: note.tags(db)?,
             note,
             selected: 0,
             help_display: false,
