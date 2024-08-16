@@ -90,26 +90,26 @@ pub fn draw_tag_notes_listing_state(
             .split(main_rect);
 
             let tag_name = Paragraph::new(Line::from(vec![
-                Span::raw(tag.name()).style(Style::default().fg(Color::Green))
+                Span::raw(tag.name()).style(Style::new().fg(Color::Green))
             ]))
             .block(
                 Block::new()
                     .title("Tag name")
                     .borders(Borders::ALL)
                     .border_type(BorderType::Rounded)
-                    .border_style(Style::default().fg(Color::Blue))
+                    .border_style(Style::new().fg(Color::Blue))
                     .padding(Padding::uniform(1)),
             );
 
             let tag_notes = List::new(notes.iter().map(|tag| Span::raw(tag.name())))
                 .highlight_symbol(">> ")
-                .highlight_style(Style::default().fg(Color::Black).bg(Color::White))
+                .highlight_style(Style::new().fg(Color::Black).bg(Color::White))
                 .block(
                     Block::new()
                         .title("Tag notes")
                         .borders(Borders::ALL)
                         .border_type(BorderType::Rounded)
-                        .border_style(Style::default().fg(Color::Yellow)),
+                        .border_style(Style::new().fg(Color::Yellow)),
                 );
 
             let notes_scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)

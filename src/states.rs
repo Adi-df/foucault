@@ -113,12 +113,12 @@ impl State {
     }
 
     pub fn draw(&self, notebook: &Notebook, terminal: &mut Terminal) -> Result<()> {
-        let main_frame = Block::default()
+        let main_frame = Block::new()
             .title(notebook.name.as_str())
             .padding(Padding::uniform(1))
             .borders(Borders::all())
             .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(Color::White));
+            .border_style(Style::new().fg(Color::White));
 
         match self {
             State::Nothing => draw_nothing_state(terminal, notebook, main_frame),

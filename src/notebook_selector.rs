@@ -106,23 +106,23 @@ pub fn open_selector(dir: &Path) -> Result<Option<String>> {
 
         // Draw
         terminal.draw(|frame| {
-            let main_block = Block::default()
+            let main_block = Block::new()
                 .title("Foucault")
                 .title_alignment(Alignment::Center)
-                .title_style(Style::default().add_modifier(Modifier::BOLD))
+                .title_style(Style::new().add_modifier(Modifier::BOLD))
                 .padding(Padding::new(2, 2, 1, 1))
                 .borders(Borders::all())
-                .border_style(Style::default().fg(Color::White))
+                .border_style(Style::new().fg(Color::White))
                 .border_type(BorderType::Rounded);
 
             let list = List::default()
                 .items(
                     notebooks
                         .iter()
-                        .map(|notebook| Text::styled(notebook, Style::default())),
+                        .map(|notebook| Text::styled(notebook, Style::new())),
                 )
                 .highlight_symbol(">>")
-                .highlight_style(Style::default().fg(Color::Black).bg(Color::White))
+                .highlight_style(Style::new().fg(Color::Black).bg(Color::White))
                 .direction(ListDirection::TopToBottom);
 
             let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)

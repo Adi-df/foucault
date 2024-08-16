@@ -3,7 +3,7 @@ use log::info;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::prelude::{Constraint, Direction, Layout, Margin};
-use ratatui::style::{Color, Modifier, Style, Stylize};
+use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{
     Block, BorderType, Borders, List, ListState, Padding, Paragraph, Scrollbar,
@@ -105,14 +105,14 @@ pub fn draw_note_managing_state(
             .split(main_rect);
 
             let search_bar = Paragraph::new(Line::from(vec![
-                Span::raw(pattern).style(Style::default().add_modifier(Modifier::UNDERLINED))
+                Span::raw(pattern).style(Style::new().add_modifier(Modifier::UNDERLINED))
             ]))
             .block(
                 Block::new()
                     .title("Searching")
                     .borders(Borders::ALL)
                     .border_type(BorderType::Rounded)
-                    .border_style(Style::default().fg(if notes.is_empty() {
+                    .border_style(Style::new().fg(if notes.is_empty() {
                         Color::Red
                     } else {
                         Color::Green
@@ -129,16 +129,22 @@ pub fn draw_note_managing_state(
                 let pattern_end = pattern_start + pattern.len();
 
                 let mut note_line = vec![
-                    Span::raw(&note.name()[..pattern_start]).bold(),
-                    Span::raw(&note.name()[pattern_start..pattern_end])
-                        .underlined()
-                        .bold(),
-                    Span::raw(&note.name()[pattern_end..]).bold(),
+                    Span::raw(&note.name()[..pattern_start])
+                        .style(Style::new().add_modifier(Modifier::BOLD)),
+                    Span::raw(&note.name()[pattern_start..pattern_end]).style(
+                        Style::new()
+                            .add_modifier(Modifier::BOLD)
+                            .add_modifier(Modifier::UNDERLINED),
+                    ),
+                    Span::raw(&note.name()[pattern_end..])
+                        .style(Style::new().add_modifier(Modifier::BOLD)),
                     Span::raw("    "),
                 ];
 
                 for tag in note.tags() {
-                    note_line.push(Span::raw(tag.name()).bg(Color::from_u32(tag.color())));
+                    note_line.push(
+                        Span::raw(tag.name()).style(Style::new().bg(Color::from_u32(tag.color()))),
+                    );
                     note_line.push(Span::raw(", "))
                 }
                 if !note.tags().is_empty() {

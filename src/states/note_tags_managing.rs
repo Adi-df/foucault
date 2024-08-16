@@ -135,26 +135,26 @@ pub fn draw_note_tags_managing(
     .split(main_rect);
 
     let note_name = Paragraph::new(Line::from(vec![
-        Span::raw(note.name()).style(Style::default().fg(Color::Green))
+        Span::raw(note.name()).style(Style::new().fg(Color::Green))
     ]))
     .block(
         Block::new()
             .title("Note name")
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(Color::Blue))
+            .border_style(Style::new().fg(Color::Blue))
             .padding(Padding::uniform(1)),
     );
 
     let note_tags = List::new(tags.iter().map(|tag| Span::raw(tag.name())))
         .highlight_symbol(">> ")
-        .highlight_style(Style::default().fg(Color::Black).bg(Color::White))
+        .highlight_style(Style::new().fg(Color::Black).bg(Color::White))
         .block(
             Block::new()
                 .title("Note Tags")
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(Color::Yellow)),
+                .border_style(Style::new().fg(Color::Yellow)),
         );
 
     frame.render_widget(note_name, vertical_layout[0]);

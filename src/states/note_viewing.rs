@@ -284,15 +284,15 @@ pub fn draw_viewed_note(
     .split(vertical_layout[0]);
 
     let note_title = Paragraph::new(note.name())
-        .style(Style::default().add_modifier(Modifier::BOLD))
+        .style(Style::new().add_modifier(Modifier::BOLD))
         .alignment(Alignment::Left)
         .block(
-            Block::default()
+            Block::new()
                 .title("Title")
-                .title_style(Style::default())
+                .title_style(Style::new())
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(Color::Green))
+                .border_style(Style::new().fg(Color::Green))
                 .padding(Padding::uniform(1)),
         );
     let note_tags = Table::default()
@@ -315,19 +315,19 @@ pub fn draw_viewed_note(
         )
         .column_spacing(1)
         .block(
-            Block::default()
+            Block::new()
                 .title("Tags")
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(Color::Red))
+                .border_style(Style::new().fg(Color::Red))
                 .padding(Padding::uniform(1)),
         );
 
-    let content_block = Block::default()
+    let content_block = Block::new()
         .title("Content")
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
-        .border_style(Style::default().fg(Color::Yellow))
+        .border_style(Style::new().fg(Color::Yellow))
         .padding(Padding::uniform(1));
 
     let content_area = content_block.inner(vertical_layout[1]);

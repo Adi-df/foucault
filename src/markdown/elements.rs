@@ -454,7 +454,7 @@ where
                 Line::default(),
             ],
             BlockElements::ListItem { content } => vec![Line::from(
-                [Span::raw("  - ").style(Style::default().fg(Color::Blue))]
+                [Span::raw("  - ").style(Style::new().fg(Color::Blue))]
                     .into_iter()
                     .chain(content.iter().cloned().map(InlineElement::into_span))
                     .collect::<Vec<_>>(),

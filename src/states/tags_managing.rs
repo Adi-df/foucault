@@ -3,7 +3,7 @@ use log::info;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::prelude::{Constraint, Direction, Layout, Margin, Rect};
-use ratatui::style::{Color, Modifier, Style, Stylize};
+use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{
     Block, BorderType, Borders, Clear, List, ListState, Padding, Paragraph, Scrollbar,
@@ -138,14 +138,14 @@ pub fn draw_tags_managing(
     .split(main_rect);
 
     let filter_bar = Paragraph::new(Line::from(vec![
-        Span::raw(pattern).style(Style::default().add_modifier(Modifier::UNDERLINED))
+        Span::raw(pattern).style(Style::new().add_modifier(Modifier::UNDERLINED))
     ]))
     .block(
         Block::new()
             .title("Filter")
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(if tags.is_empty() {
+            .border_style(Style::new().fg(if tags.is_empty() {
                 Color::Red
             } else {
                 Color::Green
@@ -162,18 +162,19 @@ pub fn draw_tags_managing(
         let pattern_end = pattern_start + pattern.len();
         Line::from(vec![
             Span::raw(&tag.name()[..pattern_start]),
-            Span::raw(&tag.name()[pattern_start..pattern_end]).underlined(),
+            Span::raw(&tag.name()[pattern_start..pattern_end])
+                .style(Style::new().add_modifier(Modifier::UNDERLINED)),
             Span::raw(&tag.name()[pattern_end..]),
         ])
     }))
     .highlight_symbol(">> ")
-    .highlight_style(Style::default().bg(Color::White).fg(Color::Black))
+    .highlight_style(Style::new().bg(Color::White).fg(Color::Black))
     .block(
         Block::new()
             .title("Tags")
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(Color::Yellow))
+            .border_style(Style::new().fg(Color::Yellow))
             .padding(Padding::uniform(2)),
     );
 

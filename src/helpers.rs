@@ -80,7 +80,7 @@ pub fn draw_yes_no_prompt(frame: &mut Frame, choice: bool, title: &str, main_rec
         .title(title)
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
-        .border_style(Style::default().fg(Color::Blue));
+        .border_style(Style::new().fg(Color::Blue));
 
     let layout = Layout::new(
         Direction::Horizontal,
@@ -93,26 +93,26 @@ pub fn draw_yes_no_prompt(frame: &mut Frame, choice: bool, title: &str, main_rec
     } else {
         Span::raw("Yes")
     }]))
-    .style(Style::default().fg(Color::Green))
+    .style(Style::new().fg(Color::Green))
     .alignment(Alignment::Center)
     .block(
-        Block::default()
+        Block::new()
             .borders(Borders::ALL)
             .border_type(BorderType::Plain)
-            .border_style(Style::default().fg(Color::Green)),
+            .border_style(Style::new().fg(Color::Green)),
     );
     let no = Paragraph::new(Line::from(vec![if choice {
         Span::raw("No")
     } else {
         Span::raw("No").add_modifier(Modifier::UNDERLINED)
     }]))
-    .style(Style::default().fg(Color::Red))
+    .style(Style::new().fg(Color::Red))
     .alignment(Alignment::Center)
     .block(
-        Block::default()
+        Block::new()
             .borders(Borders::ALL)
             .border_type(BorderType::Plain)
-            .border_style(Style::default().fg(Color::Red)),
+            .border_style(Style::new().fg(Color::Red)),
     );
 
     frame.render_widget(Clear, popup_area);
@@ -131,14 +131,14 @@ pub fn draw_text_prompt(
     let popup_area = create_popup_size((30, 5), main_rect);
 
     let new_note_entry = Paragraph::new(Line::from(vec![
-        Span::raw(text).style(Style::default().add_modifier(Modifier::UNDERLINED))
+        Span::raw(text).style(Style::new().add_modifier(Modifier::UNDERLINED))
     ]))
     .block(
-        Block::default()
+        Block::new()
             .title(title)
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(if valid { Color::Green } else { Color::Red }))
+            .border_style(Style::new().fg(if valid { Color::Green } else { Color::Red }))
             .padding(Padding::uniform(1)),
     );
 
