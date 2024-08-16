@@ -124,13 +124,13 @@ pub fn run_note_viewing_state(
             State::Exit
         }
         KeyCode::Char('h') if key_event.modifiers == KeyModifiers::CONTROL => {
-            info!("Toogle help display");
+            info!("Toogle help display.");
             state_data.help_display = !state_data.help_display;
 
             State::NoteViewing(state_data)
         }
         KeyCode::Char('e') => {
-            info!("Edit note {}", state_data.note_data.note.name);
+            info!("Edit note {}.", state_data.note_data.note.name);
             edit_note(&mut state_data.note_data.note, notebook)?;
 
             state_data.re_parse_content();

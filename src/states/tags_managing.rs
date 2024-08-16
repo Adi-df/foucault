@@ -6,14 +6,14 @@ use ratatui::prelude::{Constraint, Direction, Layout, Margin, Rect};
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{
-    Block, BorderType, Borders, List, ListState, Padding, Paragraph, Scrollbar,
+    Block, BorderType, Borders, Clear, List, ListState, Padding, Paragraph, Scrollbar,
     ScrollbarOrientation, ScrollbarState,
 };
 use ratatui::Frame;
 
 use rusqlite::Connection;
 
-use crate::helpers::{DiscardResult, TryFromDatabase};
+use crate::helpers::{create_bottom_line, create_row_help_layout, DiscardResult, TryFromDatabase};
 use crate::notebook::Notebook;
 use crate::states::tag_creating::TagsCreatingStateData;
 use crate::states::tag_deleting::TagsDeletingStateData;
@@ -25,6 +25,7 @@ pub struct TagsManagingStateData {
     pub pattern: String,
     pub selected: usize,
     pub tags: Vec<Tag>,
+    pub help_display: bool,
 }
 
 impl TagsManagingStateData {
@@ -33,6 +34,7 @@ impl TagsManagingStateData {
             tags: Tag::search_by_name(pattern.as_str(), db)?,
             selected: 0,
             pattern,
+            help_display: false,
         })
     }
 
@@ -55,6 +57,22 @@ pub fn run_tags_managing_state(
             info!("Stop tags managing.");
             State::Nothing
         }
+        KeyCode::Char('h') if key_event.modifiers == KeyModifiers::CONTROL => {
+            info!("Toogle help display.");
+            state_data.help_display = !state_data.help_display;
+
+            State::TagsManaging(state_data)
+        }
+        KeyCode::Char('c') if key_event.modifiers == KeyModifiers::CONTROL => {
+            info!("Open tag creating prompt.");
+            State::TagCreating(TagsCreatingStateData::empty(state_data))
+        }
+        KeyCode::Char('d')
+            if key_event.modifiers == KeyModifiers::CONTROL && !state_data.tags.is_empty() =>
+        {
+            info!("Open tag deleting prompt.");
+            State::TagDeleting(TagsDeletingStateData::empty(state_data))
+        }
         KeyCode::Up if state_data.selected > 0 => State::TagsManaging(TagsManagingStateData {
             selected: state_data.selected - 1,
             ..state_data
@@ -64,17 +82,6 @@ pub fn run_tags_managing_state(
                 selected: state_data.selected + 1,
                 ..state_data
             })
-        }
-        KeyCode::Char('c') if key_event.modifiers.contains(KeyModifiers::CONTROL) => {
-            info!("Open tag creating prompt.");
-            State::TagCreating(TagsCreatingStateData::empty(state_data))
-        }
-        KeyCode::Char('d')
-            if key_event.modifiers.contains(KeyModifiers::CONTROL)
-                && !state_data.tags.is_empty() =>
-        {
-            info!("Open tag deleting prompt.");
-            State::TagDeleting(TagsDeletingStateData::empty(state_data))
         }
         KeyCode::Enter if !state_data.tags.is_empty() => {
             info!("Open tag notes listing.");
@@ -123,6 +130,7 @@ pub fn draw_tags_managing(
         pattern,
         selected,
         tags,
+        help_display,
     }: &TagsManagingStateData,
     main_rect: Rect,
 ) {
@@ -187,4 +195,23 @@ pub fn draw_tags_managing(
         vertical_layout[1].inner(&Margin::new(0, 1)),
         &mut ScrollbarState::new(tags.len()).position(*selected),
     );
+
+    if *help_display {
+        let command_area = create_bottom_line(main_rect);
+        let commands = create_row_help_layout(&[
+            ("Ctrl+c", "Create tag"),
+            ("Ctrl+d", "Delete tag"),
+            ("⏎", "List related notes"),
+        ])
+        .block(
+            Block::new()
+                .padding(Padding::uniform(1))
+                .borders(Borders::all())
+                .border_type(BorderType::Double)
+                .border_style(Style::new().fg(Color::White)),
+        );
+
+        frame.render_widget(Clear, command_area);
+        frame.render_widget(commands, command_area);
+    }
 }
