@@ -13,7 +13,7 @@ use ratatui::Frame;
 
 use rusqlite::Connection;
 
-use crate::helpers::{create_bottom_line, create_row_help_layout, DiscardResult, TryFromDatabase};
+use crate::helpers::{create_bottom_line, create_row_help_layout, DiscardResult};
 use crate::notebook::Notebook;
 use crate::states::tag_creating::TagsCreatingStateData;
 use crate::states::tag_deleting::TagsDeletingStateData;
@@ -87,10 +87,7 @@ pub fn run_tags_managing_state(
             info!("Open tag notes listing.");
             let tag = state_data.tags.swap_remove(state_data.selected);
 
-            State::TagNotesListing(TagNotesListingStateData::try_from_database(
-                tag,
-                notebook.db(),
-            )?)
+            State::TagNotesListing(TagNotesListingStateData::new(tag, notebook.db())?)
         }
         KeyCode::Backspace if key_event.modifiers == KeyModifiers::NONE => {
             state_data.pattern.pop();
@@ -158,15 +155,15 @@ pub fn draw_tags_managing(
 
     let list_results = List::new(tags.iter().map(|tag| {
         let pattern_start = tag
-            .name
+            .name()
             .to_lowercase()
             .find(pattern)
             .expect("The pattern should match listed tags");
         let pattern_end = pattern_start + pattern.len();
         Line::from(vec![
-            Span::raw(&tag.name[..pattern_start]),
-            Span::raw(&tag.name[pattern_start..pattern_end]).underlined(),
-            Span::raw(&tag.name[pattern_end..]),
+            Span::raw(&tag.name()[..pattern_start]),
+            Span::raw(&tag.name()[pattern_start..pattern_end]).underlined(),
+            Span::raw(&tag.name()[pattern_end..]),
         ])
     }))
     .highlight_symbol(">> ")

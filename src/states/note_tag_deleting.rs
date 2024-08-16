@@ -38,26 +38,26 @@ pub fn run_note_tag_deleting_state(
                 note_tags_managing_data
                     .get_selected()
                     .expect("A tag should be selected.")
-                    .name,
-                note_tags_managing_data.note_data.note.name
+                    .name(),
+                note_tags_managing_data.note.name()
             );
             State::NoteTagsManaging(note_tags_managing_data)
         }
         KeyCode::Enter => {
             if delete {
                 let tag = note_tags_managing_data
-                    .note_data
                     .tags
                     .swap_remove(note_tags_managing_data.selected);
 
                 info!(
                     "Remove tag {} from note {}.",
-                    tag.name, note_tags_managing_data.note_data.note.name
+                    tag.name(),
+                    note_tags_managing_data.note.name()
                 );
 
                 note_tags_managing_data
-                    .note_data
-                    .remove_tag(&tag, notebook.db())?;
+                    .note
+                    .remove_tag(tag.id(), notebook.db())?;
 
                 State::NoteTagsManaging(note_tags_managing_data)
             } else {

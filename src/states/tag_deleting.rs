@@ -8,7 +8,6 @@ use crate::helpers::{draw_yes_no_prompt, DiscardResult};
 use crate::notebook::Notebook;
 use crate::states::tags_managing::{draw_tags_managing, TagsManagingStateData};
 use crate::states::{State, Terminal};
-use crate::tag::Tag;
 
 pub struct TagsDeletingStateData {
     pub tags_managing_data: TagsManagingStateData,
@@ -39,7 +38,7 @@ pub fn run_tag_deleting_state(
                 tags_managing_data
                     .get_selected()
                     .expect("A tag should be selected.")
-                    .name
+                    .name()
             );
             State::TagsManaging(tags_managing_data)
         }
@@ -50,7 +49,7 @@ pub fn run_tag_deleting_state(
                     tags_managing_data
                         .get_selected()
                         .expect("A tag should be selected.")
-                        .name
+                        .name()
                 );
 
                 tags_managing_data
@@ -63,7 +62,7 @@ pub fn run_tag_deleting_state(
                     tags_managing_data
                         .get_selected()
                         .expect("A tag should be selected.")
-                        .name
+                        .name()
                 );
             }
             State::TagsManaging(TagsManagingStateData::from_pattern(
@@ -90,7 +89,7 @@ pub fn draw_tag_deleting_state(
     terminal: &mut Terminal,
     main_frame: Block,
 ) -> Result<()> {
-    let Tag { name, .. } = &tags_managing_data.tags[tags_managing_data.selected];
+    let selected_tag = &tags_managing_data.tags[tags_managing_data.selected];
 
     terminal
         .draw(|frame| {
@@ -101,7 +100,7 @@ pub fn draw_tag_deleting_state(
             draw_yes_no_prompt(
                 frame,
                 *delete,
-                format!("Delete tag {name} ?").as_str(),
+                format!("Delete tag {} ?", selected_tag.name()).as_str(),
                 main_rect,
             );
 

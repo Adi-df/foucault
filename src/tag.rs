@@ -5,9 +5,10 @@ use sea_query::{
     ColumnDef, Expr, ForeignKey, ForeignKeyAction, Iden, JoinType, Order, Query,
     SqliteQueryBuilder, Table,
 };
+use thiserror::Error;
 
 use crate::helpers::DiscardResult;
-use crate::note::{Note, NoteSummary, NotesCharacters, NotesTable};
+use crate::note::{NoteSummary, NotesCharacters, NotesTable};
 
 #[derive(Iden)]
 pub struct TagsTable;
@@ -30,12 +31,26 @@ pub enum TagsJoinCharacters {
 
 #[derive(Debug)]
 pub struct Tag {
-    pub id: i64,
-    pub name: String,
+    id: i64,
+    name: String,
+}
+
+#[derive(Debug, Error)]
+pub enum TagError {
+    #[error("A simillarly named tag already exists")]
+    AlreadyExists,
+    #[error("The provided tag name is empty")]
+    EmptyName,
 }
 
 impl Tag {
     pub fn new(name: &str, db: &Connection) -> Result<Self> {
+        if name.is_empty() {
+            return Err(TagError::EmptyName.into());
+        } else if Tag::exists(name, db)? {
+            return Err(TagError::AlreadyExists.into());
+        }
+
         db.execute_batch(
             Query::insert()
                 .into_table(TagsTable)
@@ -50,6 +65,13 @@ impl Tag {
             id: db.last_insert_rowid(),
             name: name.to_owned(),
         })
+    }
+
+    pub fn id(&self) -> i64 {
+        self.id
+    }
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
     pub fn load_by_name(name: &str, db: &Connection) -> Result<Option<Tag>> {
@@ -73,7 +95,33 @@ impl Tag {
         })
     }
 
-    pub fn tag_exists(name: &str, db: &Connection) -> Result<bool> {
+    pub fn list_note_tags(note_id: i64, db: &Connection) -> Result<Vec<Self>> {
+        db.prepare(
+            Query::select()
+                .from(TagsJoinTable)
+                .columns([
+                    (TagsTable, TagsCharacters::Id),
+                    (TagsTable, TagsCharacters::Name),
+                ])
+                .join(
+                    JoinType::InnerJoin,
+                    TagsTable,
+                    Expr::col((TagsTable, TagsCharacters::Id))
+                        .equals((TagsJoinTable, TagsJoinCharacters::TagId)),
+                )
+                .and_where(Expr::col(TagsJoinCharacters::NoteId).eq(note_id))
+                .to_string(SqliteQueryBuilder)
+                .as_str(),
+        )?
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
+        .map(|row| {
+            row.map(|(id, name)| Self { id, name })
+                .map_err(anyhow::Error::from)
+        })
+        .collect()
+    }
+
+    pub fn exists(name: &str, db: &Connection) -> Result<bool> {
         db.prepare(
             Query::select()
                 .from(TagsTable)
@@ -113,40 +161,8 @@ impl Tag {
         .collect()
     }
 
-    pub fn fetch_notes(id: i64, db: &Connection) -> Result<Vec<NoteSummary>> {
-        db.prepare(
-            Query::select()
-                .from(TagsJoinTable)
-                .columns([
-                    (NotesTable, NotesCharacters::Id),
-                    (NotesTable, NotesCharacters::Name),
-                ])
-                .join(
-                    JoinType::InnerJoin,
-                    NotesTable,
-                    Expr::col((TagsJoinTable, TagsJoinCharacters::NoteId))
-                        .equals((NotesTable, NotesCharacters::Id)),
-                )
-                .and_where(Expr::col(TagsJoinCharacters::TagId).eq(id))
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-        )?
-        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
-        .map(|row| row.map_err(anyhow::Error::from))
-        .map(|row| {
-            row.and_then(|(id, name)| {
-                Ok(NoteSummary {
-                    id,
-                    name,
-                    tags: Note::list_tags(id, db)?,
-                })
-            })
-        })
-        .collect()
-    }
-
-    pub fn get_notes(&self, db: &Connection) -> Result<Vec<NoteSummary>> {
-        Tag::fetch_notes(self.id, db)
+    pub fn get_related_notes(&self, db: &Connection) -> Result<Vec<NoteSummary>> {
+        NoteSummary::fetch_by_tag(self.id, db)
     }
 }
 

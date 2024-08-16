@@ -12,7 +12,7 @@ use ratatui::widgets::{
 
 use rusqlite::Connection;
 
-use crate::helpers::{DiscardResult, TryFromDatabase};
+use crate::helpers::DiscardResult;
 use crate::note::{Note, NoteSummary};
 use crate::notebook::Notebook;
 use crate::states::note_viewing::NoteViewingStateData;
@@ -50,15 +50,10 @@ pub fn run_note_managing_state(
         }
         KeyCode::Enter if !state_data.notes.is_empty() => {
             let note_summary = &state_data.notes[state_data.selected];
-            if let Some(note) = Note::load_by_id(note_summary.id, notebook.db())? {
-                info!("Open note {}.", note_summary.name);
-                State::NoteViewing(NoteViewingStateData::try_from_database(
-                    note,
-                    notebook.db(),
-                )?)
-            } else {
-                State::NotesManaging(state_data)
-            }
+            info!("Open note {}.", note_summary.name());
+
+            let note = Note::load_from_summary(note_summary, notebook.db())?;
+            State::NoteViewing(NoteViewingStateData::new(note, notebook.db())?)
         }
         KeyCode::Backspace if key_event.modifiers == KeyModifiers::NONE => {
             state_data.pattern.pop();
@@ -128,15 +123,15 @@ pub fn draw_note_managing_state(
             let list_results = List::new(notes.iter().map(|note| {
                 info!("Test {note:?}");
                 let pattern_start = note
-                    .name
+                    .name()
                     .to_lowercase()
                     .find(&pattern.to_lowercase())
                     .expect("The search pattern should have matched");
                 let pattern_end = pattern_start + pattern.len();
                 Line::from(vec![
-                    Span::raw(&note.name[..pattern_start]),
-                    Span::raw(&note.name[pattern_start..pattern_end]).underlined(),
-                    Span::raw(&note.name[pattern_end..]),
+                    Span::raw(&note.name()[..pattern_start]),
+                    Span::raw(&note.name()[pattern_start..pattern_end]).underlined(),
+                    Span::raw(&note.name()[pattern_end..]),
                 ])
             }))
             .highlight_symbol(">> ")

@@ -19,49 +19,44 @@ use ratatui::widgets::{
 };
 use ratatui::Frame;
 
-use crate::helpers::{create_bottom_line, create_row_help_layout, DiscardResult, TryFromDatabase};
+use crate::helpers::{create_bottom_line, create_row_help_layout, DiscardResult};
 use crate::links::Link;
 use crate::markdown::elements::{InlineElements, SelectableInlineElements};
 use crate::markdown::{combine, lines, parse, ParsedMarkdown};
-use crate::note::{Note, NoteData};
+use crate::note::Note;
 use crate::notebook::Notebook;
 use crate::states::note_deleting::NoteDeletingStateData;
 use crate::states::note_renaming::NoteRenamingStateData;
 use crate::states::note_tags_managing::NoteTagsManagingStateData;
 use crate::states::notes_managing::NotesManagingStateData;
 use crate::states::{State, Terminal};
+use crate::tag::Tag;
 
 pub struct NoteViewingStateData {
-    pub note_data: NoteData,
+    pub note: Note,
+    pub tags: Vec<Tag>,
     pub parsed_content: ParsedMarkdown,
     pub selected: (usize, usize),
     pub help_display: bool,
 }
 
-impl From<NoteData> for NoteViewingStateData {
-    fn from(note_data: NoteData) -> Self {
-        let mut parsed_content = parse(note_data.note.content.as_str());
+impl NoteViewingStateData {
+    pub fn new(note: Note, db: &Connection) -> Result<Self> {
+        let mut parsed_content = parse(note.content());
         parsed_content.select((0, 0), true);
-        NoteViewingStateData {
-            note_data,
+        Ok(NoteViewingStateData {
+            tags: Tag::list_note_tags(note.id(), db)?,
+            note,
             parsed_content,
             selected: (0, 0),
             help_display: false,
-        }
-    }
-}
-
-impl TryFromDatabase<Note> for NoteViewingStateData {
-    fn try_from_database(note: Note, db: &Connection) -> Result<Self> {
-        Ok(NoteViewingStateData::from(NoteData::try_from_database(
-            note, db,
-        )?))
+        })
     }
 }
 
 impl NoteViewingStateData {
     fn re_parse_content(&mut self) {
-        self.parsed_content = parse(self.note_data.note.content.as_str());
+        self.parsed_content = parse(self.note.content());
     }
     fn get_current(&self) -> Option<&SelectableInlineElements> {
         self.parsed_content.get_element(self.selected)
@@ -75,36 +70,10 @@ impl NoteViewingStateData {
             .list_links()
             .into_iter()
             .map(|to| Link {
-                from: self.note_data.note.id,
+                from: self.note.id(),
                 to: to.to_string(),
             })
             .collect()
-    }
-    fn update_links(&mut self, db: &Connection) -> Result<()> {
-        let computed_links = self.compute_links();
-
-        let removed: Vec<Link> = self
-            .note_data
-            .links
-            .iter()
-            .filter(|link| !computed_links.contains(link))
-            .cloned()
-            .collect();
-
-        for link in removed {
-            self.note_data.remove_link(link.to.as_str(), db)?;
-        }
-
-        let added: Vec<Link> = computed_links
-            .into_iter()
-            .filter(|link| !self.note_data.links.contains(link))
-            .collect();
-
-        for link in added {
-            self.note_data.add_link(link.to.as_str(), db)?;
-        }
-
-        Ok(())
     }
 }
 
@@ -116,7 +85,7 @@ pub fn run_note_viewing_state(
 ) -> Result<State> {
     Ok(match key_event.code {
         KeyCode::Esc => {
-            info!("Stop viewing of note {}.", state_data.note_data.note.name);
+            info!("Stop viewing of note {}.", state_data.note.name());
             State::Nothing
         }
         KeyCode::Char('q') => {
@@ -130,11 +99,13 @@ pub fn run_note_viewing_state(
             State::NoteViewing(state_data)
         }
         KeyCode::Char('e') => {
-            info!("Edit note {}.", state_data.note_data.note.name);
-            edit_note(&mut state_data.note_data.note, notebook)?;
+            info!("Edit note {}.", state_data.note.name());
+            edit_note(&mut state_data.note, notebook)?;
 
             state_data.re_parse_content();
-            state_data.update_links(notebook.db())?;
+            state_data
+                .note
+                .update_links(&state_data.compute_links(), notebook.db())?;
             state_data.selected = (0, 0);
             state_data.select_current(true);
             *force_redraw = true;
@@ -146,25 +117,19 @@ pub fn run_note_viewing_state(
             State::NotesManaging(NotesManagingStateData::empty(notebook.db())?)
         }
         KeyCode::Char('d') => {
-            info!(
-                "Open deleting prompt for note {}.",
-                state_data.note_data.note.name
-            );
+            info!("Open deleting prompt for note {}.", state_data.note.name());
             State::NoteDeleting(NoteDeletingStateData::empty(state_data))
         }
         KeyCode::Char('r') => {
-            info!(
-                "Open renaming prompt for note {}.",
-                state_data.note_data.note.name
-            );
+            info!("Open renaming prompt for note {}.", state_data.note.name());
             State::NoteRenaming(NoteRenamingStateData::empty(state_data))
         }
         KeyCode::Char('t') => {
-            info!(
-                "Open tags manager for note {}",
-                state_data.note_data.note.name
-            );
-            State::NoteTagsManaging(NoteTagsManagingStateData::from(state_data.note_data))
+            info!("Open tags manager for note {}", state_data.note.name());
+            State::NoteTagsManaging(NoteTagsManagingStateData::new(
+                state_data.note,
+                notebook.db(),
+            )?)
         }
         KeyCode::Enter => {
             info!("Try to trigger element action.");
@@ -176,10 +141,7 @@ pub fn run_note_viewing_state(
                     }
                     InlineElements::CrossRef { dest, .. } => {
                         if let Some(note) = Note::load_by_name(dest.as_str(), notebook.db())? {
-                            State::NoteViewing(NoteViewingStateData::try_from_database(
-                                note,
-                                notebook.db(),
-                            )?)
+                            State::NoteViewing(NoteViewingStateData::new(note, notebook.db())?)
                         } else {
                             State::NoteViewing(state_data)
                         }
@@ -259,7 +221,7 @@ fn edit_note(note: &mut Note, notebook: &Notebook) -> Result<()> {
     let tmp_file_path = notebook
         .dir()
         .unwrap()
-        .join(format!("{}.tmp.md", note.name));
+        .join(format!("{}.tmp.md", note.name()));
     note.export_content(tmp_file_path.as_path())?;
 
     let editor = env::var("EDITOR")?;
@@ -277,8 +239,7 @@ fn edit_note(note: &mut Note, notebook: &Notebook) -> Result<()> {
         .current_dir(notebook.dir().unwrap())
         .status()?;
 
-    note.import_content(tmp_file_path.as_path())?;
-    note.update(notebook.db())?;
+    note.import_content(tmp_file_path.as_path(), notebook.db())?;
 
     fs::remove_file(&tmp_file_path)?;
     Ok(())
@@ -303,7 +264,8 @@ pub fn draw_note_viewing_state(
 pub fn draw_viewed_note(
     frame: &mut Frame,
     NoteViewingStateData {
-        note_data: NoteData { note, tags, .. },
+        note,
+        tags,
         parsed_content,
         selected,
         help_display,
@@ -321,7 +283,7 @@ pub fn draw_viewed_note(
     )
     .split(vertical_layout[0]);
 
-    let note_title = Paragraph::new(note.name.as_str())
+    let note_title = Paragraph::new(note.name())
         .style(Style::default().add_modifier(Modifier::BOLD))
         .alignment(Alignment::Left)
         .block(
@@ -334,7 +296,7 @@ pub fn draw_viewed_note(
                 .padding(Padding::uniform(1)),
         );
     let note_tags = Table::default()
-        .rows([Row::new(tags.iter().map(|el| Text::raw(el.name.as_str())))])
+        .rows([Row::new(tags.iter().map(|el| Text::raw(el.name())))])
         .widths(
             [if tags.is_empty() {
                 Constraint::Min(0)

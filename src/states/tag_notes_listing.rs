@@ -12,7 +12,7 @@ use ratatui::widgets::{
 
 use rusqlite::Connection;
 
-use crate::helpers::{DiscardResult, TryFromDatabase};
+use crate::helpers::DiscardResult;
 use crate::note::{Note, NoteSummary};
 use crate::notebook::Notebook;
 use crate::states::note_viewing::NoteViewingStateData;
@@ -25,10 +25,10 @@ pub struct TagNotesListingStateData {
     pub selected: usize,
 }
 
-impl TryFromDatabase<Tag> for TagNotesListingStateData {
-    fn try_from_database(tag: Tag, db: &Connection) -> Result<Self> {
+impl TagNotesListingStateData {
+    pub fn new(tag: Tag, db: &Connection) -> Result<Self> {
         Ok(TagNotesListingStateData {
-            notes: tag.get_notes(db)?,
+            notes: tag.get_related_notes(db)?,
             selected: 0,
             tag,
         })
@@ -42,17 +42,14 @@ pub fn run_tag_notes_listing_state(
 ) -> Result<State> {
     Ok(match key_event.code {
         KeyCode::Esc => {
-            info!("Cancel tag {} note listing.", state_data.tag.name);
+            info!("Cancel tag {} note listing.", state_data.tag.name());
             State::Nothing
         }
         KeyCode::Enter if !state_data.notes.is_empty() => {
             let summary = &state_data.notes[state_data.selected];
-            if let Some(note) = Note::load_by_id(summary.id, notebook.db())? {
-                info!("Open note {} viewing.", note.name);
-                State::NoteViewing(NoteViewingStateData::try_from_database(
-                    note,
-                    notebook.db(),
-                )?)
+            if let Some(note) = Note::load_by_id(summary.id(), notebook.db())? {
+                info!("Open note {} viewing.", note.name());
+                State::NoteViewing(NoteViewingStateData::new(note, notebook.db())?)
             } else {
                 State::TagNotesListing(state_data)
             }
@@ -93,7 +90,7 @@ pub fn draw_tag_notes_listing_state(
             .split(main_rect);
 
             let tag_name = Paragraph::new(Line::from(vec![
-                Span::raw(tag.name.as_str()).style(Style::default().fg(Color::Green))
+                Span::raw(tag.name()).style(Style::default().fg(Color::Green))
             ]))
             .block(
                 Block::new()
@@ -104,7 +101,7 @@ pub fn draw_tag_notes_listing_state(
                     .padding(Padding::uniform(1)),
             );
 
-            let tag_notes = List::new(notes.iter().map(|tag| Span::raw(tag.name.as_str())))
+            let tag_notes = List::new(notes.iter().map(|tag| Span::raw(tag.name())))
                 .highlight_symbol(">> ")
                 .highlight_style(Style::default().fg(Color::Black).bg(Color::White))
                 .block(

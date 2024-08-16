@@ -37,7 +37,7 @@ pub fn run_tag_creating_state(
             State::TagsManaging(state_data.tags_managing_data)
         }
         KeyCode::Enter if !state_data.name.is_empty() => {
-            if Tag::tag_exists(state_data.name.as_str(), notebook.db())? {
+            if Tag::exists(state_data.name.as_str(), notebook.db())? {
                 State::TagCreating(TagsCreatingStateData {
                     valid: false,
                     ..state_data
@@ -53,13 +53,13 @@ pub fn run_tag_creating_state(
         }
         KeyCode::Backspace => {
             state_data.name.pop();
-            state_data.valid = Tag::tag_exists(state_data.name.as_str(), notebook.db())?
+            state_data.valid = Tag::exists(state_data.name.as_str(), notebook.db())?
                 && !state_data.name.is_empty();
             State::TagCreating(state_data)
         }
         KeyCode::Char(c) if !c.is_whitespace() => {
             state_data.name.push(c);
-            state_data.valid = Tag::tag_exists(state_data.name.as_str(), notebook.db())?;
+            state_data.valid = Tag::exists(state_data.name.as_str(), notebook.db())?;
             State::TagCreating(state_data)
         }
         _ => State::TagCreating(state_data),

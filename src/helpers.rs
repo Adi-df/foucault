@@ -6,8 +6,6 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Cell, Clear, Padding, Paragraph, Row, Table};
 use ratatui::Frame;
 
-use rusqlite::Connection;
-
 pub fn create_popup_proportion(proportion: (u16, u16), rect: Rect) -> Rect {
     let vertical = Layout::new(
         Direction::Vertical,
@@ -166,10 +164,6 @@ where
             String::new()
         }
     }
-}
-
-pub trait TryFromDatabase<T>: Sized {
-    fn try_from_database(value: T, db: &Connection) -> Result<Self>;
 }
 
 pub trait DiscardResult {

@@ -35,45 +35,67 @@ pub fn run_note_tag_adding_state(
         KeyCode::Esc => {
             info!(
                 "Cancel tag adding to note {}.",
-                state_data.note_tags_managing_data.note_data.note.name
+                state_data.note_tags_managing_data.note.name()
             );
+
+            state_data
+                .note_tags_managing_data
+                .revalidate(notebook.db())?;
             State::NoteTagsManaging(state_data.note_tags_managing_data)
         }
         KeyCode::Char(c) if !c.is_whitespace() => {
             state_data.tag_name.push(c);
-            state_data.valid = Tag::tag_exists(state_data.tag_name.as_str(), notebook.db())?
-                && !state_data
-                    .note_tags_managing_data
-                    .note_data
-                    .has_tag(&state_data.tag_name);
+            state_data.valid = {
+                if let Some(tag) = Tag::load_by_name(state_data.tag_name.as_str(), notebook.db())? {
+                    state_data
+                        .note_tags_managing_data
+                        .note
+                        .validate_new_tag(&tag, notebook.db())
+                        .is_ok()
+                } else {
+                    false
+                }
+            };
 
             State::NoteTagAdding(state_data)
         }
         KeyCode::Backspace => {
             state_data.tag_name.pop();
-            state_data.valid = Tag::tag_exists(state_data.tag_name.as_str(), notebook.db())?
-                && !state_data
+            state_data.valid = if let Some(tag) =
+                Tag::load_by_name(state_data.tag_name.as_str(), notebook.db())?
+            {
+                state_data
                     .note_tags_managing_data
-                    .note_data
-                    .has_tag(&state_data.tag_name);
+                    .note
+                    .validate_new_tag(&tag, notebook.db())
+                    .is_ok()
+            } else {
+                false
+            };
 
             State::NoteTagAdding(state_data)
         }
         KeyCode::Enter => match Tag::load_by_name(state_data.tag_name.as_str(), notebook.db())? {
             Some(tag)
-                if !state_data
+                if state_data
                     .note_tags_managing_data
-                    .note_data
-                    .has_tag(&tag.name) =>
+                    .note
+                    .validate_new_tag(&tag, notebook.db())
+                    .is_ok() =>
             {
                 info!(
                     "Add tag {} to note {}.",
-                    tag.name, state_data.note_tags_managing_data.note_data.note.name
+                    tag.name(),
+                    state_data.note_tags_managing_data.note.name()
                 );
                 state_data
                     .note_tags_managing_data
-                    .note_data
+                    .note
                     .add_tag(tag, notebook.db())?;
+
+                state_data
+                    .note_tags_managing_data
+                    .revalidate(notebook.db())?;
                 State::NoteTagsManaging(state_data.note_tags_managing_data)
             }
             _ => {

@@ -4,7 +4,7 @@ use log::info;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::Block;
 
-use crate::helpers::{draw_text_prompt, DiscardResult, TryFromDatabase};
+use crate::helpers::{draw_text_prompt, DiscardResult};
 use crate::note::Note;
 use crate::notebook::Notebook;
 use crate::states::note_viewing::NoteViewingStateData;
@@ -30,18 +30,15 @@ pub fn run_note_creating_state(
     notebook: &Notebook,
 ) -> Result<State> {
     Ok(match key_event.code {
-        KeyCode::Enter if !name.is_empty() => {
-            if Note::note_exists(name.as_str(), notebook.db())? {
+        KeyCode::Enter => {
+            if Note::validate_name(name.as_str(), notebook.db()).is_err() {
                 State::NoteCreating(NoteCreatingStateData { name, valid: false })
             } else {
                 info!("Create note : {}.", name.as_str());
 
                 let new_note = Note::new(name.clone(), String::new(), notebook.db())?;
 
-                State::NoteViewing(NoteViewingStateData::try_from_database(
-                    new_note,
-                    notebook.db(),
-                )?)
+                State::NoteViewing(NoteViewingStateData::new(new_note, notebook.db())?)
             }
         }
         KeyCode::Esc => {
@@ -51,14 +48,14 @@ pub fn run_note_creating_state(
         KeyCode::Backspace => {
             name.pop();
             State::NoteCreating(NoteCreatingStateData {
-                valid: !Note::note_exists(name.as_str(), notebook.db())?,
+                valid: Note::validate_name(name.as_str(), notebook.db()).is_ok(),
                 name,
             })
         }
         KeyCode::Char(c) => {
             name.push(c);
             State::NoteCreating(NoteCreatingStateData {
-                valid: !Note::note_exists(name.as_str(), notebook.db())?,
+                valid: Note::validate_name(name.as_str(), notebook.db()).is_ok(),
                 name,
             })
         }
