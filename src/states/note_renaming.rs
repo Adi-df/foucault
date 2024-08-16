@@ -37,7 +37,10 @@ pub fn run_note_renaming_state(
                 "Cancel renaming note {}",
                 state_data.note_viewing_data.note.name()
             );
-            State::NoteViewing(state_data.note_viewing_data)
+            State::NoteViewing(NoteViewingStateData::new(
+                state_data.note_viewing_data.note,
+                notebook.db(),
+            )?)
         }
         KeyCode::Enter => {
             if Note::validate_name(state_data.new_name.as_str(), notebook.db()).is_err() {
@@ -55,7 +58,10 @@ pub fn run_note_renaming_state(
                     .note_viewing_data
                     .note
                     .rename(state_data.new_name, notebook.db())?;
-                State::NoteViewing(state_data.note_viewing_data)
+                State::NoteViewing(NoteViewingStateData::new(
+                    state_data.note_viewing_data.note,
+                    notebook.db(),
+                )?)
             }
         }
         KeyCode::Backspace => {

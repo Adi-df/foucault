@@ -37,12 +37,6 @@ impl NoteTagsManagingStateData {
         })
     }
 
-    pub fn revalidate(&mut self, db: &Connection) -> Result<()> {
-        self.note.revalidate(db)?;
-        self.tags = Tag::list_note_tags(self.note.id(), db)?;
-        Ok(())
-    }
-
     pub fn get_selected(&self) -> Option<&Tag> {
         self.tags.get(self.selected)
     }

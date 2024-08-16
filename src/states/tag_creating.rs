@@ -34,7 +34,10 @@ pub fn run_tag_creating_state(
     Ok(match key_event.code {
         KeyCode::Esc => {
             info!("Cancel tag creation.");
-            State::TagsManaging(state_data.tags_managing_data)
+            State::TagsManaging(TagsManagingStateData::from_pattern(
+                state_data.tags_managing_data.pattern,
+                notebook.db(),
+            )?)
         }
         KeyCode::Enter if !state_data.name.is_empty() => {
             if Tag::exists(state_data.name.as_str(), notebook.db())? {
@@ -53,13 +56,13 @@ pub fn run_tag_creating_state(
         }
         KeyCode::Backspace => {
             state_data.name.pop();
-            state_data.valid = Tag::exists(state_data.name.as_str(), notebook.db())?
+            state_data.valid = !Tag::exists(state_data.name.as_str(), notebook.db())?
                 && !state_data.name.is_empty();
             State::TagCreating(state_data)
         }
         KeyCode::Char(c) if !c.is_whitespace() => {
             state_data.name.push(c);
-            state_data.valid = Tag::exists(state_data.name.as_str(), notebook.db())?;
+            state_data.valid = !Tag::exists(state_data.name.as_str(), notebook.db())?;
             State::TagCreating(state_data)
         }
         _ => State::TagCreating(state_data),
@@ -70,7 +73,7 @@ pub fn draw_tag_creating_state(
     TagsCreatingStateData {
         tags_managing_data,
         name,
-        valid: taken,
+        valid,
     }: &TagsCreatingStateData,
     terminal: &mut Terminal,
     main_frame: Block,
@@ -80,7 +83,7 @@ pub fn draw_tag_creating_state(
             let main_rect = main_frame.inner(frame.size());
 
             draw_tags_managing(frame, tags_managing_data, main_rect);
-            draw_text_prompt(frame, "Tag name", name, !taken, main_rect);
+            draw_text_prompt(frame, "Tag name", name, *valid, main_rect);
 
             frame.render_widget(main_frame, frame.size());
         })

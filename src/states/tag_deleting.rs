@@ -40,7 +40,10 @@ pub fn run_tag_deleting_state(
                     .expect("A tag should be selected.")
                     .name()
             );
-            State::TagsManaging(tags_managing_data)
+            State::TagsManaging(TagsManagingStateData::from_pattern(
+                tags_managing_data.pattern,
+                notebook.db(),
+            )?)
         }
         KeyCode::Enter => {
             if delete {

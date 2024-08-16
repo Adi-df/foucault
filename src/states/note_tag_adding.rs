@@ -38,10 +38,10 @@ pub fn run_note_tag_adding_state(
                 state_data.note_tags_managing_data.note.name()
             );
 
-            state_data
-                .note_tags_managing_data
-                .revalidate(notebook.db())?;
-            State::NoteTagsManaging(state_data.note_tags_managing_data)
+            State::NoteTagsManaging(NoteTagsManagingStateData::new(
+                state_data.note_tags_managing_data.note,
+                notebook.db(),
+            )?)
         }
         KeyCode::Char(c) if !c.is_whitespace() => {
             state_data.tag_name.push(c);
@@ -93,10 +93,10 @@ pub fn run_note_tag_adding_state(
                     .note
                     .add_tag(tag, notebook.db())?;
 
-                state_data
-                    .note_tags_managing_data
-                    .revalidate(notebook.db())?;
-                State::NoteTagsManaging(state_data.note_tags_managing_data)
+                State::NoteTagsManaging(NoteTagsManagingStateData::new(
+                    state_data.note_tags_managing_data.note,
+                    notebook.db(),
+                )?)
             }
             _ => {
                 state_data.valid = false;

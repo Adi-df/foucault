@@ -77,15 +77,6 @@ impl Note {
         &self.content
     }
 
-    pub fn revalidate(&mut self, db: &Connection) -> Result<()> {
-        if let Some(note) = Note::load_by_id(self.id, db)? {
-            *self = note;
-            Ok(())
-        } else {
-            Err(NoteError::DoesNotExist.into())
-        }
-    }
-
     pub fn load_by_id(id: i64, db: &Connection) -> Result<Option<Self>> {
         db.query_row(
             Query::select()

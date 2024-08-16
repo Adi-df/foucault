@@ -41,7 +41,10 @@ pub fn run_note_tag_deleting_state(
                     .name(),
                 note_tags_managing_data.note.name()
             );
-            State::NoteTagsManaging(note_tags_managing_data)
+            State::NoteTagsManaging(NoteTagsManagingStateData::new(
+                note_tags_managing_data.note,
+                notebook.db(),
+            )?)
         }
         KeyCode::Enter => {
             if delete {
@@ -59,9 +62,15 @@ pub fn run_note_tag_deleting_state(
                     .note
                     .remove_tag(tag.id(), notebook.db())?;
 
-                State::NoteTagsManaging(note_tags_managing_data)
+                State::NoteTagsManaging(NoteTagsManagingStateData::new(
+                    note_tags_managing_data.note,
+                    notebook.db(),
+                )?)
             } else {
-                State::NoteTagsManaging(note_tags_managing_data)
+                State::NoteTagsManaging(NoteTagsManagingStateData::new(
+                    note_tags_managing_data.note,
+                    notebook.db(),
+                )?)
             }
         }
         KeyCode::Tab => State::NoteTagDeleting(NoteTagDeletingStateData {
