@@ -2,6 +2,7 @@
 name = "foucault"
 version = "0.1.2"
 edition = "2021"
+repository = "https://github.com/Adi-df/foucault/"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -23,3 +24,19 @@ random_color = "0.8.0"
 tokio = { version = "1.39.2", features = ["full"] }
 sqlx = { version = "0.8.0", features = ["runtime-tokio", "migrate", "macros", "sqlite"] }
 futures = "0.3.30"
+
+# The profile that 'cargo dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
+
+# Config for 'cargo dist'
+[workspace.metadata.dist]
+# The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
+cargo-dist-version = "0.21.0"
+# CI backends to support
+ci = "github"
+# The installers to generate for each app
+installers = []
+# Target platforms to build apps for (Rust target-triple syntax)
+targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-pc-windows-msvc"]
