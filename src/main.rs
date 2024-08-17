@@ -29,7 +29,7 @@ use crate::notebook_selector::open_selector;
 #[derive(Parser)]
 #[command(
     author = "Adrien Degliame <adidf-web@laposte.net>",
-    version = "0.2.0",
+    version = "0.2.1",
     about = "The Foucault notebook CLI"
 )]
 struct Cli {
