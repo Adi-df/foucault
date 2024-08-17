@@ -86,14 +86,14 @@ impl Tag {
                 Ok(Tag {
                     id: row.id.expect("There should be a tag id"),
                     name: name.to_string(),
-                    color: row.color as u32,
+                    color: u32::try_from(row.color)?,
                 })
             })
             .transpose()
     }
 
     pub async fn search_by_name(pattern: &str, db: &SqlitePool) -> Result<Vec<Tag>> {
-        let sql_pattern = format!("%{}%", pattern);
+        let sql_pattern = format!("%{pattern}%");
         sqlx::query!(
             "SELECT id,name,color FROM tags_table WHERE name LIKE $1 ORDER BY id DESC",
             sql_pattern
@@ -105,18 +105,26 @@ impl Tag {
             Ok(Tag {
                 id: row.id,
                 name: row.name,
-                color: row.color as u32,
+                color: u32::try_from(row.color)?,
             })
         })
         .collect()
     }
 
     pub async fn list_note_tags(note_id: i64, db: &SqlitePool) -> Result<Vec<Self>> {
-        sqlx::query!("SELECT tags_table.id,tags_table.name,tags_table.color FROM tags_join_table INNER JOIN tags_table ON tags_join_table.tag_id = tags_table.id WHERE tags_join_table.note_id=$1", note_id).fetch_all(db).await?.into_iter().map(|row| Ok(Tag {
+        sqlx::query!(
+            "SELECT tags_table.id,tags_table.name,tags_table.color FROM tags_join_table INNER JOIN tags_table ON tags_join_table.tag_id = tags_table.id WHERE tags_join_table.note_id=$1",
+            note_id
+        )
+        .fetch_all(db)
+        .await?
+        .into_iter()
+        .map(|row| Ok(Tag {
             id: row.id,
             name: row.name,
-            color: row.color as u32
-        })).collect()
+            color: u32::try_from(row.color)?,
+        }))
+        .collect()
     }
 
     pub fn id(&self) -> i64 {

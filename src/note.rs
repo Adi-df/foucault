@@ -286,7 +286,7 @@ impl NoteSummary {
     }
 
     pub async fn search_by_name(pattern: &str, db: &SqlitePool) -> Result<Vec<Self>> {
-        let sql_pattern = format!("%{}%", pattern);
+        let sql_pattern = format!("%{pattern}%");
         join_all(
             sqlx::query!(
                 "SELECT id,name FROM notes_table WHERE name LIKE $1 ORDER BY name ASC",
@@ -310,12 +310,24 @@ impl NoteSummary {
     }
 
     pub async fn fetch_by_tag(tag_id: i64, db: &SqlitePool) -> Result<Vec<NoteSummary>> {
-        join_all(sqlx::query!("SELECT notes_table.id, notes_table.name FROM tags_join_table INNER JOIN notes_table ON tags_join_table.note_id = notes_table.id WHERE tag_id=$1", tag_id).fetch_all(db).await?.into_iter().map(|row| async move{
-            Ok(NoteSummary {
+        join_all(
+            sqlx::query!(
+                "SELECT notes_table.id, notes_table.name FROM tags_join_table INNER JOIN notes_table ON tags_join_table.note_id = notes_table.id WHERE tag_id=$1",
+                tag_id
+            )
+            .fetch_all(db)
+            .await?.
+            into_iter()
+            .map(|row| async move {
+                Ok(NoteSummary {
                     id: row.id,
                     name: row.name.expect("There should be a note name"),
                     tags: Tag::list_note_tags(row.id, db).await?
                 })
-        })).await.into_iter().collect()
+            })
+        )
+        .await
+        .into_iter()
+        .collect()
     }
 }
