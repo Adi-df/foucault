@@ -77,7 +77,7 @@ pub async fn run_tags_managing_state(
             selected: state_data.selected - 1,
             ..state_data
         }),
-        KeyCode::Down if state_data.selected < state_data.tags.len() - 1 => {
+        KeyCode::Down if state_data.selected < state_data.tags.len().saturating_sub(1) => {
             State::TagsManaging(TagsManagingStateData {
                 selected: state_data.selected + 1,
                 ..state_data
