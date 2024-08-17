@@ -21,4 +21,4 @@ question = "0.2.2"
 unicode-segmentation = "1.11.0"
 random_color = "0.8.0"
 tokio = { version = "1.39.2", features = ["full"] }
-sqlx = { version = "0.8.0", features = ["runtime-tokio", "sqlite"] }
+sqlx = { version = "0.8.0", features = ["runtime-tokio", "migrate", "sqlite"] }
