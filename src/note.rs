@@ -1,5 +1,7 @@
 use std::path::Path;
 
+use futures::future::join_all;
+use sqlx::{Row, SqlitePool};
 use tokio::fs;
 
 use anyhow::Result;
@@ -35,110 +37,90 @@ pub enum NoteError {
 }
 
 impl Note {
-    pub fn new(name: String, content: String, db: &Connection) -> Result<Self> {
-        Note::validate_new_name(&name, db)?;
+    pub async fn new(name: String, content: String, db: &SqlitePool) -> Result<Self> {
+        Note::validate_new_name(&name, db).await?;
 
-        db.execute_batch(
-            Query::insert()
-                .into_table(NotesTable)
-                .columns([NotesCharacters::Name, NotesCharacters::Content])
-                .values([name.as_str().into(), content.as_str().into()])?
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-        )?;
+        let id =
+            sqlx::query("INSERT INTO notes_table (name, content) VALUES ($1, $2) RETURNING id")
+                .bind(&name)
+                .bind(&content)
+                .fetch_one(db)
+                .await?
+                .try_get(0)?;
 
-        Ok(Self {
-            id: db.last_insert_rowid(),
-            name,
-            content,
-        })
+        Ok(Self { id, name, content })
     }
 
-    pub fn validate_new_name(name: &str, db: &Connection) -> Result<()> {
+    pub async fn validate_new_name(name: &str, db: &SqlitePool) -> Result<()> {
         if name.is_empty() {
             return Err(NoteError::EmptyName.into());
         }
 
-        if Note::name_exists(name, db)? {
+        if Note::name_exists(name, db).await? {
             return Err(NoteError::AlreadyExists.into());
         }
 
         Ok(())
     }
 
-    pub fn name_exists(name: &str, db: &Connection) -> Result<bool> {
-        db.prepare(
-            Query::select()
-                .from(NotesTable)
-                .column(NotesCharacters::Id)
-                .and_where(Expr::col(NotesCharacters::Name).eq(name))
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-        )?
-        .exists([])
-        .map_err(anyhow::Error::from)
+    pub async fn name_exists(name: &str, db: &SqlitePool) -> Result<bool> {
+        Ok(sqlx::query("SELECT 1 FROM notes_table WHERE name=$1")
+            .bind(name)
+            .fetch_optional(db)
+            .await?
+            .is_some())
     }
 
-    pub fn load_by_id(id: i64, db: &Connection) -> Result<Option<Self>> {
-        db.query_row(
-            Query::select()
-                .from(NotesTable)
-                .columns([NotesCharacters::Name, NotesCharacters::Content])
-                .and_where(Expr::col(NotesCharacters::Id).eq(id))
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-            [],
-            |row| Ok([row.get(0)?, row.get(1)?]),
-        )
-        .optional()
-        .map_err(anyhow::Error::from)
-        .map(|res| res.map(|[name, content]| Note { id, name, content }))
+    pub async fn load_by_id(id: i64, db: &SqlitePool) -> Result<Option<Self>> {
+        sqlx::query("SELECT name,content FROM notes_table WHERE id=$1")
+            .bind(id)
+            .fetch_optional(db)
+            .await?
+            .map(|row| {
+                Ok(Note {
+                    id,
+                    name: row.try_get(0)?,
+                    content: row.try_get(1)?,
+                })
+            })
+            .transpose()
     }
 
-    pub fn load_from_summary(summary: &NoteSummary, db: &Connection) -> Result<Self> {
-        match Note::load_by_id(summary.id, db)? {
+    pub async fn load_from_summary(summary: &NoteSummary, db: &SqlitePool) -> Result<Self> {
+        match Note::load_by_id(summary.id, db).await? {
             Some(note) => Ok(note),
             None => Err(NoteError::DoesNotExist.into()),
         }
     }
 
-    pub fn load_by_name(name: &str, db: &Connection) -> Result<Option<Self>> {
-        db.query_row(
-            Query::select()
-                .from(NotesTable)
-                .columns([NotesCharacters::Id, NotesCharacters::Content])
-                .and_where(Expr::col(NotesCharacters::Name).eq(name))
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-            [],
-            |row| Ok((row.get(0)?, row.get(1)?)),
-        )
-        .optional()
-        .map_err(anyhow::Error::from)
-        .map(|res| {
-            res.map(|(id, content)| Note {
-                id,
-                name: name.to_string(),
-                content,
+    pub async fn load_by_name(name: &str, db: &SqlitePool) -> Result<Option<Self>> {
+        sqlx::query("SELECT id, content FROM notes_table WHERE name=$1")
+            .bind(name)
+            .fetch_optional(db)
+            .await?
+            .map(|row| {
+                Ok(Note {
+                    id: row.try_get(0)?,
+                    name: name.to_string(),
+                    content: row.try_get(1)?,
+                })
             })
-        })
+            .transpose()
     }
 
-    pub fn list_note_links(id: i64, db: &Connection) -> Result<Vec<Link>> {
-        db.prepare(
-            Query::select()
-                .from(TagsJoinTable)
-                .columns([LinksCharacters::ToName])
-                .and_where(Expr::col(LinksCharacters::FromId).eq(id))
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-        )?
-        .query_map([], |row| row.get(0))?
-        .map(|row| {
-            row.map_err(anyhow::Error::from)
-                .map(|to| Link { from: id, to })
-        })
-        .collect()
+    pub async fn list_note_links(id: i64, db: &SqlitePool) -> Result<Vec<Link>> {
+        sqlx::query("SELECT to_name FROM tags_join_talbe WHERE from_id=$1")
+            .bind(id)
+            .fetch_all(db)
+            .await?
+            .into_iter()
+            .map(|row| {
+                Ok(Link {
+                    from: id,
+                    to: row.try_get(0)?,
+                })
+            })
+            .collect()
     }
 
     pub fn id(&self) -> i64 {
@@ -151,53 +133,45 @@ impl Note {
         &self.content
     }
 
-    pub fn links(&self, db: &Connection) -> Result<Vec<Link>> {
-        Note::list_note_links(self.id, db)
+    pub async fn links(&self, db: &SqlitePool) -> Result<Vec<Link>> {
+        Note::list_note_links(self.id, db).await
     }
 
-    pub fn tags(&self, db: &Connection) -> Result<Vec<Tag>> {
+    pub fn tags(&self, db: &SqlitePool) -> Result<Vec<Tag>> {
         Tag::list_note_tags(self.id, db)
     }
 
-    pub fn has_tag(&self, tag_id: i64, db: &Connection) -> Result<bool> {
-        db.prepare(
-            Query::select()
-                .from(TagsJoinTable)
-                .columns([TagsJoinCharacters::TagId, TagsJoinCharacters::NoteId])
-                .and_where(Expr::col(TagsJoinCharacters::TagId).eq(tag_id))
-                .and_where(Expr::col(TagsJoinCharacters::NoteId).eq(self.id))
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-        )?
-        .exists([])
-        .map_err(anyhow::Error::from)
+    pub async fn has_tag(&self, tag_id: i64, db: &SqlitePool) -> Result<bool> {
+        Ok(
+            sqlx::query("SELECT 1 FROM tags_join_table WHERE tag_id=$1 AND note_id=$2")
+                .bind(tag_id)
+                .bind(self.id)
+                .fetch_optional(db)
+                .await?
+                .is_some(),
+        )
     }
 
-    pub fn rename(&mut self, name: String, db: &Connection) -> Result<()> {
-        Note::validate_new_name(&name, db)?;
+    pub async fn rename(&mut self, name: String, db: &SqlitePool) -> Result<()> {
+        Note::validate_new_name(&name, db).await?;
 
-        db.execute_batch(
-            Query::update()
-                .table(NotesTable)
-                .values([(NotesCharacters::Name, self.name.as_str().into())])
-                .and_where(Expr::col(NotesCharacters::Id).eq(self.id))
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-        )
-        .map_err(anyhow::Error::from)?;
+        sqlx::query("UPDATE notes_table SET name=$1 WHERE id=$2")
+            .bind(&name)
+            .bind(self.id)
+            .fetch_one(db)
+            .await?;
+
         self.name = name;
         Ok(())
     }
 
-    pub fn delete(self, db: &Connection) -> Result<()> {
-        db.execute_batch(
-            Query::delete()
-                .from_table(NotesTable)
-                .and_where(Expr::col(NotesCharacters::Id).eq(self.id))
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-        )
-        .map_err(anyhow::Error::from)
+    pub async fn delete(self, db: &SqlitePool) -> Result<()> {
+        sqlx::query("DELETE FROM notes_table WHERE id=$1")
+            .bind(self.id)
+            .fetch_one(db)
+            .await?;
+
+        Ok(())
     }
 
     pub async fn export_content(&self, file: &Path) -> Result<()> {
@@ -206,96 +180,85 @@ impl Note {
             .map_err(anyhow::Error::from)
     }
 
-    pub async fn import_content(&mut self, file: &Path, db: &Connection) -> Result<()> {
+    pub async fn import_content(&mut self, file: &Path, db: &SqlitePool) -> Result<()> {
         let new_content = String::from_utf8(fs::read(file).await?)?;
 
-        db.execute_batch(
-            Query::update()
-                .table(NotesTable)
-                .values([(NotesCharacters::Content, self.content.as_str().into())])
-                .and_where(Expr::col(NotesCharacters::Id).eq(self.id))
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-        )
-        .map_err(anyhow::Error::from)?;
+        sqlx::query("UPDATE notes_table SET content=$1 WHERE id=$2")
+            .bind(&new_content)
+            .bind(self.id)
+            .fetch_one(db)
+            .await?;
 
         self.content = new_content;
         Ok(())
     }
 
-    pub fn update_links(&self, new_links: &[Link], db: &Connection) -> Result<()> {
-        let current_links = self.links(db)?;
+    pub async fn update_links(&self, new_links: &[Link], db: &SqlitePool) -> Result<()> {
+        let current_links = self.links(db).await?;
 
-        let removed = current_links
-            .iter()
-            .filter(|link| !new_links.contains(link))
-            .map(|link| &link.to)
-            .peekable();
+        join_all(
+            current_links
+                .iter()
+                .filter(|link| !new_links.contains(link))
+                .map(|link| link.to.as_str())
+                .map(|link| {
+                    sqlx::query("DELETE FROM links_table WHERE from_id=$1 AND to_name IN $2")
+                        .bind(self.id)
+                        .bind(link)
+                        .fetch_one(db)
+                })
+                .collect::<Vec<_>>(),
+        )
+        .await;
 
-        db.execute_batch(
-            Query::delete()
-                .from_table(LinksTable)
-                .and_where(Expr::col(LinksCharacters::FromId).eq(self.id))
-                .and_where(Expr::col(LinksCharacters::ToName).is_in(removed))
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-        )?;
-
-        let mut added = new_links
-            .iter()
-            .filter(|link| !current_links.contains(link))
-            .map(|link| &link.to)
-            .peekable();
-
-        if added.peek().is_some() {
-            db.execute_batch({
-                let mut builder = Query::insert()
-                    .into_table(LinksTable)
-                    .columns([LinksCharacters::FromId, LinksCharacters::ToName])
-                    .to_owned();
-                for new_link in added {
-                    builder.values([self.id.into(), new_link.into()])?;
-                }
-                builder.to_string(SqliteQueryBuilder).as_str()
-            })?;
-        }
+        join_all(
+            new_links
+                .iter()
+                .filter(|link| !current_links.contains(link))
+                .map(|link| &link.to)
+                .map(|link| {
+                    sqlx::query("INSERT INTO links_table (from_id, to_name) VALUES ($1, $2)")
+                        .bind(self.id)
+                        .bind(link)
+                        .fetch_one(db)
+                })
+                .collect::<Vec<_>>(),
+        )
+        .await;
 
         Ok(())
     }
 
-    pub fn validate_new_tag(&self, tag_id: i64, db: &Connection) -> Result<()> {
+    pub async fn validate_new_tag(&self, tag_id: i64, db: &SqlitePool) -> Result<()> {
         if !Tag::id_exists(tag_id, db)? {
             Err(TagError::DoesNotExists.into())
-        } else if self.has_tag(tag_id, db)? {
+        } else if self.has_tag(tag_id, db).await? {
             Err(NoteError::NoteAlreadyTagged.into())
         } else {
             Ok(())
         }
     }
 
-    pub fn add_tag(&self, tag_id: i64, db: &Connection) -> Result<()> {
-        self.validate_new_tag(tag_id, db)?;
-        db.execute_batch(
-            Query::insert()
-                .into_table(TagsJoinTable)
-                .columns([TagsJoinCharacters::NoteId, TagsJoinCharacters::TagId])
-                .values([self.id.into(), tag_id.into()])?
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-        )
-        .map_err(anyhow::Error::from)
+    pub async fn add_tag(&self, tag_id: i64, db: &SqlitePool) -> Result<()> {
+        self.validate_new_tag(tag_id, db).await?;
+
+        sqlx::query("INSERT INTO tags_join_table (note_id, tag_id) VALUES ($1, $2)")
+            .bind(self.id)
+            .bind(tag_id)
+            .fetch_one(db)
+            .await?;
+
+        Ok(())
     }
 
-    pub fn remove_tag(&mut self, tag_id: i64, db: &Connection) -> Result<()> {
-        db.execute_batch(
-            Query::delete()
-                .from_table(TagsJoinTable)
-                .and_where(Expr::col(TagsJoinCharacters::TagId).eq(tag_id))
-                .and_where(Expr::col(TagsJoinCharacters::NoteId).eq(self.id))
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-        )
-        .map_err(anyhow::Error::from)
+    pub async fn remove_tag(&mut self, tag_id: i64, db: &SqlitePool) -> Result<()> {
+        sqlx::query("DELETE FROM tags_join_table WHERE note_id=$1 AND tag_id=$2")
+            .bind(self.id)
+            .bind(tag_id)
+            .fetch_optional(db)
+            .await?;
+
+        Ok(())
     }
 }
 
@@ -310,59 +273,31 @@ impl NoteSummary {
         &self.tags
     }
 
-    pub fn search_by_name(pattern: &str, db: &Connection) -> Result<Vec<Self>> {
-        db.prepare(
-            Query::select()
-                .from(NotesTable)
-                .columns([NotesCharacters::Id, NotesCharacters::Name])
-                .order_by(NotesCharacters::Name, Order::Asc)
-                .and_where(Expr::col(NotesCharacters::Name).like(format!("%{pattern}%")))
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-        )?
-        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
-        .map(|row| -> Result<(i64, String)> { row.map_err(anyhow::Error::from) })
-        .map(|row| {
-            row.and_then(|(id, name)| {
+    pub async fn search_by_name(pattern: &str, db: &SqlitePool) -> Result<Vec<Self>> {
+        sqlx::query("SELECT id,name FROM notes_table WHERE name LIKE '%$1%' ORDER BY name ASC")
+            .bind(pattern)
+            .fetch_all(db)
+            .await?
+            .into_iter()
+            .map(|row| {
+                let id = row.try_get(0)?;
                 Ok(NoteSummary {
                     id,
-                    name,
+                    name: row.try_get(1)?,
                     tags: Tag::list_note_tags(id, db)?,
                 })
             })
-        })
-        .collect()
+            .collect()
     }
 
-    pub fn fetch_by_tag(tag_id: i64, db: &Connection) -> Result<Vec<NoteSummary>> {
-        db.prepare(
-            Query::select()
-                .from(TagsJoinTable)
-                .columns([
-                    (NotesTable, NotesCharacters::Id),
-                    (NotesTable, NotesCharacters::Name),
-                ])
-                .join(
-                    JoinType::InnerJoin,
-                    NotesTable,
-                    Expr::col((TagsJoinTable, TagsJoinCharacters::NoteId))
-                        .equals((NotesTable, NotesCharacters::Id)),
-                )
-                .and_where(Expr::col(TagsJoinCharacters::TagId).eq(tag_id))
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-        )?
-        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
-        .map(|row| row.map_err(anyhow::Error::from))
-        .map(|row| {
-            row.and_then(|(id, name)| {
-                Ok(NoteSummary {
+    pub async fn fetch_by_tag(tag_id: i64, db: &SqlitePool) -> Result<Vec<NoteSummary>> {
+        sqlx::query("SELECT notes_table.id notes_table.name FROM tags_join_table INNER JOIN notes_table ON tags_join_table.note_id = notes_table.id WHERE tag_id=$1").bind(tag_id).fetch_all(db).await?.into_iter().map(|row| {
+            let id = row.try_get(0)?;
+            Ok(NoteSummary {
                     id,
-                    name,
-                    tags: Tag::list_note_tags(id, db)?,
+                    name: row.try_get(1)?,
+                    tags: Tag::list_note_tags(id, db)?
                 })
-            })
-        })
-        .collect()
+        }).collect()
     }
 }
