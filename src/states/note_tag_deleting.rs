@@ -23,7 +23,7 @@ impl NoteTagDeletingStateData {
     }
 }
 
-pub fn run_note_tag_deleting_state(
+pub async fn run_note_tag_deleting_state(
     NoteTagDeletingStateData {
         mut note_tags_managing_data,
         delete,
@@ -41,10 +41,9 @@ pub fn run_note_tag_deleting_state(
                     .name(),
                 note_tags_managing_data.note.name()
             );
-            State::NoteTagsManaging(NoteTagsManagingStateData::new(
-                note_tags_managing_data.note,
-                notebook.db(),
-            )?)
+            State::NoteTagsManaging(
+                NoteTagsManagingStateData::new(note_tags_managing_data.note, notebook.db()).await?,
+            )
         }
         KeyCode::Enter => {
             if delete {
@@ -60,17 +59,18 @@ pub fn run_note_tag_deleting_state(
 
                 note_tags_managing_data
                     .note
-                    .remove_tag(tag.id(), notebook.db())?;
+                    .remove_tag(tag.id(), notebook.db())
+                    .await?;
 
-                State::NoteTagsManaging(NoteTagsManagingStateData::new(
-                    note_tags_managing_data.note,
-                    notebook.db(),
-                )?)
+                State::NoteTagsManaging(
+                    NoteTagsManagingStateData::new(note_tags_managing_data.note, notebook.db())
+                        .await?,
+                )
             } else {
-                State::NoteTagsManaging(NoteTagsManagingStateData::new(
-                    note_tags_managing_data.note,
-                    notebook.db(),
-                )?)
+                State::NoteTagsManaging(
+                    NoteTagsManagingStateData::new(note_tags_managing_data.note, notebook.db())
+                        .await?,
+                )
             }
         }
         KeyCode::Tab => State::NoteTagDeleting(NoteTagDeletingStateData {

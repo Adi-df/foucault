@@ -15,7 +15,7 @@ use crate::states::notes_managing::NotesManagingStateData;
 use crate::states::tags_managing::TagsManagingStateData;
 use crate::states::{State, Terminal};
 
-pub fn run_nothing_state(key_event: KeyEvent, notebook: &Notebook) -> Result<State> {
+pub async fn run_nothing_state(key_event: KeyEvent, notebook: &Notebook) -> Result<State> {
     Ok(match key_event.code {
         KeyCode::Esc | KeyCode::Char('q') => {
             info!("Quit foucault.");
@@ -27,11 +27,11 @@ pub fn run_nothing_state(key_event: KeyEvent, notebook: &Notebook) -> Result<Sta
         }
         KeyCode::Char('s') => {
             info!("Open notes listing.");
-            State::NotesManaging(NotesManagingStateData::empty(notebook.db())?)
+            State::NotesManaging(NotesManagingStateData::empty(notebook.db()).await?)
         }
         KeyCode::Char('t') => {
             info!("Open tags manager.");
-            State::TagsManaging(TagsManagingStateData::empty(notebook.db())?)
+            State::TagsManaging(TagsManagingStateData::empty(notebook.db()).await?)
         }
         _ => State::Nothing,
     })

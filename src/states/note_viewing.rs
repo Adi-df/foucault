@@ -1,10 +1,12 @@
+use std::env;
 use std::io::stdout;
-use std::process::Command;
-use std::{env, fs};
+
+use sqlx::SqlitePool;
+use tokio::fs;
+use tokio::process::Command;
 
 use anyhow::Result;
 use log::info;
-use rusqlite::Connection;
 use scopeguard::defer;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
@@ -41,11 +43,11 @@ pub struct NoteViewingStateData {
 }
 
 impl NoteViewingStateData {
-    pub fn new(note: Note, db: &Connection) -> Result<Self> {
+    pub async fn new(note: Note, db: &SqlitePool) -> Result<Self> {
         let mut parsed_content = parse(note.content());
         parsed_content.select((0, 0), true);
         Ok(NoteViewingStateData {
-            tags: note.tags(db)?,
+            tags: note.tags(db).await?,
             note,
             parsed_content,
             selected: (0, 0),
@@ -77,7 +79,7 @@ impl NoteViewingStateData {
     }
 }
 
-pub fn run_note_viewing_state(
+pub async fn run_note_viewing_state(
     mut state_data: NoteViewingStateData,
     key_event: KeyEvent,
     notebook: &Notebook,
@@ -100,12 +102,13 @@ pub fn run_note_viewing_state(
         }
         KeyCode::Char('e') => {
             info!("Edit note {}.", state_data.note.name());
-            edit_note(&mut state_data.note, notebook)?;
+            edit_note(&mut state_data.note, notebook).await?;
 
             state_data.re_parse_content();
             state_data
                 .note
-                .update_links(&state_data.compute_links(), notebook.db())?;
+                .update_links(&state_data.compute_links(), notebook.db())
+                .await?;
             state_data.selected = (0, 0);
             state_data.select_current(true);
             *force_redraw = true;
@@ -114,7 +117,7 @@ pub fn run_note_viewing_state(
         }
         KeyCode::Char('s') => {
             info!("Enter notes listing.");
-            State::NotesManaging(NotesManagingStateData::empty(notebook.db())?)
+            State::NotesManaging(NotesManagingStateData::empty(notebook.db()).await?)
         }
         KeyCode::Char('d') => {
             info!("Open deleting prompt for note {}.", state_data.note.name());
@@ -126,10 +129,9 @@ pub fn run_note_viewing_state(
         }
         KeyCode::Char('t') => {
             info!("Open tags manager for note {}", state_data.note.name());
-            State::NoteTagsManaging(NoteTagsManagingStateData::new(
-                state_data.note,
-                notebook.db(),
-            )?)
+            State::NoteTagsManaging(
+                NoteTagsManagingStateData::new(state_data.note, notebook.db()).await?,
+            )
         }
         KeyCode::Enter => {
             info!("Try to trigger element action.");
@@ -140,8 +142,11 @@ pub fn run_note_viewing_state(
                         State::NoteViewing(state_data)
                     }
                     InlineElements::CrossRef { dest, .. } => {
-                        if let Some(note) = Note::load_by_name(dest.as_str(), notebook.db())? {
-                            State::NoteViewing(NoteViewingStateData::new(note, notebook.db())?)
+                        if let Some(note) = Note::load_by_name(dest.as_str(), notebook.db()).await?
+                        {
+                            State::NoteViewing(
+                                NoteViewingStateData::new(note, notebook.db()).await?,
+                            )
                         } else {
                             State::NoteViewing(state_data)
                         }
@@ -217,12 +222,12 @@ pub fn run_note_viewing_state(
     })
 }
 
-fn edit_note(note: &mut Note, notebook: &Notebook) -> Result<()> {
+async fn edit_note(note: &mut Note, notebook: &Notebook) -> Result<()> {
     let tmp_file_path = notebook
         .dir()
         .unwrap()
         .join(format!("{}.tmp.md", note.name()));
-    note.export_content(tmp_file_path.as_path())?;
+    note.export_content(tmp_file_path.as_path()).await?;
 
     let editor = env::var("EDITOR")?;
 
@@ -237,11 +242,13 @@ fn edit_note(note: &mut Note, notebook: &Notebook) -> Result<()> {
     Command::new(editor)
         .args([&tmp_file_path])
         .current_dir(notebook.dir().unwrap())
-        .status()?;
+        .status()
+        .await?;
 
-    note.import_content(tmp_file_path.as_path(), notebook.db())?;
+    note.import_content(tmp_file_path.as_path(), notebook.db())
+        .await?;
 
-    fs::remove_file(&tmp_file_path)?;
+    fs::remove_file(&tmp_file_path).await?;
     Ok(())
 }
 

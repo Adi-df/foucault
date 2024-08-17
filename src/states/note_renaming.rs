@@ -26,7 +26,7 @@ impl NoteRenamingStateData {
     }
 }
 
-pub fn run_note_renaming_state(
+pub async fn run_note_renaming_state(
     mut state_data: NoteRenamingStateData,
     key_event: KeyEvent,
     notebook: &Notebook,
@@ -37,13 +37,15 @@ pub fn run_note_renaming_state(
                 "Cancel renaming note {}",
                 state_data.note_viewing_data.note.name()
             );
-            State::NoteViewing(NoteViewingStateData::new(
-                state_data.note_viewing_data.note,
-                notebook.db(),
-            )?)
+            State::NoteViewing(
+                NoteViewingStateData::new(state_data.note_viewing_data.note, notebook.db()).await?,
+            )
         }
         KeyCode::Enter => {
-            if Note::validate_new_name(state_data.new_name.as_str(), notebook.db()).is_err() {
+            if Note::validate_new_name(state_data.new_name.as_str(), notebook.db())
+                .await
+                .is_err()
+            {
                 State::NoteRenaming(NoteRenamingStateData {
                     valid: false,
                     ..state_data
@@ -57,23 +59,26 @@ pub fn run_note_renaming_state(
                 state_data
                     .note_viewing_data
                     .note
-                    .rename(state_data.new_name, notebook.db())?;
-                State::NoteViewing(NoteViewingStateData::new(
-                    state_data.note_viewing_data.note,
-                    notebook.db(),
-                )?)
+                    .rename(state_data.new_name, notebook.db())
+                    .await?;
+                State::NoteViewing(
+                    NoteViewingStateData::new(state_data.note_viewing_data.note, notebook.db())
+                        .await?,
+                )
             }
         }
         KeyCode::Backspace => {
             state_data.new_name.pop();
-            state_data.valid =
-                Note::validate_new_name(state_data.new_name.as_str(), notebook.db()).is_ok();
+            state_data.valid = Note::validate_new_name(state_data.new_name.as_str(), notebook.db())
+                .await
+                .is_ok();
             State::NoteRenaming(state_data)
         }
         KeyCode::Char(c) => {
             state_data.new_name.push(c);
-            state_data.valid =
-                Note::validate_new_name(state_data.new_name.as_str(), notebook.db()).is_ok();
+            state_data.valid = Note::validate_new_name(state_data.new_name.as_str(), notebook.db())
+                .await
+                .is_ok();
             State::NoteRenaming(state_data)
         }
         _ => State::NoteRenaming(state_data),

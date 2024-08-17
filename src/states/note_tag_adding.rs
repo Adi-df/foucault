@@ -26,7 +26,7 @@ impl NoteTagAddingStateData {
     }
 }
 
-pub fn run_note_tag_adding_state(
+pub async fn run_note_tag_adding_state(
     mut state_data: NoteTagAddingStateData,
     key_event: KeyEvent,
     notebook: &Notebook,
@@ -38,19 +38,25 @@ pub fn run_note_tag_adding_state(
                 state_data.note_tags_managing_data.note.name()
             );
 
-            State::NoteTagsManaging(NoteTagsManagingStateData::new(
-                state_data.note_tags_managing_data.note,
-                notebook.db(),
-            )?)
+            State::NoteTagsManaging(
+                NoteTagsManagingStateData::new(
+                    state_data.note_tags_managing_data.note,
+                    notebook.db(),
+                )
+                .await?,
+            )
         }
         KeyCode::Char(c) if !c.is_whitespace() => {
             state_data.tag_name.push(c);
             state_data.valid = {
-                if let Some(tag) = Tag::load_by_name(state_data.tag_name.as_str(), notebook.db())? {
+                if let Some(tag) =
+                    Tag::load_by_name(state_data.tag_name.as_str(), notebook.db()).await?
+                {
                     state_data
                         .note_tags_managing_data
                         .note
                         .validate_new_tag(tag.id(), notebook.db())
+                        .await
                         .is_ok()
                 } else {
                     false
@@ -62,12 +68,13 @@ pub fn run_note_tag_adding_state(
         KeyCode::Backspace => {
             state_data.tag_name.pop();
             state_data.valid = if let Some(tag) =
-                Tag::load_by_name(state_data.tag_name.as_str(), notebook.db())?
+                Tag::load_by_name(state_data.tag_name.as_str(), notebook.db()).await?
             {
                 state_data
                     .note_tags_managing_data
                     .note
                     .validate_new_tag(tag.id(), notebook.db())
+                    .await
                     .is_ok()
             } else {
                 false
@@ -75,35 +82,42 @@ pub fn run_note_tag_adding_state(
 
             State::NoteTagAdding(state_data)
         }
-        KeyCode::Enter => match Tag::load_by_name(state_data.tag_name.as_str(), notebook.db())? {
-            Some(tag)
-                if state_data
-                    .note_tags_managing_data
-                    .note
-                    .validate_new_tag(tag.id(), notebook.db())
-                    .is_ok() =>
-            {
-                info!(
-                    "Add tag {} to note {}.",
-                    tag.name(),
-                    state_data.note_tags_managing_data.note.name()
-                );
-                state_data
-                    .note_tags_managing_data
-                    .note
-                    .add_tag(tag.id(), notebook.db())?;
+        KeyCode::Enter => {
+            match Tag::load_by_name(state_data.tag_name.as_str(), notebook.db()).await? {
+                Some(tag)
+                    if state_data
+                        .note_tags_managing_data
+                        .note
+                        .validate_new_tag(tag.id(), notebook.db())
+                        .await
+                        .is_ok() =>
+                {
+                    info!(
+                        "Add tag {} to note {}.",
+                        tag.name(),
+                        state_data.note_tags_managing_data.note.name()
+                    );
+                    state_data
+                        .note_tags_managing_data
+                        .note
+                        .add_tag(tag.id(), notebook.db())
+                        .await?;
 
-                State::NoteTagsManaging(NoteTagsManagingStateData::new(
-                    state_data.note_tags_managing_data.note,
-                    notebook.db(),
-                )?)
-            }
-            _ => {
-                state_data.valid = false;
+                    State::NoteTagsManaging(
+                        NoteTagsManagingStateData::new(
+                            state_data.note_tags_managing_data.note,
+                            notebook.db(),
+                        )
+                        .await?,
+                    )
+                }
+                _ => {
+                    state_data.valid = false;
 
-                State::NoteTagAdding(state_data)
+                    State::NoteTagAdding(state_data)
+                }
             }
-        },
+        }
         _ => State::NoteTagAdding(state_data),
     })
 }

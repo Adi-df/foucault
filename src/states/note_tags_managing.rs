@@ -1,13 +1,14 @@
 use anyhow::Result;
 use log::info;
 
+use sqlx::SqlitePool;
+
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::prelude::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Clear, List, ListState, Padding, Paragraph};
 use ratatui::Frame;
-use rusqlite::Connection;
 
 use crate::helpers::{create_bottom_line, create_row_help_layout, DiscardResult};
 use crate::note::Note;
@@ -15,10 +16,9 @@ use crate::notebook::Notebook;
 use crate::states::note_tag_adding::NoteTagAddingStateData;
 use crate::states::note_tag_deleting::NoteTagDeletingStateData;
 use crate::states::note_viewing::NoteViewingStateData;
+use crate::states::tag_notes_listing::TagNotesListingStateData;
 use crate::states::{State, Terminal};
 use crate::tag::Tag;
-
-use super::tag_notes_listing::TagNotesListingStateData;
 
 pub struct NoteTagsManagingStateData {
     pub note: Note,
@@ -28,9 +28,9 @@ pub struct NoteTagsManagingStateData {
 }
 
 impl NoteTagsManagingStateData {
-    pub fn new(note: Note, db: &Connection) -> Result<Self> {
+    pub async fn new(note: Note, db: &SqlitePool) -> Result<Self> {
         Ok(NoteTagsManagingStateData {
-            tags: note.tags(db)?,
+            tags: note.tags(db).await?,
             note,
             selected: 0,
             help_display: false,
@@ -42,7 +42,7 @@ impl NoteTagsManagingStateData {
     }
 }
 
-pub fn run_note_tags_managing_state(
+pub async fn run_note_tags_managing_state(
     mut state_data: NoteTagsManagingStateData,
     key_event: KeyEvent,
     notebook: &Notebook,
@@ -50,7 +50,7 @@ pub fn run_note_tags_managing_state(
     Ok(match key_event.code {
         KeyCode::Esc => {
             info!("Cancel note {} tags managing.", state_data.note.name());
-            State::NoteViewing(NoteViewingStateData::new(state_data.note, notebook.db())?)
+            State::NoteViewing(NoteViewingStateData::new(state_data.note, notebook.db()).await?)
         }
         KeyCode::Char('h') if key_event.modifiers == KeyModifiers::CONTROL => {
             info!("Toogle help display.");
@@ -81,10 +81,13 @@ pub fn run_note_tags_managing_state(
                     .expect("A tag should be selected.")
                     .name()
             );
-            State::TagNotesListing(TagNotesListingStateData::new(
-                state_data.tags.swap_remove(state_data.selected),
-                notebook.db(),
-            )?)
+            State::TagNotesListing(
+                TagNotesListingStateData::new(
+                    state_data.tags.swap_remove(state_data.selected),
+                    notebook.db(),
+                )
+                .await?,
+            )
         }
         KeyCode::Up if state_data.selected > 0 => {
             State::NoteTagsManaging(NoteTagsManagingStateData {

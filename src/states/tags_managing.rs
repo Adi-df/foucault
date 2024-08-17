@@ -1,6 +1,8 @@
 use anyhow::Result;
 use log::info;
 
+use sqlx::SqlitePool;
+
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::prelude::{Constraint, Direction, Layout, Margin, Rect};
 use ratatui::style::{Color, Modifier, Style};
@@ -10,8 +12,6 @@ use ratatui::widgets::{
     ScrollbarOrientation, ScrollbarState,
 };
 use ratatui::Frame;
-
-use rusqlite::Connection;
 
 use crate::helpers::{create_bottom_line, create_row_help_layout, DiscardResult};
 use crate::notebook::Notebook;
@@ -29,17 +29,17 @@ pub struct TagsManagingStateData {
 }
 
 impl TagsManagingStateData {
-    pub fn from_pattern(pattern: String, db: &Connection) -> Result<Self> {
+    pub async fn from_pattern(pattern: String, db: &SqlitePool) -> Result<Self> {
         Ok(TagsManagingStateData {
-            tags: Tag::search_by_name(pattern.as_str(), db)?,
+            tags: Tag::search_by_name(pattern.as_str(), db).await?,
             selected: 0,
             pattern,
             help_display: false,
         })
     }
 
-    pub fn empty(db: &Connection) -> Result<Self> {
-        Self::from_pattern(String::new(), db)
+    pub async fn empty(db: &SqlitePool) -> Result<Self> {
+        Self::from_pattern(String::new(), db).await
     }
 
     pub fn get_selected(&self) -> Option<&Tag> {
@@ -47,7 +47,7 @@ impl TagsManagingStateData {
     }
 }
 
-pub fn run_tags_managing_state(
+pub async fn run_tags_managing_state(
     mut state_data: TagsManagingStateData,
     key_event: KeyEvent,
     notebook: &Notebook,
@@ -77,7 +77,7 @@ pub fn run_tags_managing_state(
             selected: state_data.selected - 1,
             ..state_data
         }),
-        KeyCode::Down if state_data.selected < state_data.tags.len() - 1 => {
+        KeyCode::Down if state_data.selected < state_data.tags.len().saturating_sub(1) => {
             State::TagsManaging(TagsManagingStateData {
                 selected: state_data.selected + 1,
                 ..state_data
@@ -87,17 +87,19 @@ pub fn run_tags_managing_state(
             info!("Open tag notes listing.");
             let tag = state_data.tags.swap_remove(state_data.selected);
 
-            State::TagNotesListing(TagNotesListingStateData::new(tag, notebook.db())?)
+            State::TagNotesListing(TagNotesListingStateData::new(tag, notebook.db()).await?)
         }
         KeyCode::Backspace if key_event.modifiers == KeyModifiers::NONE => {
             state_data.pattern.pop();
-            state_data.tags = Tag::search_by_name(state_data.pattern.as_str(), notebook.db())?;
+            state_data.tags =
+                Tag::search_by_name(state_data.pattern.as_str(), notebook.db()).await?;
             state_data.selected = 0;
             State::TagsManaging(state_data)
         }
         KeyCode::Char(c) if key_event.modifiers == KeyModifiers::NONE && !c.is_whitespace() => {
             state_data.pattern.push(c);
-            state_data.tags = Tag::search_by_name(state_data.pattern.as_str(), notebook.db())?;
+            state_data.tags =
+                Tag::search_by_name(state_data.pattern.as_str(), notebook.db()).await?;
             state_data.selected = 0;
             State::TagsManaging(state_data)
         }

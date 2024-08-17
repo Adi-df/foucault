@@ -1,6 +1,8 @@
 use anyhow::Result;
 use log::info;
 
+use sqlx::SqlitePool;
+
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::prelude::{Constraint, Direction, Layout, Margin};
 use ratatui::style::{Color, Modifier, Style};
@@ -9,8 +11,6 @@ use ratatui::widgets::{
     Block, BorderType, Borders, List, ListState, Padding, Paragraph, Scrollbar,
     ScrollbarOrientation, ScrollbarState,
 };
-
-use rusqlite::Connection;
 
 use crate::helpers::DiscardResult;
 use crate::note::{Note, NoteSummary};
@@ -25,20 +25,20 @@ pub struct NotesManagingStateData {
 }
 
 impl NotesManagingStateData {
-    pub fn from_pattern(pattern: String, db: &Connection) -> Result<Self> {
+    pub async fn from_pattern(pattern: String, db: &SqlitePool) -> Result<Self> {
         Ok(NotesManagingStateData {
-            notes: NoteSummary::search_by_name(pattern.as_str(), db)?,
+            notes: NoteSummary::search_by_name(pattern.as_str(), db).await?,
             selected: 0,
             pattern,
         })
     }
 
-    pub fn empty(db: &Connection) -> Result<Self> {
-        Self::from_pattern(String::new(), db)
+    pub async fn empty(db: &SqlitePool) -> Result<Self> {
+        Self::from_pattern(String::new(), db).await
     }
 }
 
-pub fn run_note_managing_state(
+pub async fn run_note_managing_state(
     mut state_data: NotesManagingStateData,
     key_event: KeyEvent,
     notebook: &Notebook,
@@ -52,13 +52,13 @@ pub fn run_note_managing_state(
             let note_summary = &state_data.notes[state_data.selected];
             info!("Open note {}.", note_summary.name());
 
-            let note = Note::load_from_summary(note_summary, notebook.db())?;
-            State::NoteViewing(NoteViewingStateData::new(note, notebook.db())?)
+            let note = Note::load_from_summary(note_summary, notebook.db()).await?;
+            State::NoteViewing(NoteViewingStateData::new(note, notebook.db()).await?)
         }
         KeyCode::Backspace if key_event.modifiers == KeyModifiers::NONE => {
             state_data.pattern.pop();
             state_data.notes =
-                NoteSummary::search_by_name(state_data.pattern.as_str(), notebook.db())?;
+                NoteSummary::search_by_name(state_data.pattern.as_str(), notebook.db()).await?;
             state_data.selected = 0;
 
             State::NotesManaging(state_data)
@@ -66,7 +66,7 @@ pub fn run_note_managing_state(
         KeyCode::Char(c) if key_event.modifiers == KeyModifiers::NONE => {
             state_data.pattern.push(c);
             state_data.notes =
-                NoteSummary::search_by_name(state_data.pattern.as_str(), notebook.db())?;
+                NoteSummary::search_by_name(state_data.pattern.as_str(), notebook.db()).await?;
             state_data.selected = 0;
 
             State::NotesManaging(state_data)

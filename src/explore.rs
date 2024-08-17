@@ -17,7 +17,7 @@ use ratatui::Terminal;
 use crate::notebook::Notebook;
 use crate::states::State;
 
-pub fn explore(notebook: &Notebook) -> Result<()> {
+pub async fn explore(notebook: &Notebook) -> Result<()> {
     info!("Explore notebook : {}", notebook.name);
 
     enable_raw_mode().expect("Prepare terminal");
@@ -40,7 +40,7 @@ pub fn explore(notebook: &Notebook) -> Result<()> {
             if event::poll(Duration::from_millis(50))? {
                 if let Event::Key(key) = event::read()? {
                     if key.kind == KeyEventKind::Press {
-                        state = state.run(key, notebook, &mut forced_redraw)?;
+                        state = state.run(key, notebook, &mut forced_redraw).await?;
                     }
                 }
             }

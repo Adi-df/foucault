@@ -11,8 +11,10 @@ mod notebook_selector;
 mod states;
 mod tag;
 
+use std::env;
 use std::path::PathBuf;
-use std::{env, fs};
+
+use tokio::fs;
 
 use anyhow::Result;
 use log::{error, info};
@@ -50,7 +52,8 @@ enum Commands {
     },
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     env_logger::init();
 
     info!("Start foucault");
@@ -65,7 +68,7 @@ fn main() -> Result<()> {
     };
 
     if !app_dir_path.exists() {
-        if fs::create_dir(&app_dir_path).is_err() {
+        if fs::create_dir(&app_dir_path).await.is_err() {
             error!("Unable to create app directory.");
             todo!();
         }
@@ -84,15 +87,16 @@ fn main() -> Result<()> {
                     Notebook::new_notebook(
                         name.trim(),
                         &env::current_dir().expect("The current directory isn't accessible"),
-                    )?;
+                    )
+                    .await?;
                 } else {
-                    Notebook::new_notebook(name.trim(), &app_dir_path)?;
+                    Notebook::new_notebook(name.trim(), &app_dir_path).await?;
                 };
                 println!("Notebook {name} was successfully created.");
             }
             Commands::Open { name } => {
                 info!("Open notebook {name}.");
-                explore(&Notebook::open_notebook(name, &app_dir_path)?)?;
+                explore(&Notebook::open_notebook(name, &app_dir_path).await?).await?;
             }
             Commands::Delete { name } => {
                 info!("Delete notebook {name}.");
@@ -106,7 +110,7 @@ fn main() -> Result<()> {
                     Answer::YES
                 ) {
                     println!("Proceed.");
-                    Notebook::delete_notebook(name, &app_dir_path)?;
+                    Notebook::delete_notebook(name, &app_dir_path).await?;
                 } else {
                     println!("Cancel.");
                 }
@@ -117,7 +121,7 @@ fn main() -> Result<()> {
 
         if let Some(name) = open_selector(&app_dir_path)? {
             info!("Open notebook selected : {name}.");
-            explore(&Notebook::open_notebook(name.as_str(), &app_dir_path)?)?;
+            explore(&Notebook::open_notebook(name.as_str(), &app_dir_path).await?).await?;
         }
     }
 

@@ -26,7 +26,7 @@ impl TagsCreatingStateData {
     }
 }
 
-pub fn run_tag_creating_state(
+pub async fn run_tag_creating_state(
     mut state_data: TagsCreatingStateData,
     key_event: KeyEvent,
     notebook: &Notebook,
@@ -34,36 +34,47 @@ pub fn run_tag_creating_state(
     Ok(match key_event.code {
         KeyCode::Esc => {
             info!("Cancel tag creation.");
-            State::TagsManaging(TagsManagingStateData::from_pattern(
-                state_data.tags_managing_data.pattern,
-                notebook.db(),
-            )?)
+            State::TagsManaging(
+                TagsManagingStateData::from_pattern(
+                    state_data.tags_managing_data.pattern,
+                    notebook.db(),
+                )
+                .await?,
+            )
         }
         KeyCode::Enter => {
-            if Tag::validate_new_tag(state_data.name.as_str(), notebook.db()).is_err() {
+            if Tag::validate_new_tag(state_data.name.as_str(), notebook.db())
+                .await
+                .is_err()
+            {
                 State::TagCreating(TagsCreatingStateData {
                     valid: false,
                     ..state_data
                 })
             } else {
                 info!("Create tag {}.", state_data.name);
-                Tag::new(state_data.name.as_str(), notebook.db())?;
-                State::TagsManaging(TagsManagingStateData::from_pattern(
-                    state_data.tags_managing_data.pattern,
-                    notebook.db(),
-                )?)
+                Tag::new(state_data.name.as_str(), notebook.db()).await?;
+                State::TagsManaging(
+                    TagsManagingStateData::from_pattern(
+                        state_data.tags_managing_data.pattern,
+                        notebook.db(),
+                    )
+                    .await?,
+                )
             }
         }
         KeyCode::Backspace => {
             state_data.name.pop();
-            state_data.valid =
-                Tag::validate_new_tag(state_data.name.as_str(), notebook.db()).is_ok();
+            state_data.valid = Tag::validate_new_tag(state_data.name.as_str(), notebook.db())
+                .await
+                .is_ok();
             State::TagCreating(state_data)
         }
         KeyCode::Char(c) if !c.is_whitespace() => {
             state_data.name.push(c);
-            state_data.valid =
-                Tag::validate_new_tag(state_data.name.as_str(), notebook.db()).is_ok();
+            state_data.valid = Tag::validate_new_tag(state_data.name.as_str(), notebook.db())
+                .await
+                .is_ok();
             State::TagCreating(state_data)
         }
         _ => State::TagCreating(state_data),
