@@ -1,9 +1,9 @@
 use std::env;
 use std::io::stdout;
-use std::process::Command;
 
 use sqlx::SqlitePool;
 use tokio::fs;
+use tokio::process::Command;
 
 use anyhow::Result;
 use log::info;
@@ -242,7 +242,8 @@ async fn edit_note(note: &mut Note, notebook: &Notebook) -> Result<()> {
     Command::new(editor)
         .args([&tmp_file_path])
         .current_dir(notebook.dir().unwrap())
-        .status()?;
+        .status()
+        .await?;
 
     note.import_content(tmp_file_path.as_path(), notebook.db())
         .await?;
