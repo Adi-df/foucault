@@ -1,5 +1,6 @@
-use std::fs;
 use std::path::Path;
+
+use tokio::fs;
 
 use anyhow::Result;
 use thiserror::Error;
@@ -199,12 +200,14 @@ impl Note {
         .map_err(anyhow::Error::from)
     }
 
-    pub fn export_content(&self, file: &Path) -> Result<()> {
-        fs::write(file, self.content.as_bytes()).map_err(anyhow::Error::from)
+    pub async fn export_content(&self, file: &Path) -> Result<()> {
+        fs::write(file, self.content.as_bytes())
+            .await
+            .map_err(anyhow::Error::from)
     }
 
-    pub fn import_content(&mut self, file: &Path, db: &Connection) -> Result<()> {
-        let new_content = String::from_utf8(fs::read(file)?)?;
+    pub async fn import_content(&mut self, file: &Path, db: &Connection) -> Result<()> {
+        let new_content = String::from_utf8(fs::read(file).await?)?;
 
         db.execute_batch(
             Query::update()

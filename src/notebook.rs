@@ -9,10 +9,6 @@ use anyhow::Result;
 use log::error;
 use thiserror::Error;
 
-use crate::links::LinksTable;
-use crate::note::NotesTable;
-use crate::tag::{TagsJoinTable, TagsTable};
-
 pub struct Notebook {
     pub name: String,
     file: PathBuf,

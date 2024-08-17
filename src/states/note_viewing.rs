@@ -6,7 +6,6 @@ use tokio::fs;
 
 use anyhow::Result;
 use log::info;
-use rusqlite::Connection;
 use scopeguard::defer;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
@@ -224,7 +223,7 @@ async fn edit_note(note: &mut Note, notebook: &Notebook) -> Result<()> {
         .dir()
         .unwrap()
         .join(format!("{}.tmp.md", note.name()));
-    note.export_content(tmp_file_path.as_path())?;
+    note.export_content(tmp_file_path.as_path()).await?;
 
     let editor = env::var("EDITOR")?;
 
@@ -241,7 +240,8 @@ async fn edit_note(note: &mut Note, notebook: &Notebook) -> Result<()> {
         .current_dir(notebook.dir().unwrap())
         .status()?;
 
-    note.import_content(tmp_file_path.as_path(), notebook.db())?;
+    note.import_content(tmp_file_path.as_path(), notebook.db())
+        .await?;
 
     fs::remove_file(&tmp_file_path).await?;
     Ok(())
