@@ -1,7 +1,7 @@
 use anyhow::Result;
 use thiserror::Error;
 
-use sqlx::{Row, SqlitePool};
+use sqlx::SqlitePool;
 
 use random_color::RandomColor;
 
@@ -34,12 +34,14 @@ impl Tag {
         Tag::validate_new_tag(name, db).await?;
 
         let color = rand_color();
-        let id = sqlx::query("INSERT INTO tags_table (name, color) VALUES ($1, $2) RETURNING id")
-            .bind(name)
-            .bind(color)
-            .fetch_one(db)
-            .await?
-            .try_get(0)?;
+        let id = sqlx::query!(
+            "INSERT INTO tags_table (name, color) VALUES ($1, $2) RETURNING id",
+            name,
+            color
+        )
+        .fetch_one(db)
+        .await?
+        .id;
 
         Ok(Self {
             id,
@@ -59,57 +61,61 @@ impl Tag {
     }
 
     pub async fn id_exists(tag_id: i64, db: &SqlitePool) -> Result<bool> {
-        Ok(sqlx::query("SELECT 1 FROM tags_table WHERE id=$1")
-            .bind(tag_id)
-            .fetch_optional(db)
-            .await?
-            .is_some())
+        Ok(
+            sqlx::query!("SELECT id FROM tags_table WHERE id=$1", tag_id)
+                .fetch_optional(db)
+                .await?
+                .is_some(),
+        )
     }
 
     pub async fn name_exists(name: &str, db: &SqlitePool) -> Result<bool> {
-        Ok(sqlx::query("SELECT 1 FROM tags_table WHERE name=$1")
-            .bind(name)
-            .fetch_optional(db)
-            .await?
-            .is_some())
+        Ok(
+            sqlx::query!("SELECT id FROM tags_table WHERE name=$1", name)
+                .fetch_optional(db)
+                .await?
+                .is_some(),
+        )
     }
 
     pub async fn load_by_name(name: &str, db: &SqlitePool) -> Result<Option<Tag>> {
-        sqlx::query("SELECT id,color FROM tags_table WHERE name=$1")
-            .bind(name)
+        sqlx::query!("SELECT id,color FROM tags_table WHERE name=$1", name)
             .fetch_optional(db)
             .await?
             .map(|row| {
                 Ok(Tag {
-                    id: row.try_get(0)?,
+                    id: row.id.expect("There should be a tag id"),
                     name: name.to_string(),
-                    color: row.try_get(1)?,
+                    color: row.color as u32,
                 })
             })
             .transpose()
     }
 
     pub async fn search_by_name(pattern: &str, db: &SqlitePool) -> Result<Vec<Tag>> {
-        sqlx::query("SELECT id,name,color FROM tags_table WHERE name LIKE $1 ORDER BY id DESC")
-            .bind(format!("%{}%", pattern))
-            .fetch_all(db)
-            .await?
-            .into_iter()
-            .map(|row| {
-                Ok(Tag {
-                    id: row.try_get(0)?,
-                    name: row.try_get(1)?,
-                    color: row.try_get(2)?,
-                })
+        let sql_pattern = format!("%{}%", pattern);
+        sqlx::query!(
+            "SELECT id,name,color FROM tags_table WHERE name LIKE $1 ORDER BY id DESC",
+            sql_pattern
+        )
+        .fetch_all(db)
+        .await?
+        .into_iter()
+        .map(|row| {
+            Ok(Tag {
+                id: row.id,
+                name: row.name,
+                color: row.color as u32,
             })
-            .collect()
+        })
+        .collect()
     }
 
     pub async fn list_note_tags(note_id: i64, db: &SqlitePool) -> Result<Vec<Self>> {
-        sqlx::query("SELECT tags_table.id,tags_table.name,tags_table.color FROM tags_join_table INNER JOIN tags_table ON tags_join_table.tag_id = tags_table.id WHERE tags_join_table.note_id=$1").bind(note_id).fetch_all(db).await?.into_iter().map(|row| Ok(Tag {
-            id: row.try_get(0)?,
-            name: row.try_get(1)?,
-            color: row.try_get(2)?
+        sqlx::query!("SELECT tags_table.id,tags_table.name,tags_table.color FROM tags_join_table INNER JOIN tags_table ON tags_join_table.tag_id = tags_table.id WHERE tags_join_table.note_id=$1", note_id).fetch_all(db).await?.into_iter().map(|row| Ok(Tag {
+            id: row.id,
+            name: row.name,
+            color: row.color as u32
         })).collect()
     }
 
@@ -124,8 +130,7 @@ impl Tag {
     }
 
     pub async fn delete(self, db: &SqlitePool) -> Result<()> {
-        sqlx::query("DELETE FROM tags_table WHERE id=$1")
-            .bind(self.id)
+        sqlx::query!("DELETE FROM tags_table WHERE id=$1", self.id)
             .execute(db)
             .await?;
         Ok(())
