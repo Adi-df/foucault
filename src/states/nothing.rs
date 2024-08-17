@@ -31,7 +31,7 @@ pub async fn run_nothing_state(key_event: KeyEvent, notebook: &Notebook) -> Resu
         }
         KeyCode::Char('t') => {
             info!("Open tags manager.");
-            State::TagsManaging(TagsManagingStateData::empty(notebook.db())?)
+            State::TagsManaging(TagsManagingStateData::empty(notebook.db()).await?)
         }
         _ => State::Nothing,
     })

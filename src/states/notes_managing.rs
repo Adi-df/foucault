@@ -53,7 +53,7 @@ pub async fn run_note_managing_state(
             info!("Open note {}.", note_summary.name());
 
             let note = Note::load_from_summary(note_summary, notebook.db()).await?;
-            State::NoteViewing(NoteViewingStateData::new(note, notebook.db())?)
+            State::NoteViewing(NoteViewingStateData::new(note, notebook.db()).await?)
         }
         KeyCode::Backspace if key_event.modifiers == KeyModifiers::NONE => {
             state_data.pattern.pop();

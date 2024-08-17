@@ -1,6 +1,8 @@
 use anyhow::Result;
 use log::info;
 
+use sqlx::SqlitePool;
+
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::prelude::{Constraint, Direction, Layout, Margin, Rect};
 use ratatui::style::{Color, Modifier, Style};
@@ -27,17 +29,17 @@ pub struct TagsManagingStateData {
 }
 
 impl TagsManagingStateData {
-    pub fn from_pattern(pattern: String, db: &Connection) -> Result<Self> {
+    pub async fn from_pattern(pattern: String, db: &SqlitePool) -> Result<Self> {
         Ok(TagsManagingStateData {
-            tags: Tag::search_by_name(pattern.as_str(), db)?,
+            tags: Tag::search_by_name(pattern.as_str(), db).await?,
             selected: 0,
             pattern,
             help_display: false,
         })
     }
 
-    pub fn empty(db: &Connection) -> Result<Self> {
-        Self::from_pattern(String::new(), db)
+    pub async fn empty(db: &SqlitePool) -> Result<Self> {
+        Self::from_pattern(String::new(), db).await
     }
 
     pub fn get_selected(&self) -> Option<&Tag> {
@@ -85,17 +87,19 @@ pub async fn run_tags_managing_state(
             info!("Open tag notes listing.");
             let tag = state_data.tags.swap_remove(state_data.selected);
 
-            State::TagNotesListing(TagNotesListingStateData::new(tag, notebook.db())?)
+            State::TagNotesListing(TagNotesListingStateData::new(tag, notebook.db()).await?)
         }
         KeyCode::Backspace if key_event.modifiers == KeyModifiers::NONE => {
             state_data.pattern.pop();
-            state_data.tags = Tag::search_by_name(state_data.pattern.as_str(), notebook.db())?;
+            state_data.tags =
+                Tag::search_by_name(state_data.pattern.as_str(), notebook.db()).await?;
             state_data.selected = 0;
             State::TagsManaging(state_data)
         }
         KeyCode::Char(c) if key_event.modifiers == KeyModifiers::NONE && !c.is_whitespace() => {
             state_data.pattern.push(c);
-            state_data.tags = Tag::search_by_name(state_data.pattern.as_str(), notebook.db())?;
+            state_data.tags =
+                Tag::search_by_name(state_data.pattern.as_str(), notebook.db()).await?;
             state_data.selected = 0;
             State::TagsManaging(state_data)
         }

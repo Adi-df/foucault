@@ -43,11 +43,11 @@ pub struct NoteViewingStateData {
 }
 
 impl NoteViewingStateData {
-    pub fn new(note: Note, db: &SqlitePool) -> Result<Self> {
+    pub async fn new(note: Note, db: &SqlitePool) -> Result<Self> {
         let mut parsed_content = parse(note.content());
         parsed_content.select((0, 0), true);
         Ok(NoteViewingStateData {
-            tags: note.tags(db)?,
+            tags: note.tags(db).await?,
             note,
             parsed_content,
             selected: (0, 0),
@@ -129,10 +129,9 @@ pub async fn run_note_viewing_state(
         }
         KeyCode::Char('t') => {
             info!("Open tags manager for note {}", state_data.note.name());
-            State::NoteTagsManaging(NoteTagsManagingStateData::new(
-                state_data.note,
-                notebook.db(),
-            )?)
+            State::NoteTagsManaging(
+                NoteTagsManagingStateData::new(state_data.note, notebook.db()).await?,
+            )
         }
         KeyCode::Enter => {
             info!("Try to trigger element action.");
@@ -145,7 +144,9 @@ pub async fn run_note_viewing_state(
                     InlineElements::CrossRef { dest, .. } => {
                         if let Some(note) = Note::load_by_name(dest.as_str(), notebook.db()).await?
                         {
-                            State::NoteViewing(NoteViewingStateData::new(note, notebook.db())?)
+                            State::NoteViewing(
+                                NoteViewingStateData::new(note, notebook.db()).await?,
+                            )
                         } else {
                             State::NoteViewing(state_data)
                         }

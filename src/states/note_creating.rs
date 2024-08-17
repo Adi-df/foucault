@@ -41,7 +41,7 @@ pub async fn run_note_creating_state(
 
                 let new_note = Note::new(name.clone(), String::new(), notebook.db()).await?;
 
-                State::NoteViewing(NoteViewingStateData::new(new_note, notebook.db())?)
+                State::NoteViewing(NoteViewingStateData::new(new_note, notebook.db()).await?)
             }
         }
         KeyCode::Esc => {

@@ -137,8 +137,8 @@ impl Note {
         Note::list_note_links(self.id, db).await
     }
 
-    pub fn tags(&self, db: &SqlitePool) -> Result<Vec<Tag>> {
-        Tag::list_note_tags(self.id, db)
+    pub async fn tags(&self, db: &SqlitePool) -> Result<Vec<Tag>> {
+        Tag::list_note_tags(self.id, db).await
     }
 
     pub async fn has_tag(&self, tag_id: i64, db: &SqlitePool) -> Result<bool> {
@@ -230,7 +230,7 @@ impl Note {
     }
 
     pub async fn validate_new_tag(&self, tag_id: i64, db: &SqlitePool) -> Result<()> {
-        if !Tag::id_exists(tag_id, db)? {
+        if !Tag::id_exists(tag_id, db).await? {
             Err(TagError::DoesNotExists.into())
         } else if self.has_tag(tag_id, db).await? {
             Err(NoteError::NoteAlreadyTagged.into())
@@ -274,30 +274,34 @@ impl NoteSummary {
     }
 
     pub async fn search_by_name(pattern: &str, db: &SqlitePool) -> Result<Vec<Self>> {
-        sqlx::query("SELECT id,name FROM notes_table WHERE name LIKE '%$1%' ORDER BY name ASC")
-            .bind(pattern)
-            .fetch_all(db)
-            .await?
-            .into_iter()
-            .map(|row| {
-                let id = row.try_get(0)?;
-                Ok(NoteSummary {
-                    id,
-                    name: row.try_get(1)?,
-                    tags: Tag::list_note_tags(id, db)?,
-                })
-            })
-            .collect()
+        join_all(
+            sqlx::query("SELECT id,name FROM notes_table WHERE name LIKE '%$1%' ORDER BY name ASC")
+                .bind(pattern)
+                .fetch_all(db)
+                .await?
+                .into_iter()
+                .map(|row| async move {
+                    let id = row.try_get(0)?;
+                    Ok(NoteSummary {
+                        id,
+                        name: row.try_get(1)?,
+                        tags: Tag::list_note_tags(id, db).await?,
+                    })
+                }),
+        )
+        .await
+        .into_iter()
+        .collect()
     }
 
     pub async fn fetch_by_tag(tag_id: i64, db: &SqlitePool) -> Result<Vec<NoteSummary>> {
-        sqlx::query("SELECT notes_table.id notes_table.name FROM tags_join_table INNER JOIN notes_table ON tags_join_table.note_id = notes_table.id WHERE tag_id=$1").bind(tag_id).fetch_all(db).await?.into_iter().map(|row| {
+        join_all(sqlx::query("SELECT notes_table.id notes_table.name FROM tags_join_table INNER JOIN notes_table ON tags_join_table.note_id = notes_table.id WHERE tag_id=$1").bind(tag_id).fetch_all(db).await?.into_iter().map(|row| async move{
             let id = row.try_get(0)?;
             Ok(NoteSummary {
                     id,
                     name: row.try_get(1)?,
-                    tags: Tag::list_note_tags(id, db)?
+                    tags: Tag::list_note_tags(id, db).await?
                 })
-        }).collect()
+        })).await.into_iter().collect()
     }
 }

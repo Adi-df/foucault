@@ -1,6 +1,8 @@
 use anyhow::Result;
 use log::info;
 
+use sqlx::SqlitePool;
+
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::prelude::{Constraint, Direction, Layout, Margin};
 use ratatui::style::{Color, Style};
@@ -24,9 +26,9 @@ pub struct TagNotesListingStateData {
 }
 
 impl TagNotesListingStateData {
-    pub fn new(tag: Tag, db: &Connection) -> Result<Self> {
+    pub async fn new(tag: Tag, db: &SqlitePool) -> Result<Self> {
         Ok(TagNotesListingStateData {
-            notes: tag.get_related_notes(db)?,
+            notes: tag.get_related_notes(db).await?,
             selected: 0,
             tag,
         })
@@ -47,7 +49,7 @@ pub async fn run_tag_notes_listing_state(
             let summary = &state_data.notes[state_data.selected];
             if let Some(note) = Note::load_by_id(summary.id(), notebook.db()).await? {
                 info!("Open note {} viewing.", note.name());
-                State::NoteViewing(NoteViewingStateData::new(note, notebook.db())?)
+                State::NoteViewing(NoteViewingStateData::new(note, notebook.db()).await?)
             } else {
                 State::TagNotesListing(state_data)
             }

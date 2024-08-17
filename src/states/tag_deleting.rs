@@ -40,10 +40,10 @@ pub async fn run_tag_deleting_state(
                     .expect("A tag should be selected.")
                     .name()
             );
-            State::TagsManaging(TagsManagingStateData::from_pattern(
-                tags_managing_data.pattern,
-                notebook.db(),
-            )?)
+            State::TagsManaging(
+                TagsManagingStateData::from_pattern(tags_managing_data.pattern, notebook.db())
+                    .await?,
+            )
         }
         KeyCode::Enter => {
             if delete {
@@ -58,7 +58,8 @@ pub async fn run_tag_deleting_state(
                 tags_managing_data
                     .tags
                     .swap_remove(tags_managing_data.selected)
-                    .delete(notebook.db())?;
+                    .delete(notebook.db())
+                    .await?;
             } else {
                 info!(
                     "Cancel deleting of tag {}.",
@@ -68,10 +69,10 @@ pub async fn run_tag_deleting_state(
                         .name()
                 );
             }
-            State::TagsManaging(TagsManagingStateData::from_pattern(
-                tags_managing_data.pattern,
-                notebook.db(),
-            )?)
+            State::TagsManaging(
+                TagsManagingStateData::from_pattern(tags_managing_data.pattern, notebook.db())
+                    .await?,
+            )
         }
         KeyCode::Tab => State::TagDeleting(TagsDeletingStateData {
             tags_managing_data,

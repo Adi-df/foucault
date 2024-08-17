@@ -105,7 +105,7 @@ impl Notebook {
             });
 
         // Initialize
-        sqlx::migrate!("migrations").run(&database).await?;
+        sqlx::migrate!().run(&database).await?;
 
         Ok(Notebook {
             name: name.to_owned(),
