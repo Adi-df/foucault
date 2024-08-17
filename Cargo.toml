@@ -2,7 +2,15 @@
 name = "foucault"
 version = "0.1.2"
 edition = "2021"
+authors = ["Adrien Degliame--Fecchio"]
 repository = "https://github.com/Adi-df/foucault/"
+description = "A minimal TUI note taking app"
+
+[package.metadata.wix]
+upgrade-guid = "49E7C3B1-F9F9-4344-A3B8-2AE27FC5724B"
+path-guid = "E5D1C3D7-1E27-4590-8F0F-DF9E159067DC"
+license = false
+eula = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -25,6 +33,10 @@ tokio = { version = "1.39.2", features = ["full"] }
 sqlx = { version = "0.8.0", features = ["runtime-tokio", "migrate", "macros", "sqlite"] }
 futures = "0.3.30"
 
+[build-dependencies]
+just = "1.34.0"
+sqlx-cli = "0.8.0"
+
 # The profile that 'cargo dist' will build with
 [profile.dist]
 inherits = "release"
@@ -37,6 +49,10 @@ cargo-dist-version = "0.21.0"
 # CI backends to support
 ci = "github"
 # The installers to generate for each app
-installers = []
+installers = ["shell", "msi"]
 # Target platforms to build apps for (Rust target-triple syntax)
 targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-pc-windows-msvc"]
+# Path that installers should place binaries in
+install-path = "CARGO_HOME"
+# Whether to install an updater program
+install-updater = false
