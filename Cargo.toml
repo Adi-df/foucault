@@ -16,11 +16,9 @@ clap = { version = "4.4.11", features = ["derive"] }
 markdown = "1.0.0-alpha.16"
 crossterm = "0.27.0"
 ratatui = "0.26.3"
-rusqlite = { version = "0.29.0", features = ["bundled"] }
-sea-query = "0.30.5"
-sea-query-rusqlite = "0.4.0"
 opener = "0.6.1"
 question = "0.2.2"
 unicode-segmentation = "1.11.0"
 random_color = "0.8.0"
 tokio = { version = "1.39.2", features = ["full"] }
+sqlx = { version = "0.8.0", features = ["runtime-tokio", "sqlite"] }

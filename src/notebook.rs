@@ -1,13 +1,13 @@
+use sqlx::sqlite::SqlitePoolOptions;
 use std::env;
 use std::path::{Path, PathBuf};
-
 use tokio::fs;
+
+use sqlx::SqlitePool;
 
 use anyhow::Result;
 use log::error;
 use thiserror::Error;
-
-use rusqlite::Connection;
 
 use crate::links::LinksTable;
 use crate::note::NotesTable;
@@ -16,7 +16,7 @@ use crate::tag::{TagsJoinTable, TagsTable};
 pub struct Notebook {
     pub name: String,
     file: PathBuf,
-    database: Connection,
+    db_pool: SqlitePool,
 }
 
 #[derive(Error, Debug)]
@@ -38,15 +38,15 @@ pub enum SuppressionError {
 }
 
 impl Notebook {
-    pub fn db(&self) -> &Connection {
-        &self.database
+    pub fn db(&self) -> &SqlitePool {
+        &self.db_pool
     }
 
     pub fn dir(&self) -> Option<&Path> {
         self.file.parent()
     }
 
-    pub fn open_notebook(name: &str, dir: &Path) -> Result<Self> {
+    pub async fn open_notebook(name: &str, dir: &Path) -> Result<Self> {
         let notebook_path = {
             let app_dir_notebook_path = dir.join(format!("{name}.book"));
             let current_dir_notebook_path = env::current_dir()?.join(format!("{name}.book"));
@@ -64,19 +64,27 @@ impl Notebook {
             }
         };
 
-        let database = Connection::open(&notebook_path).unwrap_or_else(|_| {
-            error!("Unable to open the notebook \"{name}\".");
-            todo!();
-        });
+        let database = SqlitePoolOptions::new()
+            .connect(&format!(
+                "sqlite://{}",
+                notebook_path
+                    .to_str()
+                    .expect("The notebook path must be valid unicode")
+            ))
+            .await
+            .unwrap_or_else(|_| {
+                error!("Unable to open the notebook \"{name}\".");
+                todo!();
+            });
 
         Ok(Notebook {
             name: name.to_owned(),
             file: notebook_path,
-            database,
+            db_pool: database,
         })
     }
 
-    pub fn new_notebook(name: &str, dir: &Path) -> Result<Self> {
+    pub async fn new_notebook(name: &str, dir: &Path) -> Result<Self> {
         let notebook_path = dir.join(format!("{name}.book"));
 
         if notebook_path.try_exists()? {
@@ -87,10 +95,18 @@ impl Notebook {
             .into());
         }
 
-        let database = Connection::open(&notebook_path).unwrap_or_else(|_| {
-            error!("Unable to open the notebook \"{name}\".");
-            todo!();
-        });
+        let database = SqlitePoolOptions::new()
+            .connect(&format!(
+                "sqlite://{}",
+                notebook_path
+                    .to_str()
+                    .expect("The notebook path must be valid unicode")
+            ))
+            .await
+            .unwrap_or_else(|_| {
+                error!("Unable to open the notebook \"{name}\".");
+                todo!();
+            });
 
         // Initialize
         NotesTable::create(&database)?;
@@ -101,7 +117,7 @@ impl Notebook {
         Ok(Notebook {
             name: name.to_owned(),
             file: notebook_path,
-            database,
+            db_pool: database,
         })
     }
 
