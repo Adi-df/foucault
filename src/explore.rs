@@ -17,7 +17,7 @@ use ratatui::Terminal;
 use crate::notebook::Notebook;
 use crate::states::State;
 
-pub fn explore(notebook: &Notebook) -> Result<()> {
+pub async fn explore(notebook: &Notebook) -> Result<()> {
     info!("Explore notebook : {}", notebook.name);
 
     enable_raw_mode().expect("Prepare terminal");
