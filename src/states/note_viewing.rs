@@ -2,6 +2,7 @@ use std::env;
 use std::io::stdout;
 use std::process::Command;
 
+use sqlx::SqlitePool;
 use tokio::fs;
 
 use anyhow::Result;
@@ -42,7 +43,7 @@ pub struct NoteViewingStateData {
 }
 
 impl NoteViewingStateData {
-    pub fn new(note: Note, db: &Connection) -> Result<Self> {
+    pub fn new(note: Note, db: &SqlitePool) -> Result<Self> {
         let mut parsed_content = parse(note.content());
         parsed_content.select((0, 0), true);
         Ok(NoteViewingStateData {
@@ -106,7 +107,8 @@ pub async fn run_note_viewing_state(
             state_data.re_parse_content();
             state_data
                 .note
-                .update_links(&state_data.compute_links(), notebook.db())?;
+                .update_links(&state_data.compute_links(), notebook.db())
+                .await?;
             state_data.selected = (0, 0);
             state_data.select_current(true);
             *force_redraw = true;
@@ -115,7 +117,7 @@ pub async fn run_note_viewing_state(
         }
         KeyCode::Char('s') => {
             info!("Enter notes listing.");
-            State::NotesManaging(NotesManagingStateData::empty(notebook.db())?)
+            State::NotesManaging(NotesManagingStateData::empty(notebook.db()).await?)
         }
         KeyCode::Char('d') => {
             info!("Open deleting prompt for note {}.", state_data.note.name());
@@ -141,7 +143,8 @@ pub async fn run_note_viewing_state(
                         State::NoteViewing(state_data)
                     }
                     InlineElements::CrossRef { dest, .. } => {
-                        if let Some(note) = Note::load_by_name(dest.as_str(), notebook.db())? {
+                        if let Some(note) = Note::load_by_name(dest.as_str(), notebook.db()).await?
+                        {
                             State::NoteViewing(NoteViewingStateData::new(note, notebook.db())?)
                         } else {
                             State::NoteViewing(state_data)

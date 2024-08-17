@@ -46,7 +46,7 @@ pub async fn run_note_deleting_state(
         KeyCode::Enter => {
             if delete {
                 info!("Delete note {}.", note_viewing_data.note.name());
-                note_viewing_data.note.delete(notebook.db())?;
+                note_viewing_data.note.delete(notebook.db()).await?;
                 State::Nothing
             } else {
                 info!("Cancel deleting note {}.", note_viewing_data.note.name());

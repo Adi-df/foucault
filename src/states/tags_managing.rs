@@ -11,8 +11,6 @@ use ratatui::widgets::{
 };
 use ratatui::Frame;
 
-use rusqlite::Connection;
-
 use crate::helpers::{create_bottom_line, create_row_help_layout, DiscardResult};
 use crate::notebook::Notebook;
 use crate::states::tag_creating::TagsCreatingStateData;

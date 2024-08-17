@@ -27,7 +27,7 @@ pub async fn run_nothing_state(key_event: KeyEvent, notebook: &Notebook) -> Resu
         }
         KeyCode::Char('s') => {
             info!("Open notes listing.");
-            State::NotesManaging(NotesManagingStateData::empty(notebook.db())?)
+            State::NotesManaging(NotesManagingStateData::empty(notebook.db()).await?)
         }
         KeyCode::Char('t') => {
             info!("Open tags manager.");

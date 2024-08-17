@@ -1,13 +1,14 @@
 use anyhow::Result;
 use log::info;
 
+use sqlx::SqlitePool;
+
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::prelude::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Clear, List, ListState, Padding, Paragraph};
 use ratatui::Frame;
-use rusqlite::Connection;
 
 use crate::helpers::{create_bottom_line, create_row_help_layout, DiscardResult};
 use crate::note::Note;
@@ -27,7 +28,7 @@ pub struct NoteTagsManagingStateData {
 }
 
 impl NoteTagsManagingStateData {
-    pub fn new(note: Note, db: &Connection) -> Result<Self> {
+    pub fn new(note: Note, db: &SqlitePool) -> Result<Self> {
         Ok(NoteTagsManagingStateData {
             tags: note.tags(db)?,
             note,

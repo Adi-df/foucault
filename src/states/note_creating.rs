@@ -31,12 +31,15 @@ pub async fn run_note_creating_state(
 ) -> Result<State> {
     Ok(match key_event.code {
         KeyCode::Enter => {
-            if Note::validate_new_name(name.as_str(), notebook.db()).is_err() {
+            if Note::validate_new_name(name.as_str(), notebook.db())
+                .await
+                .is_err()
+            {
                 State::NoteCreating(NoteCreatingStateData { name, valid: false })
             } else {
                 info!("Create note : {}.", name.as_str());
 
-                let new_note = Note::new(name.clone(), String::new(), notebook.db())?;
+                let new_note = Note::new(name.clone(), String::new(), notebook.db()).await?;
 
                 State::NoteViewing(NoteViewingStateData::new(new_note, notebook.db())?)
             }
@@ -48,14 +51,18 @@ pub async fn run_note_creating_state(
         KeyCode::Backspace => {
             name.pop();
             State::NoteCreating(NoteCreatingStateData {
-                valid: Note::validate_new_name(name.as_str(), notebook.db()).is_ok(),
+                valid: Note::validate_new_name(name.as_str(), notebook.db())
+                    .await
+                    .is_ok(),
                 name,
             })
         }
         KeyCode::Char(c) => {
             name.push(c);
             State::NoteCreating(NoteCreatingStateData {
-                valid: Note::validate_new_name(name.as_str(), notebook.db()).is_ok(),
+                valid: Note::validate_new_name(name.as_str(), notebook.db())
+                    .await
+                    .is_ok(),
                 name,
             })
         }

@@ -60,7 +60,8 @@ pub async fn run_note_tag_deleting_state(
 
                 note_tags_managing_data
                     .note
-                    .remove_tag(tag.id(), notebook.db())?;
+                    .remove_tag(tag.id(), notebook.db())
+                    .await?;
 
                 State::NoteTagsManaging(NoteTagsManagingStateData::new(
                     note_tags_managing_data.note,

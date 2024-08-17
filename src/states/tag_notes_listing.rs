@@ -10,8 +10,6 @@ use ratatui::widgets::{
     ScrollbarOrientation, ScrollbarState,
 };
 
-use rusqlite::Connection;
-
 use crate::helpers::DiscardResult;
 use crate::note::{Note, NoteSummary};
 use crate::notebook::Notebook;
@@ -47,7 +45,7 @@ pub async fn run_tag_notes_listing_state(
         }
         KeyCode::Enter if !state_data.notes.is_empty() => {
             let summary = &state_data.notes[state_data.selected];
-            if let Some(note) = Note::load_by_id(summary.id(), notebook.db())? {
+            if let Some(note) = Note::load_by_id(summary.id(), notebook.db()).await? {
                 info!("Open note {} viewing.", note.name());
                 State::NoteViewing(NoteViewingStateData::new(note, notebook.db())?)
             } else {
