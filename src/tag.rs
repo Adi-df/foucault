@@ -1,14 +1,8 @@
 use anyhow::Result;
 
 use random_color::RandomColor;
-use rusqlite::{Connection, OptionalExtension};
-use sea_query::{
-    ColumnDef, Expr, ForeignKey, ForeignKeyAction, Iden, JoinType, Order, Query,
-    SqliteQueryBuilder, Table,
-};
 use thiserror::Error;
 
-use crate::helpers::DiscardResult;
 use crate::note::{NoteSummary, NotesCharacters, NotesTable};
 
 #[derive(Iden)]
@@ -203,32 +197,6 @@ impl Tag {
 
     pub fn get_related_notes(&self, db: &Connection) -> Result<Vec<NoteSummary>> {
         NoteSummary::fetch_by_tag(self.id, db)
-    }
-}
-
-impl TagsTable {
-    pub fn create(db: &Connection) -> Result<()> {
-        db.execute_batch(
-            Table::create()
-                .if_not_exists()
-                .table(TagsTable)
-                .col(
-                    ColumnDef::new(TagsCharacters::Id)
-                        .integer()
-                        .primary_key()
-                        .auto_increment(),
-                )
-                .col(
-                    ColumnDef::new(TagsCharacters::Name)
-                        .string()
-                        .unique_key()
-                        .not_null(),
-                )
-                .col(ColumnDef::new(TagsCharacters::Color).integer().not_null())
-                .build(SqliteQueryBuilder)
-                .as_str(),
-        )
-        .discard_result()
     }
 }
 
