@@ -40,13 +40,16 @@ impl Note {
     pub async fn new(name: String, content: String, db: &SqlitePool) -> Result<Self> {
         Note::validate_new_name(&name, db).await?;
 
-        let id =
-            sqlx::query("INSERT INTO notes_table (name, content) VALUES ($1, $2) RETURNING id")
-                .bind(&name)
-                .bind(&content)
-                .fetch_one(db)
-                .await?
-                .try_get(0)?;
+        let ref_name = &name;
+        let ref_content = &content;
+        let id = sqlx::query!(
+            "INSERT INTO notes_table (name, content) VALUES ($1, $2) RETURNING id",
+            ref_name,
+            ref_content
+        )
+        .fetch_one(db)
+        .await?
+        .id;
 
         Ok(Self { id, name, content })
     }
