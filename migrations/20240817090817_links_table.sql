@@ -4,4 +4,4 @@ CREATE TABLE links_table (
     to_name string NOT NULL,
     FOREIGN KEY (from_id) REFERENCES notes_table (id)
         ON UPDATE CASCADE ON DELETE CASCADE
-)
+);
