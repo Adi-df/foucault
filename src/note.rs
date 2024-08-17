@@ -240,9 +240,10 @@ impl Note {
         let removed = current_links
             .iter()
             .filter(|link| !new_links.contains(link))
-            .map(|link| &link.to);
+            .map(|link| &link.to)
+            .peekable();
 
-        db.prepare(
+        db.execute_batch(
             Query::delete()
                 .from_table(LinksTable)
                 .and_where(Expr::col(LinksCharacters::FromId).eq(self.id))
@@ -251,21 +252,24 @@ impl Note {
                 .as_str(),
         )?;
 
-        let added = new_links
+        let mut added = new_links
             .iter()
             .filter(|link| !current_links.contains(link))
-            .map(|link| &link.to);
+            .map(|link| &link.to)
+            .peekable();
 
-        db.prepare({
-            let mut builder = Query::insert()
-                .into_table(LinksTable)
-                .columns([LinksCharacters::FromId, LinksCharacters::ToName])
-                .to_owned();
-            for new_link in added {
-                builder.values([self.id.into(), new_link.into()])?;
-            }
-            builder.to_string(SqliteQueryBuilder).as_str()
-        })?;
+        if added.peek().is_some() {
+            db.execute_batch({
+                let mut builder = Query::insert()
+                    .into_table(LinksTable)
+                    .columns([LinksCharacters::FromId, LinksCharacters::ToName])
+                    .to_owned();
+                for new_link in added {
+                    builder.values([self.id.into(), new_link.into()])?;
+                }
+                builder.to_string(SqliteQueryBuilder).as_str()
+            })?;
+        }
 
         Ok(())
     }
