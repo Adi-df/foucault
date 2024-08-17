@@ -47,7 +47,7 @@ impl TagsManagingStateData {
     }
 }
 
-pub fn run_tags_managing_state(
+pub async fn run_tags_managing_state(
     mut state_data: TagsManagingStateData,
     key_event: KeyEvent,
     notebook: &Notebook,

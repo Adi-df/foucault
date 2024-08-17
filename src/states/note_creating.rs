@@ -24,7 +24,7 @@ impl NoteCreatingStateData {
     }
 }
 
-pub fn run_note_creating_state(
+pub async fn run_note_creating_state(
     NoteCreatingStateData { mut name, valid }: NoteCreatingStateData,
     key_event: KeyEvent,
     notebook: &Notebook,

@@ -109,7 +109,7 @@ async fn main() -> Result<()> {
                     Answer::YES
                 ) {
                     println!("Proceed.");
-                    Notebook::delete_notebook(name, &app_dir_path)?;
+                    Notebook::delete_notebook(name, &app_dir_path).await?;
                 } else {
                     println!("Cancel.");
                 }

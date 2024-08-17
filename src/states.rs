@@ -84,30 +84,36 @@ pub enum State {
 }
 
 impl State {
-    pub fn run(
+    pub async fn run(
         self,
         key_event: KeyEvent,
         notebook: &Notebook,
         force_redraw: &mut bool,
     ) -> Result<Self> {
         match self {
-            State::Nothing => run_nothing_state(key_event, notebook),
-            State::NotesManaging(data) => run_note_managing_state(data, key_event, notebook),
-            State::NoteCreating(data) => run_note_creating_state(data, key_event, notebook),
+            State::Nothing => run_nothing_state(key_event, notebook).await,
+            State::NotesManaging(data) => run_note_managing_state(data, key_event, notebook).await,
+            State::NoteCreating(data) => run_note_creating_state(data, key_event, notebook).await,
             State::NoteViewing(data) => {
-                run_note_viewing_state(data, key_event, notebook, force_redraw)
+                run_note_viewing_state(data, key_event, notebook, force_redraw).await
             }
-            State::NoteDeleting(data) => run_note_deleting_state(data, key_event, notebook),
-            State::NoteRenaming(data) => run_note_renaming_state(data, key_event, notebook),
+            State::NoteDeleting(data) => run_note_deleting_state(data, key_event, notebook).await,
+            State::NoteRenaming(data) => run_note_renaming_state(data, key_event, notebook).await,
             State::NoteTagsManaging(data) => {
-                run_note_tags_managing_state(data, key_event, notebook)
+                run_note_tags_managing_state(data, key_event, notebook).await
             }
-            State::NoteTagAdding(data) => run_note_tag_adding_state(data, key_event, notebook),
-            State::NoteTagDeleting(data) => run_note_tag_deleting_state(data, key_event, notebook),
-            State::TagsManaging(data) => run_tags_managing_state(data, key_event, notebook),
-            State::TagCreating(data) => run_tag_creating_state(data, key_event, notebook),
-            State::TagDeleting(data) => run_tag_deleting_state(data, key_event, notebook),
-            State::TagNotesListing(data) => run_tag_notes_listing_state(data, key_event, notebook),
+            State::NoteTagAdding(data) => {
+                run_note_tag_adding_state(data, key_event, notebook).await
+            }
+            State::NoteTagDeleting(data) => {
+                run_note_tag_deleting_state(data, key_event, notebook).await
+            }
+            State::TagsManaging(data) => run_tags_managing_state(data, key_event, notebook).await,
+            State::TagCreating(data) => run_tag_creating_state(data, key_event, notebook).await,
+            State::TagDeleting(data) => run_tag_deleting_state(data, key_event, notebook).await,
+            State::TagNotesListing(data) => {
+                run_tag_notes_listing_state(data, key_event, notebook).await
+            }
             State::Exit => unreachable!(),
         }
     }

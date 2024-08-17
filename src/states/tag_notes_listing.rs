@@ -35,7 +35,7 @@ impl TagNotesListingStateData {
     }
 }
 
-pub fn run_tag_notes_listing_state(
+pub async fn run_tag_notes_listing_state(
     state_data: TagNotesListingStateData,
     key_event: KeyEvent,
     notebook: &Notebook,

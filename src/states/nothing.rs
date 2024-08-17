@@ -15,7 +15,7 @@ use crate::states::notes_managing::NotesManagingStateData;
 use crate::states::tags_managing::TagsManagingStateData;
 use crate::states::{State, Terminal};
 
-pub fn run_nothing_state(key_event: KeyEvent, notebook: &Notebook) -> Result<State> {
+pub async fn run_nothing_state(key_event: KeyEvent, notebook: &Notebook) -> Result<State> {
     Ok(match key_event.code {
         KeyCode::Esc | KeyCode::Char('q') => {
             info!("Quit foucault.");

@@ -1,6 +1,8 @@
+use std::env;
 use std::io::stdout;
 use std::process::Command;
-use std::{env, fs};
+
+use tokio::fs;
 
 use anyhow::Result;
 use log::info;
@@ -77,7 +79,7 @@ impl NoteViewingStateData {
     }
 }
 
-pub fn run_note_viewing_state(
+pub async fn run_note_viewing_state(
     mut state_data: NoteViewingStateData,
     key_event: KeyEvent,
     notebook: &Notebook,
@@ -100,7 +102,7 @@ pub fn run_note_viewing_state(
         }
         KeyCode::Char('e') => {
             info!("Edit note {}.", state_data.note.name());
-            edit_note(&mut state_data.note, notebook)?;
+            edit_note(&mut state_data.note, notebook).await?;
 
             state_data.re_parse_content();
             state_data
@@ -217,7 +219,7 @@ pub fn run_note_viewing_state(
     })
 }
 
-fn edit_note(note: &mut Note, notebook: &Notebook) -> Result<()> {
+async fn edit_note(note: &mut Note, notebook: &Notebook) -> Result<()> {
     let tmp_file_path = notebook
         .dir()
         .unwrap()
@@ -241,7 +243,7 @@ fn edit_note(note: &mut Note, notebook: &Notebook) -> Result<()> {
 
     note.import_content(tmp_file_path.as_path(), notebook.db())?;
 
-    fs::remove_file(&tmp_file_path)?;
+    fs::remove_file(&tmp_file_path).await?;
     Ok(())
 }
 

@@ -1,5 +1,7 @@
+use std::env;
 use std::path::{Path, PathBuf};
-use std::{env, fs};
+
+use tokio::fs;
 
 use anyhow::Result;
 use log::error;
@@ -77,7 +79,7 @@ impl Notebook {
     pub fn new_notebook(name: &str, dir: &Path) -> Result<Self> {
         let notebook_path = dir.join(format!("{name}.book"));
 
-        if notebook_path.exists() {
+        if notebook_path.try_exists()? {
             error!("A notebook named \"{name}\" already exists.");
             return Err(CreationError::NotebookAlreadyExists {
                 name: name.to_owned(),
@@ -103,7 +105,7 @@ impl Notebook {
         })
     }
 
-    pub fn delete_notebook(name: &str, dir: &Path) -> Result<()> {
+    pub async fn delete_notebook(name: &str, dir: &Path) -> Result<()> {
         let notebook_path = dir.join(format!("{name}.book"));
 
         if !notebook_path.exists() {
@@ -114,7 +116,7 @@ impl Notebook {
             .into());
         }
 
-        fs::remove_file(notebook_path)?;
+        fs::remove_file(notebook_path).await?;
         Ok(())
     }
 }

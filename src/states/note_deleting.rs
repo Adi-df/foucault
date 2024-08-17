@@ -23,7 +23,7 @@ impl NoteDeletingStateData {
     }
 }
 
-pub fn run_note_deleting_state(
+pub async fn run_note_deleting_state(
     NoteDeletingStateData {
         note_viewing_data,
         delete,

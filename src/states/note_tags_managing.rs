@@ -15,10 +15,9 @@ use crate::notebook::Notebook;
 use crate::states::note_tag_adding::NoteTagAddingStateData;
 use crate::states::note_tag_deleting::NoteTagDeletingStateData;
 use crate::states::note_viewing::NoteViewingStateData;
+use crate::states::tag_notes_listing::TagNotesListingStateData;
 use crate::states::{State, Terminal};
 use crate::tag::Tag;
-
-use super::tag_notes_listing::TagNotesListingStateData;
 
 pub struct NoteTagsManagingStateData {
     pub note: Note,
@@ -42,7 +41,7 @@ impl NoteTagsManagingStateData {
     }
 }
 
-pub fn run_note_tags_managing_state(
+pub async fn run_note_tags_managing_state(
     mut state_data: NoteTagsManagingStateData,
     key_event: KeyEvent,
     notebook: &Notebook,

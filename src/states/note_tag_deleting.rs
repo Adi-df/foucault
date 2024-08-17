@@ -23,7 +23,7 @@ impl NoteTagDeletingStateData {
     }
 }
 
-pub fn run_note_tag_deleting_state(
+pub async fn run_note_tag_deleting_state(
     NoteTagDeletingStateData {
         mut note_tags_managing_data,
         delete,

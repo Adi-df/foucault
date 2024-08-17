@@ -38,7 +38,7 @@ impl NotesManagingStateData {
     }
 }
 
-pub fn run_note_managing_state(
+pub async fn run_note_managing_state(
     mut state_data: NotesManagingStateData,
     key_event: KeyEvent,
     notebook: &Notebook,

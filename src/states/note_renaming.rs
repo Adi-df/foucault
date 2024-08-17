@@ -26,7 +26,7 @@ impl NoteRenamingStateData {
     }
 }
 
-pub fn run_note_renaming_state(
+pub async fn run_note_renaming_state(
     mut state_data: NoteRenamingStateData,
     key_event: KeyEvent,
     notebook: &Notebook,

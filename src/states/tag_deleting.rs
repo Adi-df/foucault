@@ -23,7 +23,7 @@ impl TagsDeletingStateData {
     }
 }
 
-pub fn run_tag_deleting_state(
+pub async fn run_tag_deleting_state(
     TagsDeletingStateData {
         mut tags_managing_data,
         delete,

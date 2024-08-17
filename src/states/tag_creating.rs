@@ -26,7 +26,7 @@ impl TagsCreatingStateData {
     }
 }
 
-pub fn run_tag_creating_state(
+pub async fn run_tag_creating_state(
     mut state_data: TagsCreatingStateData,
     key_event: KeyEvent,
     notebook: &Notebook,

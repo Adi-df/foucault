@@ -26,7 +26,7 @@ impl NoteTagAddingStateData {
     }
 }
 
-pub fn run_note_tag_adding_state(
+pub async fn run_note_tag_adding_state(
     mut state_data: NoteTagAddingStateData,
     key_event: KeyEvent,
     notebook: &Notebook,
