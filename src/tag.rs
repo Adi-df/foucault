@@ -1,6 +1,8 @@
 use anyhow::Result;
 use thiserror::Error;
 
+use sqlx::{Row, SqlitePool};
+
 use random_color::RandomColor;
 
 use crate::note::NoteSummary;
@@ -28,130 +30,87 @@ fn rand_color() -> u32 {
 }
 
 impl Tag {
-    pub fn new(name: &str, db: &Connection) -> Result<Self> {
-        Tag::validate_new_tag(name, db)?;
+    pub async fn new(name: &str, db: &SqlitePool) -> Result<Self> {
+        Tag::validate_new_tag(name, db).await?;
 
         let color = rand_color();
-        db.execute_batch(
-            Query::insert()
-                .into_table(TagsTable)
-                .columns([TagsCharacters::Name, TagsCharacters::Color])
-                .values([name.into(), color.into()])?
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-        )
-        .map_err(anyhow::Error::from)?;
+        let id = sqlx::query("INSERT INTO tags_table (name, color) VALUES ($1, $2) RETURNING id")
+            .bind(name)
+            .bind(color)
+            .fetch_one(db)
+            .await?
+            .try_get(0)?;
 
         Ok(Self {
-            id: db.last_insert_rowid(),
-            name: name.to_owned(),
+            id,
+            name: name.to_string(),
             color,
         })
     }
 
-    pub fn validate_new_tag(name: &str, db: &Connection) -> Result<()> {
+    pub async fn validate_new_tag(name: &str, db: &SqlitePool) -> Result<()> {
         if name.is_empty() {
             Err(TagError::EmptyName.into())
-        } else if Tag::name_exists(name, db)? {
+        } else if Tag::name_exists(name, db).await? {
             Err(TagError::AlreadyExists.into())
         } else {
             Ok(())
         }
     }
 
-    pub fn id_exists(tag_id: i64, db: &Connection) -> Result<bool> {
-        db.prepare(
-            Query::select()
-                .from(TagsTable)
-                .column(TagsCharacters::Id)
-                .and_where(Expr::col(TagsCharacters::Id).eq(tag_id))
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-        )?
-        .exists([])
-        .map_err(anyhow::Error::from)
+    pub async fn id_exists(tag_id: i64, db: &SqlitePool) -> Result<bool> {
+        Ok(sqlx::query("SELECT 1 FROM tags_table WHERE id=$1")
+            .bind(tag_id)
+            .fetch_optional(db)
+            .await?
+            .is_some())
     }
 
-    pub fn name_exists(name: &str, db: &Connection) -> Result<bool> {
-        db.prepare(
-            Query::select()
-                .from(TagsTable)
-                .column(TagsCharacters::Name)
-                .and_where(Expr::col(TagsCharacters::Name).eq(name))
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-        )?
-        .exists([])
-        .map_err(anyhow::Error::from)
+    pub async fn name_exists(name: &str, db: &SqlitePool) -> Result<bool> {
+        Ok(sqlx::query("SELECT 1 FROM tags_table WHERE name=$1")
+            .bind(name)
+            .fetch_optional(db)
+            .await?
+            .is_some())
     }
 
-    pub fn load_by_name(name: &str, db: &Connection) -> Result<Option<Tag>> {
-        db.query_row(
-            Query::select()
-                .from(TagsTable)
-                .columns([TagsCharacters::Id, TagsCharacters::Color])
-                .and_where(Expr::col(TagsCharacters::Name).eq(name))
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-            [],
-            |row| Ok((row.get(0)?, row.get(1)?)),
-        )
-        .optional()
-        .map_err(anyhow::Error::from)
-        .map(|res| {
-            res.map(|(id, color)| Tag {
-                id,
-                name: name.to_string(),
-                color,
+    pub async fn load_by_name(name: &str, db: &SqlitePool) -> Result<Option<Tag>> {
+        sqlx::query("SELECT id,color FROM tags_table WHERE name=$1")
+            .bind(name)
+            .fetch_optional(db)
+            .await?
+            .map(|row| {
+                Ok(Tag {
+                    id: row.try_get(0)?,
+                    name: name.to_string(),
+                    color: row.try_get(1)?,
+                })
             })
-        })
+            .transpose()
     }
 
-    pub fn search_by_name(pattern: &str, db: &Connection) -> Result<Vec<Tag>> {
-        db.prepare(
-            Query::select()
-                .from(TagsTable)
-                .columns([
-                    TagsCharacters::Id,
-                    TagsCharacters::Name,
-                    TagsCharacters::Color,
-                ])
-                .order_by(TagsCharacters::Id, Order::Desc)
-                .and_where(Expr::col(TagsCharacters::Name).like(format!("%{pattern}%")))
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-        )?
-        .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?
-        .map(|row| -> Result<(i64, String, u32)> { row.map_err(anyhow::Error::from) })
-        .map(|row| row.map(|(id, name, color)| Tag { id, name, color }))
-        .collect()
+    pub async fn search_by_name(pattern: &str, db: &SqlitePool) -> Result<Vec<Tag>> {
+        sqlx::query("SELECT id,name,color FROM tags_table ORDER BY id DESC WHERE name LIKE '%$1%'")
+            .bind(pattern)
+            .fetch_all(db)
+            .await?
+            .into_iter()
+            .map(|row| {
+                Ok(Tag {
+                    id: row.try_get(0)?,
+                    name: row.try_get(1)?,
+                    color: row.try_get(2)?,
+                })
+            })
+            .collect()
     }
 
-    pub fn list_note_tags(note_id: i64, db: &Connection) -> Result<Vec<Self>> {
-        db.prepare(
-            Query::select()
-                .from(TagsJoinTable)
-                .columns([
-                    (TagsTable, TagsCharacters::Id),
-                    (TagsTable, TagsCharacters::Name),
-                    (TagsTable, TagsCharacters::Color),
-                ])
-                .join(
-                    JoinType::InnerJoin,
-                    TagsTable,
-                    Expr::col((TagsTable, TagsCharacters::Id))
-                        .equals((TagsJoinTable, TagsJoinCharacters::TagId)),
-                )
-                .and_where(Expr::col(TagsJoinCharacters::NoteId).eq(note_id))
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-        )?
-        .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?
-        .map(|row| {
-            row.map(|(id, name, color)| Self { id, name, color })
-                .map_err(anyhow::Error::from)
-        })
-        .collect()
+    pub async fn list_note_tags(note_id: i64, db: &SqlitePool) -> Result<Vec<Self>> {
+        sqlx::query("SELECT tags_table.id,tags_table.name,tags_table.color FROM tags_join_table INNER JOIN tags_table ON tags_join_table.tag_id = tags_table.id WHERE tags_join_table.note_id=$1").bind(note_id).fetch_all(db).await?.into_iter().map(|row| Ok(Tag {
+            id: row.try_get(0)?,
+            name: row.try_get(1)?,
+            color: row.try_get(2)?
+        })).collect()
     }
 
     pub fn id(&self) -> i64 {
@@ -164,18 +123,15 @@ impl Tag {
         self.color
     }
 
-    pub fn delete(self, db: &Connection) -> Result<()> {
-        db.execute_batch(
-            Query::delete()
-                .from_table(TagsTable)
-                .and_where(Expr::col(TagsCharacters::Id).eq(self.id))
-                .to_string(SqliteQueryBuilder)
-                .as_str(),
-        )?;
+    pub async fn delete(self, db: &SqlitePool) -> Result<()> {
+        sqlx::query("DELETE FROM tags_table WHERE id=$1")
+            .bind(self.id)
+            .fetch_optional(db)
+            .await?;
         Ok(())
     }
 
-    pub fn get_related_notes(&self, db: &Connection) -> Result<Vec<NoteSummary>> {
-        NoteSummary::fetch_by_tag(self.id, db)
+    pub async fn get_related_notes(&self, db: &SqlitePool) -> Result<Vec<NoteSummary>> {
+        NoteSummary::fetch_by_tag(self.id, db).await
     }
 }

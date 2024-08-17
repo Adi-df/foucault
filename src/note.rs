@@ -168,7 +168,7 @@ impl Note {
     pub async fn delete(self, db: &SqlitePool) -> Result<()> {
         sqlx::query("DELETE FROM notes_table WHERE id=$1")
             .bind(self.id)
-            .fetch_one(db)
+            .fetch_optional(db)
             .await?;
 
         Ok(())
