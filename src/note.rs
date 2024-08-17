@@ -5,17 +5,7 @@ use anyhow::Result;
 use thiserror::Error;
 
 use crate::links::Link;
-use crate::tag::{Tag, TagError, TagsJoinCharacters, TagsJoinTable};
-
-#[derive(Iden)]
-pub struct NotesTable;
-
-#[derive(Iden, Clone, Copy, Debug)]
-pub enum NotesCharacters {
-    Id,
-    Name,
-    Content,
-}
+use crate::tag::{Tag, TagError};
 
 #[derive(Debug)]
 pub struct Note {

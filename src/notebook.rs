@@ -1,8 +1,8 @@
-use sqlx::sqlite::SqlitePoolOptions;
 use std::env;
 use std::path::{Path, PathBuf};
 use tokio::fs;
 
+use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::SqlitePool;
 
 use anyhow::Result;
@@ -109,10 +109,7 @@ impl Notebook {
             });
 
         // Initialize
-        NotesTable::create(&database)?;
-        TagsTable::create(&database)?;
-        TagsJoinTable::create(&database)?;
-        LinksTable::create(&database)?;
+        sqlx::migrate!("migrations").run(&database).await?;
 
         Ok(Notebook {
             name: name.to_owned(),

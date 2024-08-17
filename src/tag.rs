@@ -1,29 +1,9 @@
 use anyhow::Result;
-
-use random_color::RandomColor;
 use thiserror::Error;
 
-use crate::note::{NoteSummary, NotesCharacters, NotesTable};
+use random_color::RandomColor;
 
-#[derive(Iden)]
-pub struct TagsTable;
-
-#[derive(Iden)]
-pub struct TagsJoinTable;
-
-#[derive(Iden, Clone, Copy, Debug)]
-pub enum TagsCharacters {
-    Id,
-    Name,
-    Color,
-}
-
-#[derive(Iden, Clone, Copy, Debug)]
-pub enum TagsJoinCharacters {
-    Id,
-    NoteId,
-    TagId,
-}
+use crate::note::NoteSummary;
 
 #[derive(Debug)]
 pub struct Tag {

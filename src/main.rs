@@ -87,15 +87,16 @@ async fn main() -> Result<()> {
                     Notebook::new_notebook(
                         name.trim(),
                         &env::current_dir().expect("The current directory isn't accessible"),
-                    )?;
+                    )
+                    .await?;
                 } else {
-                    Notebook::new_notebook(name.trim(), &app_dir_path)?;
+                    Notebook::new_notebook(name.trim(), &app_dir_path).await?;
                 };
                 println!("Notebook {name} was successfully created.");
             }
             Commands::Open { name } => {
                 info!("Open notebook {name}.");
-                explore(&Notebook::open_notebook(name, &app_dir_path)?).await?;
+                explore(&Notebook::open_notebook(name, &app_dir_path).await?).await?;
             }
             Commands::Delete { name } => {
                 info!("Delete notebook {name}.");
@@ -120,7 +121,7 @@ async fn main() -> Result<()> {
 
         if let Some(name) = open_selector(&app_dir_path)? {
             info!("Open notebook selected : {name}.");
-            explore(&Notebook::open_notebook(name.as_str(), &app_dir_path)?).await?;
+            explore(&Notebook::open_notebook(name.as_str(), &app_dir_path).await?).await?;
         }
     }
 
