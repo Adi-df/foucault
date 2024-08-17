@@ -109,7 +109,7 @@ impl Note {
     }
 
     pub async fn list_note_links(id: i64, db: &SqlitePool) -> Result<Vec<Link>> {
-        sqlx::query("SELECT to_name FROM tags_join_talbe WHERE from_id=$1")
+        sqlx::query("SELECT to_name FROM links_table WHERE from_id=$1")
             .bind(id)
             .fetch_all(db)
             .await?
@@ -158,7 +158,7 @@ impl Note {
         sqlx::query("UPDATE notes_table SET name=$1 WHERE id=$2")
             .bind(&name)
             .bind(self.id)
-            .fetch_one(db)
+            .execute(db)
             .await?;
 
         self.name = name;
@@ -168,7 +168,7 @@ impl Note {
     pub async fn delete(self, db: &SqlitePool) -> Result<()> {
         sqlx::query("DELETE FROM notes_table WHERE id=$1")
             .bind(self.id)
-            .fetch_optional(db)
+            .execute(db)
             .await?;
 
         Ok(())
@@ -186,7 +186,7 @@ impl Note {
         sqlx::query("UPDATE notes_table SET content=$1 WHERE id=$2")
             .bind(&new_content)
             .bind(self.id)
-            .fetch_one(db)
+            .execute(db)
             .await?;
 
         self.content = new_content;
@@ -205,7 +205,7 @@ impl Note {
                     sqlx::query("DELETE FROM links_table WHERE from_id=$1 AND to_name IN $2")
                         .bind(self.id)
                         .bind(link)
-                        .fetch_one(db)
+                        .execute(db)
                 })
                 .collect::<Vec<_>>(),
         )
@@ -220,7 +220,7 @@ impl Note {
                     sqlx::query("INSERT INTO links_table (from_id, to_name) VALUES ($1, $2)")
                         .bind(self.id)
                         .bind(link)
-                        .fetch_one(db)
+                        .execute(db)
                 })
                 .collect::<Vec<_>>(),
         )
@@ -245,7 +245,7 @@ impl Note {
         sqlx::query("INSERT INTO tags_join_table (note_id, tag_id) VALUES ($1, $2)")
             .bind(self.id)
             .bind(tag_id)
-            .fetch_one(db)
+            .execute(db)
             .await?;
 
         Ok(())
@@ -255,7 +255,7 @@ impl Note {
         sqlx::query("DELETE FROM tags_join_table WHERE note_id=$1 AND tag_id=$2")
             .bind(self.id)
             .bind(tag_id)
-            .fetch_optional(db)
+            .execute(db)
             .await?;
 
         Ok(())
@@ -275,8 +275,8 @@ impl NoteSummary {
 
     pub async fn search_by_name(pattern: &str, db: &SqlitePool) -> Result<Vec<Self>> {
         join_all(
-            sqlx::query("SELECT id,name FROM notes_table WHERE name LIKE '%$1%' ORDER BY name ASC")
-                .bind(pattern)
+            sqlx::query("SELECT id,name FROM notes_table WHERE name LIKE $1 ORDER BY name ASC")
+                .bind(format!("%{}%", pattern))
                 .fetch_all(db)
                 .await?
                 .into_iter()
@@ -295,7 +295,7 @@ impl NoteSummary {
     }
 
     pub async fn fetch_by_tag(tag_id: i64, db: &SqlitePool) -> Result<Vec<NoteSummary>> {
-        join_all(sqlx::query("SELECT notes_table.id notes_table.name FROM tags_join_table INNER JOIN notes_table ON tags_join_table.note_id = notes_table.id WHERE tag_id=$1").bind(tag_id).fetch_all(db).await?.into_iter().map(|row| async move{
+        join_all(sqlx::query("SELECT notes_table.id, notes_table.name FROM tags_join_table INNER JOIN notes_table ON tags_join_table.note_id = notes_table.id WHERE tag_id=$1").bind(tag_id).fetch_all(db).await?.into_iter().map(|row| async move{
             let id = row.try_get(0)?;
             Ok(NoteSummary {
                     id,

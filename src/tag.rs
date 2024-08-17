@@ -90,8 +90,8 @@ impl Tag {
     }
 
     pub async fn search_by_name(pattern: &str, db: &SqlitePool) -> Result<Vec<Tag>> {
-        sqlx::query("SELECT id,name,color FROM tags_table ORDER BY id DESC WHERE name LIKE '%$1%'")
-            .bind(pattern)
+        sqlx::query("SELECT id,name,color FROM tags_table WHERE name LIKE $1 ORDER BY id DESC")
+            .bind(format!("%{}%", pattern))
             .fetch_all(db)
             .await?
             .into_iter()
@@ -126,7 +126,7 @@ impl Tag {
     pub async fn delete(self, db: &SqlitePool) -> Result<()> {
         sqlx::query("DELETE FROM tags_table WHERE id=$1")
             .bind(self.id)
-            .fetch_optional(db)
+            .execute(db)
             .await?;
         Ok(())
     }
