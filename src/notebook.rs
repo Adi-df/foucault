@@ -93,7 +93,7 @@ impl Notebook {
 
         let database = SqlitePoolOptions::new()
             .connect(&format!(
-                "sqlite://{}",
+                "sqlite://{}?mode=rwc",
                 notebook_path
                     .to_str()
                     .expect("The notebook path must be valid unicode")
