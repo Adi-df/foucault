@@ -1,0 +1,5 @@
+- uses: extractions/setup-just@v2
+- name: Install SQLx-cli
+  run: cargo install sqlx-cli --no-default-features --features sqlite
+- name: Prepare queries
+  run: just prepare-queries
