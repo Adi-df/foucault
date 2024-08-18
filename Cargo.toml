@@ -15,21 +15,21 @@ eula = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.75"
-thiserror = "1.0.51"
+anyhow = "1.0.86"
+thiserror = "1.0.63"
 scopeguard = "1.2.0"
-log = { version = "0.4.20", features = ["std"] }
-env_logger = "0.10.1"
+log = { version = "0.4.22", features = ["std"] }
+env_logger = "0.10.2"
 dirs = "5.0.1"
-clap = { version = "4.4.11", features = ["derive"] }
-markdown = "1.0.0-alpha.16"
+clap = { version = "4.5.16", features = ["derive"] }
+markdown = "1.0.0-alpha.20"
 crossterm = "0.27.0"
 ratatui = "0.26.3"
 opener = "0.6.1"
 question = "0.2.2"
 unicode-segmentation = "1.11.0"
 random_color = "0.8.0"
-tokio = { version = "1.39.2", features = ["full"] }
+tokio = { version = "1.39.3", features = ["full"] }
 sqlx = { version = "0.8.0", features = ["runtime-tokio", "migrate", "macros", "sqlite"] }
 futures = "0.3.30"
 
