@@ -139,9 +139,10 @@ pub fn draw_note_managing_state(
                     Span::raw("    "),
                 ];
 
-                for tag in note.tags() {
+                for tag in &note.tags() {
                     note_line.push(
-                        Span::raw(tag.name()).style(Style::new().bg(Color::from_u32(tag.color()))),
+                        Span::raw(tag.name().to_string())
+                            .style(Style::new().bg(Color::from_u32(tag.color()))),
                     );
                     note_line.push(Span::raw(", "));
                 }

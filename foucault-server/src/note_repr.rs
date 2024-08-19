@@ -22,16 +22,16 @@ pub enum NoteError {
 
 #[derive(Debug)]
 pub struct Note {
-    id: i64,
-    name: String,
-    content: String,
+    pub id: i64,
+    pub name: String,
+    pub content: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct NoteSummary {
-    id: i64,
-    name: String,
-    tags: Vec<Tag>,
+    pub id: i64,
+    pub name: String,
+    pub tags: Vec<Tag>,
 }
 
 pub(crate) async fn create(name: &str, content: &str, connection: &SqlitePool) -> Result<i64> {

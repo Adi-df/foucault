@@ -4,6 +4,7 @@ use tokio::fs;
 
 use anyhow::Result;
 
+use foucault_server::note_repr;
 use foucault_server::note_repr::NoteError;
 
 use crate::links::Link;
@@ -12,16 +13,24 @@ use crate::NotebookAPI;
 
 #[derive(Debug)]
 pub struct Note {
-    id: i64,
-    name: String,
-    content: String,
+    inner: note_repr::Note,
 }
 
-#[derive(Debug)]
+impl From<note_repr::Note> for Note {
+    fn from(inner: note_repr::Note) -> Self {
+        Self { inner }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct NoteSummary {
-    id: i64,
-    name: String,
-    tags: Vec<Tag>,
+    inner: note_repr::NoteSummary,
+}
+
+impl From<note_repr::NoteSummary> for NoteSummary {
+    fn from(inner: note_repr::NoteSummary) -> Self {
+        Self { inner }
+    }
 }
 
 impl Note {
@@ -38,7 +47,7 @@ impl Note {
     }
 
     pub async fn load_from_summary(summary: &NoteSummary, notebook: &NotebookAPI) -> Result<Self> {
-        match Note::load_by_id(summary.id, notebook).await? {
+        match Note::load_by_id(summary.inner.id, notebook).await? {
             Some(note) => Ok(note),
             None => Err(NoteError::DoesNotExist.into()),
         }
@@ -48,26 +57,26 @@ impl Note {
         todo!();
     }
 
-    pub async fn list_note_links(id: i64, db: &NotebookAPI) -> Result<Vec<Link>> {
+    pub async fn list_note_links(id: i64, notebook: &NotebookAPI) -> Result<Vec<Link>> {
         todo!();
     }
 
     pub fn id(&self) -> i64 {
-        self.id
+        self.inner.id
     }
     pub fn name(&self) -> &str {
-        &self.name
+        &self.inner.name
     }
     pub fn content(&self) -> &str {
-        &self.content
+        &self.inner.content
     }
 
     pub async fn links(&self, notebook: &NotebookAPI) -> Result<Vec<Link>> {
-        Note::list_note_links(self.id, notebook).await
+        Note::list_note_links(self.inner.id, notebook).await
     }
 
     pub async fn tags(&self, notebook: &NotebookAPI) -> Result<Vec<Tag>> {
-        Tag::list_note_tags(self.id, notebook).await
+        Tag::list_note_tags(self.inner.id, notebook).await
     }
 
     pub async fn has_tag(&self, tag_id: i64, notebook: &NotebookAPI) -> Result<bool> {
@@ -76,7 +85,7 @@ impl Note {
 
     pub async fn rename(&mut self, name: String, notebook: &NotebookAPI) -> Result<()> {
         todo!();
-        self.name = name;
+        self.inner.name = name;
     }
 
     pub async fn delete(self, notebook: &NotebookAPI) -> Result<()> {
@@ -84,7 +93,7 @@ impl Note {
     }
 
     pub async fn export_content(&self, file: &Path) -> Result<()> {
-        fs::write(file, self.content.as_bytes())
+        fs::write(file, self.inner.content.as_bytes())
             .await
             .map_err(anyhow::Error::from)
     }
@@ -94,7 +103,7 @@ impl Note {
 
         todo!();
 
-        self.content = new_content;
+        self.inner.content = new_content;
         Ok(())
     }
 
@@ -117,13 +126,13 @@ impl Note {
 
 impl NoteSummary {
     pub fn id(&self) -> i64 {
-        self.id
+        self.inner.id
     }
     pub fn name(&self) -> &str {
-        &self.name
+        &self.inner.name
     }
-    pub fn tags(&self) -> &[Tag] {
-        &self.tags
+    pub fn tags(&self) -> Vec<Tag> {
+        self.inner.tags.iter().cloned().map(Tag::from).collect()
     }
 
     pub async fn search_by_name(pattern: &str, notebook: &NotebookAPI) -> Result<Vec<Self>> {

@@ -4,9 +4,15 @@ use foucault_server::tag_repr;
 use crate::note::NoteSummary;
 use crate::NotebookAPI;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Tag {
     inner: tag_repr::Tag,
+}
+
+impl From<tag_repr::Tag> for Tag {
+    fn from(inner: tag_repr::Tag) -> Self {
+        Self { inner }
+    }
 }
 
 impl Tag {

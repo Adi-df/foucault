@@ -5,6 +5,12 @@ pub struct Link {
     inner: link_repr::Link,
 }
 
+impl From<link_repr::Link> for Link {
+    fn from(inner: link_repr::Link) -> Self {
+        Self { inner }
+    }
+}
+
 impl Link {
     pub fn new(from: i64, to: String) -> Self {
         Link {
