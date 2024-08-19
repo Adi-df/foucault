@@ -2,12 +2,13 @@ default:
     just --list
 
 mock-db-filename := "mock.db"
-mock-db-url := "sqlite://" + mock-db-filename + "?mode=rwc"
+mock-db-filepath := justfile_dir() + "/" + mock-db-filename
+mock-db-url := "sqlite://" + mock-db-filepath + "?mode=rwc"
 prepare-queries:
     @echo "Prepare SQLx compile-time queries."
-    env DATABASE_URL="{{mock-db-url}}" cargo sqlx migrate run
-    env DATABASE_URL="{{mock-db-url}}" cargo sqlx prepare
-    rm {{mock-db-filename}}
+    cd foucault-client && env DATABASE_URL="{{mock-db-url}}" cargo sqlx migrate run
+    cd foucault-client && env DATABASE_URL="{{mock-db-url}}" cargo sqlx prepare
+    rm {{mock-db-filepath}}
 
 build-dev:
     cargo build

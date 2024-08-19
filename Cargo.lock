@@ -505,6 +505,10 @@ dependencies = [
 [[package]]
 name = "foucault"
 version = "0.2.1"
+
+[[package]]
+name = "foucault-client"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -524,6 +528,10 @@ dependencies = [
  "tokio",
  "unicode-segmentation",
 ]
+
+[[package]]
+name = "foucault-server"
+version = "0.1.0"
 
 [[package]]
 name = "futures"
