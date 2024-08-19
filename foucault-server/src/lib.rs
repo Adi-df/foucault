@@ -5,6 +5,7 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::module_name_repetitions)]
 
+pub mod link_repr;
 pub mod note_repr;
 pub mod notebook;
 pub mod tag_repr;
