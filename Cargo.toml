@@ -2,6 +2,7 @@
 name = "foucault"
 version = "0.2.1"
 edition = "2021"
+license = "GPL-3.0"
 authors = ["Adrien Degliame--Fecchio"]
 repository = "https://github.com/Adi-df/foucault/"
 description = "A minimal TUI note taking app"
