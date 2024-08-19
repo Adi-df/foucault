@@ -1,11 +1,10 @@
 use anyhow::Result;
 use thiserror::Error;
 
-use sqlx::SqlitePool;
-
 use random_color::RandomColor;
 
 use crate::note::NoteSummary;
+use crate::NotebookAPI;
 
 #[derive(Debug)]
 pub struct Tag {
@@ -30,8 +29,8 @@ fn rand_color() -> u32 {
 }
 
 impl Tag {
-    pub async fn new(name: &str, db: &SqlitePool) -> Result<Self> {
-        Tag::validate_new_tag(name, db).await?;
+    pub async fn new(name: &str, notebook: &NotebookAPI) -> Result<Self> {
+        Tag::validate_new_tag(name, notebook).await?;
 
         let color = rand_color();
         let id = sqlx::query!(
@@ -50,17 +49,17 @@ impl Tag {
         })
     }
 
-    pub async fn validate_new_tag(name: &str, db: &SqlitePool) -> Result<()> {
+    pub async fn validate_new_tag(name: &str, notebook: &NotebookAPI) -> Result<()> {
         if name.is_empty() {
             Err(TagError::EmptyName.into())
-        } else if Tag::name_exists(name, db).await? {
+        } else if Tag::name_exists(name, notebook).await? {
             Err(TagError::AlreadyExists.into())
         } else {
             Ok(())
         }
     }
 
-    pub async fn id_exists(tag_id: i64, db: &SqlitePool) -> Result<bool> {
+    pub async fn id_exists(tag_id: i64, notebook: &NotebookAPI) -> Result<bool> {
         Ok(
             sqlx::query!("SELECT id FROM tags_table WHERE id=$1", tag_id)
                 .fetch_optional(db)
@@ -69,7 +68,7 @@ impl Tag {
         )
     }
 
-    pub async fn name_exists(name: &str, db: &SqlitePool) -> Result<bool> {
+    pub async fn name_exists(name: &str, notebook: &NotebookAPI) -> Result<bool> {
         Ok(
             sqlx::query!("SELECT id FROM tags_table WHERE name=$1", name)
                 .fetch_optional(db)
@@ -78,7 +77,7 @@ impl Tag {
         )
     }
 
-    pub async fn load_by_name(name: &str, db: &SqlitePool) -> Result<Option<Tag>> {
+    pub async fn load_by_name(name: &str, notebook: &NotebookAPI) -> Result<Option<Tag>> {
         sqlx::query!("SELECT id,color FROM tags_table WHERE name=$1", name)
             .fetch_optional(db)
             .await?
@@ -92,7 +91,7 @@ impl Tag {
             .transpose()
     }
 
-    pub async fn search_by_name(pattern: &str, db: &SqlitePool) -> Result<Vec<Tag>> {
+    pub async fn search_by_name(pattern: &str, notebook: &NotebookAPI) -> Result<Vec<Tag>> {
         let sql_pattern = format!("%{pattern}%");
         sqlx::query!(
             "SELECT id,name,color FROM tags_table WHERE name LIKE $1 ORDER BY id DESC",
@@ -111,7 +110,7 @@ impl Tag {
         .collect()
     }
 
-    pub async fn list_note_tags(note_id: i64, db: &SqlitePool) -> Result<Vec<Self>> {
+    pub async fn list_note_tags(note_id: i64, notebook: &NotebookAPI) -> Result<Vec<Self>> {
         sqlx::query!(
             "SELECT tags_table.id,tags_table.name,tags_table.color FROM tags_join_table INNER JOIN tags_table ON tags_join_table.tag_id = tags_table.id WHERE tags_join_table.note_id=$1",
             note_id
@@ -137,14 +136,14 @@ impl Tag {
         self.color
     }
 
-    pub async fn delete(self, db: &SqlitePool) -> Result<()> {
+    pub async fn delete(self, notebook: &NotebookAPI) -> Result<()> {
         sqlx::query!("DELETE FROM tags_table WHERE id=$1", self.id)
             .execute(db)
             .await?;
         Ok(())
     }
 
-    pub async fn get_related_notes(&self, db: &SqlitePool) -> Result<Vec<NoteSummary>> {
-        NoteSummary::fetch_by_tag(self.id, db).await
+    pub async fn get_related_notes(&self, notebook: &NotebookAPI) -> Result<Vec<NoteSummary>> {
+        NoteSummary::fetch_by_tag(self.id, notebook).await
     }
 }

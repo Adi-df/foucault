@@ -527,12 +527,15 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "crossterm",
+ "futures",
  "log",
  "markdown",
  "opener",
+ "random_color",
  "ratatui",
  "scopeguard",
  "sqlx",
+ "thiserror",
  "tokio",
  "unicode-segmentation",
 ]

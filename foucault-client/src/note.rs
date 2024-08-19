@@ -1,7 +1,6 @@
 use std::path::Path;
 
 use futures::future::join_all;
-use sqlx::SqlitePool;
 use tokio::fs;
 
 use anyhow::Result;
@@ -9,6 +8,7 @@ use thiserror::Error;
 
 use crate::links::Link;
 use crate::tag::{Tag, TagError};
+use crate::NotebookAPI;
 
 #[derive(Debug)]
 pub struct Note {
@@ -37,8 +37,8 @@ pub enum NoteError {
 }
 
 impl Note {
-    pub async fn new(name: String, content: String, db: &SqlitePool) -> Result<Self> {
-        Note::validate_new_name(&name, db).await?;
+    pub async fn new(name: String, content: String, notebook: &NotebookAPI) -> Result<Self> {
+        Note::validate_new_name(&name, notebook).await?;
 
         let ref_name = &name;
         let ref_content = &content;
@@ -54,19 +54,19 @@ impl Note {
         Ok(Self { id, name, content })
     }
 
-    pub async fn validate_new_name(name: &str, db: &SqlitePool) -> Result<()> {
+    pub async fn validate_new_name(name: &str, notebook: &NotebookAPI) -> Result<()> {
         if name.is_empty() {
             return Err(NoteError::EmptyName.into());
         }
 
-        if Note::name_exists(name, db).await? {
+        if Note::name_exists(name, notebook).await? {
             return Err(NoteError::AlreadyExists.into());
         }
 
         Ok(())
     }
 
-    pub async fn name_exists(name: &str, db: &SqlitePool) -> Result<bool> {
+    pub async fn name_exists(name: &str, notebook: &NotebookAPI) -> Result<bool> {
         Ok(
             sqlx::query!("SELECT id FROM notes_table WHERE name=$1", name)
                 .fetch_optional(db)
@@ -75,7 +75,7 @@ impl Note {
         )
     }
 
-    pub async fn load_by_id(id: i64, db: &SqlitePool) -> Result<Option<Self>> {
+    pub async fn load_by_id(id: i64, notebook: &NotebookAPI) -> Result<Option<Self>> {
         sqlx::query!("SELECT name,content FROM notes_table WHERE id=$1", id)
             .fetch_optional(db)
             .await?
@@ -89,14 +89,14 @@ impl Note {
             .transpose()
     }
 
-    pub async fn load_from_summary(summary: &NoteSummary, db: &SqlitePool) -> Result<Self> {
+    pub async fn load_from_summary(summary: &NoteSummary, notebook: &NotebookAPI) -> Result<Self> {
         match Note::load_by_id(summary.id, db).await? {
             Some(note) => Ok(note),
             None => Err(NoteError::DoesNotExist.into()),
         }
     }
 
-    pub async fn load_by_name(name: &str, db: &SqlitePool) -> Result<Option<Self>> {
+    pub async fn load_by_name(name: &str, notebook: &NotebookAPI) -> Result<Option<Self>> {
         sqlx::query!("SELECT id,content FROM notes_table WHERE name=$1", name)
             .fetch_optional(db)
             .await?
@@ -110,7 +110,7 @@ impl Note {
             .transpose()
     }
 
-    pub async fn list_note_links(id: i64, db: &SqlitePool) -> Result<Vec<Link>> {
+    pub async fn list_note_links(id: i64, db: &NotebookAPI) -> Result<Vec<Link>> {
         sqlx::query!("SELECT to_name FROM links_table WHERE from_id=$1", id)
             .fetch_all(db)
             .await?
@@ -134,15 +134,15 @@ impl Note {
         &self.content
     }
 
-    pub async fn links(&self, db: &SqlitePool) -> Result<Vec<Link>> {
-        Note::list_note_links(self.id, db).await
+    pub async fn links(&self, notebook: &NotebookAPI) -> Result<Vec<Link>> {
+        Note::list_note_links(self.id, notebook).await
     }
 
-    pub async fn tags(&self, db: &SqlitePool) -> Result<Vec<Tag>> {
-        Tag::list_note_tags(self.id, db).await
+    pub async fn tags(&self, notebook: &NotebookAPI) -> Result<Vec<Tag>> {
+        Tag::list_note_tags(self.id, notebook).await
     }
 
-    pub async fn has_tag(&self, tag_id: i64, db: &SqlitePool) -> Result<bool> {
+    pub async fn has_tag(&self, tag_id: i64, notebook: &NotebookAPI) -> Result<bool> {
         Ok(sqlx::query!(
             "SELECT tag_id FROM tags_join_table WHERE tag_id=$1 AND note_id=$2",
             tag_id,
@@ -153,8 +153,8 @@ impl Note {
         .is_some())
     }
 
-    pub async fn rename(&mut self, name: String, db: &SqlitePool) -> Result<()> {
-        Note::validate_new_name(&name, db).await?;
+    pub async fn rename(&mut self, name: String, notebook: &NotebookAPI) -> Result<()> {
+        Note::validate_new_name(&name, notebook).await?;
 
         let ref_name = &name;
         sqlx::query!(
@@ -169,7 +169,7 @@ impl Note {
         Ok(())
     }
 
-    pub async fn delete(self, db: &SqlitePool) -> Result<()> {
+    pub async fn delete(self, notebook: &NotebookAPI) -> Result<()> {
         sqlx::query!("DELETE FROM notes_table WHERE id=$1", self.id)
             .execute(db)
             .await?;
@@ -183,7 +183,7 @@ impl Note {
             .map_err(anyhow::Error::from)
     }
 
-    pub async fn import_content(&mut self, file: &Path, db: &SqlitePool) -> Result<()> {
+    pub async fn import_content(&mut self, file: &Path, notebook: &NotebookAPI) -> Result<()> {
         let new_content = String::from_utf8(fs::read(file).await?)?;
 
         let ref_new_content = &new_content;
@@ -199,8 +199,8 @@ impl Note {
         Ok(())
     }
 
-    pub async fn update_links(&self, new_links: &[Link], db: &SqlitePool) -> Result<()> {
-        let current_links = self.links(db).await?;
+    pub async fn update_links(&self, new_links: &[Link], notebook: &NotebookAPI) -> Result<()> {
+        let current_links = self.links(notebook).await?;
 
         join_all(
             current_links
@@ -237,18 +237,18 @@ impl Note {
         Ok(())
     }
 
-    pub async fn validate_new_tag(&self, tag_id: i64, db: &SqlitePool) -> Result<()> {
-        if !Tag::id_exists(tag_id, db).await? {
+    pub async fn validate_new_tag(&self, tag_id: i64, notebook: &NotebookAPI) -> Result<()> {
+        if !Tag::id_exists(tag_id, notebook).await? {
             Err(TagError::DoesNotExists.into())
-        } else if self.has_tag(tag_id, db).await? {
+        } else if self.has_tag(tag_id, notebook).await? {
             Err(NoteError::NoteAlreadyTagged.into())
         } else {
             Ok(())
         }
     }
 
-    pub async fn add_tag(&self, tag_id: i64, db: &SqlitePool) -> Result<()> {
-        self.validate_new_tag(tag_id, db).await?;
+    pub async fn add_tag(&self, tag_id: i64, notebook: &NotebookAPI) -> Result<()> {
+        self.validate_new_tag(tag_id, notebook).await?;
 
         sqlx::query!(
             "INSERT INTO tags_join_table (note_id, tag_id) VALUES ($1, $2)",
@@ -261,7 +261,7 @@ impl Note {
         Ok(())
     }
 
-    pub async fn remove_tag(&mut self, tag_id: i64, db: &SqlitePool) -> Result<()> {
+    pub async fn remove_tag(&mut self, tag_id: i64, notebook: &NotebookAPI) -> Result<()> {
         sqlx::query!(
             "DELETE FROM tags_join_table WHERE note_id=$1 AND tag_id=$2",
             self.id,
@@ -285,7 +285,7 @@ impl NoteSummary {
         &self.tags
     }
 
-    pub async fn search_by_name(pattern: &str, db: &SqlitePool) -> Result<Vec<Self>> {
+    pub async fn search_by_name(pattern: &str, notebook: &NotebookAPI) -> Result<Vec<Self>> {
         let sql_pattern = format!("%{pattern}%");
         join_all(
             sqlx::query!(
@@ -300,7 +300,7 @@ impl NoteSummary {
                 Ok(NoteSummary {
                     id,
                     name: row.name.expect("There should be a note name"),
-                    tags: Tag::list_note_tags(id, db).await?,
+                    tags: Tag::list_note_tags(id, notebook).await?,
                 })
             }),
         )
@@ -309,7 +309,7 @@ impl NoteSummary {
         .collect()
     }
 
-    pub async fn fetch_by_tag(tag_id: i64, db: &SqlitePool) -> Result<Vec<NoteSummary>> {
+    pub async fn fetch_by_tag(tag_id: i64, notebook: &NotebookAPI) -> Result<Vec<NoteSummary>> {
         join_all(
             sqlx::query!(
                 "SELECT notes_table.id, notes_table.name FROM tags_join_table INNER JOIN notes_table ON tags_join_table.note_id = notes_table.id WHERE tag_id=$1",
@@ -322,7 +322,7 @@ impl NoteSummary {
                 Ok(NoteSummary {
                     id: row.id,
                     name: row.name.expect("There should be a note name"),
-                    tags: Tag::list_note_tags(row.id, db).await?
+                    tags: Tag::list_note_tags(row.id, notebook).await?
                 })
             })
         )

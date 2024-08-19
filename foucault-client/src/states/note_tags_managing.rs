@@ -1,8 +1,6 @@
 use anyhow::Result;
 use log::info;
 
-use sqlx::SqlitePool;
-
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::prelude::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Style};
@@ -12,13 +10,13 @@ use ratatui::Frame;
 
 use crate::helpers::{create_bottom_line, create_row_help_layout, DiscardResult};
 use crate::note::Note;
-use crate::notebook::Notebook;
 use crate::states::note_tag_adding::NoteTagAddingStateData;
 use crate::states::note_tag_deleting::NoteTagDeletingStateData;
 use crate::states::note_viewing::NoteViewingStateData;
 use crate::states::tag_notes_listing::TagNotesListingStateData;
 use crate::states::{State, Terminal};
 use crate::tag::Tag;
+use crate::NotebookAPI;
 
 pub struct NoteTagsManagingStateData {
     pub note: Note,
@@ -28,9 +26,9 @@ pub struct NoteTagsManagingStateData {
 }
 
 impl NoteTagsManagingStateData {
-    pub async fn new(note: Note, db: &SqlitePool) -> Result<Self> {
+    pub async fn new(note: Note, notebook: &NotebookAPI) -> Result<Self> {
         Ok(NoteTagsManagingStateData {
-            tags: note.tags(db).await?,
+            tags: note.tags(notebook).await?,
             note,
             selected: 0,
             help_display: false,
@@ -45,12 +43,12 @@ impl NoteTagsManagingStateData {
 pub async fn run_note_tags_managing_state(
     mut state_data: NoteTagsManagingStateData,
     key_event: KeyEvent,
-    notebook: &Notebook,
+    notebook: &NotebookAPI,
 ) -> Result<State> {
     Ok(match key_event.code {
         KeyCode::Esc => {
             info!("Cancel note {} tags managing.", state_data.note.name());
-            State::NoteViewing(NoteViewingStateData::new(state_data.note, notebook.db()).await?)
+            State::NoteViewing(NoteViewingStateData::new(state_data.note, notebook).await?)
         }
         KeyCode::Char('h') if key_event.modifiers == KeyModifiers::CONTROL => {
             info!("Toogle help display.");
@@ -84,7 +82,7 @@ pub async fn run_note_tags_managing_state(
             State::TagNotesListing(
                 TagNotesListingStateData::new(
                     state_data.tags.swap_remove(state_data.selected),
-                    notebook.db(),
+                    notebook,
                 )
                 .await?,
             )
