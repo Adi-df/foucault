@@ -24,14 +24,6 @@ impl Tag {
         todo!();
     }
 
-    pub async fn id_exists(id: i64, notebook: &NotebookAPI) -> Result<bool> {
-        todo!();
-    }
-
-    pub async fn name_exists(name: &str, notebook: &NotebookAPI) -> Result<bool> {
-        todo!();
-    }
-
     pub async fn load_by_name(name: &str, notebook: &NotebookAPI) -> Result<Option<Self>> {
         todo!();
     }

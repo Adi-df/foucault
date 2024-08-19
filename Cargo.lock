@@ -509,7 +509,6 @@ dependencies = [
  "anyhow",
  "clap",
  "crossterm",
- "dirs",
  "env_logger",
  "foucault-client",
  "foucault-server",
@@ -527,6 +526,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "crossterm",
+ "dirs",
  "foucault-server",
  "log",
  "markdown",

@@ -20,6 +20,8 @@ use ratatui::widgets::{
 };
 use ratatui::Frame;
 
+use crate::APP_DIR_PATH;
+
 use crate::helpers::{create_bottom_line, create_row_help_layout, DiscardResult};
 use crate::links::Link;
 use crate::markdown::elements::{InlineElements, SelectableInlineElements};
@@ -216,10 +218,7 @@ pub async fn run_note_viewing_state(
 }
 
 async fn edit_note(note: &mut Note, notebook: &NotebookAPI) -> Result<()> {
-    let tmp_file_path = notebook
-        .dir()
-        .unwrap()
-        .join(format!("{}.tmp.md", note.name()));
+    let tmp_file_path = APP_DIR_PATH.join(format!("{}.tmp.md", note.name()));
     note.export_content(tmp_file_path.as_path()).await?;
 
     let editor = env::var("EDITOR")?;
@@ -234,7 +233,7 @@ async fn edit_note(note: &mut Note, notebook: &NotebookAPI) -> Result<()> {
 
     Command::new(editor)
         .args([&tmp_file_path])
-        .current_dir(notebook.dir().unwrap())
+        .current_dir(&*APP_DIR_PATH)
         .status()
         .await?;
 

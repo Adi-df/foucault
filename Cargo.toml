@@ -13,7 +13,6 @@ description = "A minimal TUI note taking app"
 [dependencies]
 foucault-client = { path = "foucault-client" }
 foucault-server = { path = "foucault-server" }
-dirs = "5.0.1"
 anyhow = "1.0.86"
 question = "0.2.2"
 ratatui = "0.26.3"

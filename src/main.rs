@@ -8,17 +8,17 @@
 mod notebook_selector;
 
 use std::env;
-use std::path::PathBuf;
-
-use tokio::fs;
 
 use anyhow::Result;
 use log::{error, info};
+
+use tokio::fs;
 
 use clap::{Parser, Subcommand};
 use question::{Answer, Question};
 
 use foucault_client::explore::explore;
+use foucault_client::APP_DIR_PATH;
 use foucault_server::notebook::Notebook;
 
 use crate::notebook_selector::open_selector;
@@ -55,21 +55,12 @@ async fn main() -> Result<()> {
 
     info!("Start foucault");
 
-    let app_dir_path: PathBuf = {
-        if let Some(data_dir) = dirs::data_dir() {
-            data_dir.join("foucault")
-        } else {
-            error!("User data directory is unavailable.");
-            unimplemented!();
-        }
-    };
-
-    if !app_dir_path.exists() {
-        if fs::create_dir(&app_dir_path).await.is_err() {
+    if !APP_DIR_PATH.exists() {
+        if fs::create_dir(&*APP_DIR_PATH).await.is_err() {
             error!("Unable to create app directory.");
             todo!();
         }
-    } else if !app_dir_path.is_dir() {
+    } else if !APP_DIR_PATH.is_dir() {
         error!("Another file already exists.");
         todo!();
     }
@@ -87,13 +78,13 @@ async fn main() -> Result<()> {
                     )
                     .await?;
                 } else {
-                    Notebook::new_notebook(name.trim(), &app_dir_path).await?;
+                    Notebook::new_notebook(name.trim(), &APP_DIR_PATH).await?;
                 };
                 println!("Notebook {name} was successfully created.");
             }
             Commands::Open { name } => {
                 info!("Open notebook {name}.");
-                explore(&Notebook::open_notebook(name, &app_dir_path).await?).await?;
+                explore(&Notebook::open_notebook(name, &APP_DIR_PATH).await?).await?;
             }
             Commands::Delete { name } => {
                 info!("Delete notebook {name}.");
@@ -107,7 +98,7 @@ async fn main() -> Result<()> {
                     Answer::YES
                 ) {
                     println!("Proceed.");
-                    Notebook::delete_notebook(name, &app_dir_path).await?;
+                    Notebook::delete_notebook(name, &APP_DIR_PATH).await?;
                 } else {
                     println!("Cancel.");
                 }
@@ -116,9 +107,9 @@ async fn main() -> Result<()> {
     } else {
         info!("Open default notebook manager.");
 
-        if let Some(name) = open_selector(&app_dir_path)? {
+        if let Some(name) = open_selector(&APP_DIR_PATH)? {
             info!("Open notebook selected : {name}.");
-            explore(&Notebook::open_notebook(name.as_str(), &app_dir_path).await?).await?;
+            explore(&Notebook::open_notebook(name.as_str(), &APP_DIR_PATH).await?).await?;
         }
     }
 

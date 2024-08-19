@@ -57,10 +57,6 @@ impl Note {
         todo!();
     }
 
-    pub async fn list_note_links(id: i64, notebook: &NotebookAPI) -> Result<Vec<Link>> {
-        todo!();
-    }
-
     pub fn id(&self) -> i64 {
         self.inner.id
     }
@@ -71,16 +67,8 @@ impl Note {
         &self.inner.content
     }
 
-    pub async fn links(&self, notebook: &NotebookAPI) -> Result<Vec<Link>> {
-        Note::list_note_links(self.inner.id, notebook).await
-    }
-
     pub async fn tags(&self, notebook: &NotebookAPI) -> Result<Vec<Tag>> {
         Tag::list_note_tags(self.inner.id, notebook).await
-    }
-
-    pub async fn has_tag(&self, tag_id: i64, notebook: &NotebookAPI) -> Result<bool> {
-        todo!();
     }
 
     pub async fn rename(&mut self, name: String, notebook: &NotebookAPI) -> Result<()> {
