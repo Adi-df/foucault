@@ -7,3 +7,4 @@
 
 pub mod note_repr;
 pub mod notebook;
+pub mod tag_repr;

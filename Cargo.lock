@@ -532,7 +532,6 @@ dependencies = [
  "log",
  "markdown",
  "opener",
- "random_color",
  "ratatui",
  "scopeguard",
  "sqlx",
