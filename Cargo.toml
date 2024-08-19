@@ -10,6 +10,20 @@ authors = ["Adrien Degliame--Fecchio"]
 repository = "https://github.com/Adi-df/foucault/"
 description = "A minimal TUI note taking app"
 
+[dependencies]
+foucault-client = { path = "foucault-client" }
+dirs = "5.0.1"
+anyhow = "1.0.86"
+question = "0.2.2"
+ratatui = "0.26.3"
+thiserror = "1.0.63"
+scopeguard = "1.2.0"
+crossterm = "0.27.0"
+env_logger = "0.10.2"
+log = { version = "0.4.22", features = ["std"] }
+clap = { version = "4.5.16", features = ["derive"] }
+tokio = { version = "1.39.3", features = ["full"] }
+
 [package.metadata.wix]
 upgrade-guid = "49E7C3B1-F9F9-4344-A3B8-2AE27FC5724B"
 path-guid = "E5D1C3D7-1E27-4590-8F0F-DF9E159067DC"

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO tags_join_table (note_id, tag_id) VALUES ($1, $2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "3523e7bea2361ca6adff83faaa8a58bbbe103ba114e90ba163b082ef93713b8b"
+}

@@ -1,0 +1,7 @@
+[package]
+name = "foucault-server"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0"
+authors = ["Adrien Degliame--Fecchio"]
+repository = "https://github.com/Adi-df/foucault/"

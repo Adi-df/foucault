@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM links_table WHERE from_id=$1 AND to_name=$2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "6feecafa69b10ee6b7c0507be827caa9d0f7608afcb54eabda3e3be15a45a4a3"
+}
