@@ -527,6 +527,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "crossterm",
+ "foucault-server",
  "futures",
  "log",
  "markdown",

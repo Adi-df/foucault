@@ -1,4 +1,4 @@
 /target
 /build
-/.sqlx
+/foucault-server/.sqlx
 log.txt
