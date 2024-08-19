@@ -1,7 +1,9 @@
 #![deny(clippy::pedantic)]
 #![warn(unused_crate_dependencies)]
-#![allow(clippy::module_name_repetitions)]
 #![allow(clippy::too_many_lines)]
+#![allow(clippy::missing_panics_doc)]
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::module_name_repetitions)]
 
 mod notebook_selector;
 
@@ -17,7 +19,7 @@ use clap::{Parser, Subcommand};
 use question::{Answer, Question};
 
 use foucault_client::explore::explore;
-use foucault_client::notebook::Notebook;
+use foucault_server::notebook::Notebook;
 
 use crate::notebook_selector::open_selector;
 

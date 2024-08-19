@@ -14,10 +14,10 @@ use ratatui::prelude::CrosstermBackend;
 use ratatui::widgets::Clear;
 use ratatui::Terminal;
 
-use crate::notebook::Notebook;
 use crate::states::State;
+use crate::NotebookAPI;
 
-pub async fn explore(notebook: &Notebook) -> Result<()> {
+pub async fn explore(notebook: &NotebookAPI) -> Result<()> {
     info!("Explore notebook : {}", notebook.name);
 
     enable_raw_mode().expect("Prepare terminal");

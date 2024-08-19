@@ -512,6 +512,7 @@ dependencies = [
  "dirs",
  "env_logger",
  "foucault-client",
+ "foucault-server",
  "log",
  "question",
  "ratatui",
@@ -526,15 +527,12 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "crossterm",
- "futures",
  "log",
  "markdown",
  "opener",
- "random_color",
  "ratatui",
  "scopeguard",
  "sqlx",
- "thiserror",
  "tokio",
  "unicode-segmentation",
 ]
@@ -542,6 +540,15 @@ dependencies = [
 [[package]]
 name = "foucault-server"
 version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "futures",
+ "log",
+ "random_color",
+ "sqlx",
+ "thiserror",
+ "tokio",
+]
 
 [[package]]
 name = "futures"

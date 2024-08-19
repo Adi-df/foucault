@@ -22,7 +22,7 @@ use ratatui::style::{Color, Style};
 use ratatui::widgets::{Block, BorderType, Borders, Padding};
 use ratatui::Terminal as UITerminal;
 
-use crate::notebook::Notebook;
+use crate::NotebookAPI;
 
 use crate::states::note_creating::{
     draw_note_creating_state, run_note_creating_state, NoteCreatingStateData,
@@ -87,7 +87,7 @@ impl State {
     pub async fn run(
         self,
         key_event: KeyEvent,
-        notebook: &Notebook,
+        notebook: &NotebookAPI,
         force_redraw: &mut bool,
     ) -> Result<Self> {
         match self {
@@ -118,7 +118,7 @@ impl State {
         }
     }
 
-    pub fn draw(&self, notebook: &Notebook, terminal: &mut Terminal) -> Result<()> {
+    pub fn draw(&self, notebook: &NotebookAPI, terminal: &mut Terminal) -> Result<()> {
         let main_frame = Block::new()
             .title(notebook.name.as_str())
             .padding(Padding::uniform(1))
