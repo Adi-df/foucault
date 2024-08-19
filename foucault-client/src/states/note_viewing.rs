@@ -70,10 +70,7 @@ impl NoteViewingStateData {
         self.parsed_content
             .list_links()
             .into_iter()
-            .map(|to| Link {
-                from: self.note.id(),
-                to: to.to_string(),
-            })
+            .map(|to| Link::new(self.note.id(), to.to_string()))
             .collect()
     }
 }

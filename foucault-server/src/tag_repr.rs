@@ -7,9 +7,9 @@ use sqlx::SqlitePool;
 
 #[derive(Debug)]
 pub struct Tag {
-    id: i64,
-    name: String,
-    color: u32,
+    pub id: i64,
+    pub name: String,
+    pub color: u32,
 }
 
 #[derive(Debug, Error)]

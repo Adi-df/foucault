@@ -5,9 +5,9 @@ use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::Block;
 
 use crate::helpers::{draw_yes_no_prompt, DiscardResult};
-use crate::notebook::Notebook;
 use crate::states::tags_managing::{draw_tags_managing, TagsManagingStateData};
 use crate::states::{State, Terminal};
+use crate::NotebookAPI;
 
 pub struct TagsDeletingStateData {
     pub tags_managing_data: TagsManagingStateData,
@@ -29,7 +29,7 @@ pub async fn run_tag_deleting_state(
         delete,
     }: TagsDeletingStateData,
     key_event: KeyEvent,
-    notebook: &Notebook,
+    notebook: &NotebookAPI,
 ) -> Result<State> {
     Ok(match key_event.code {
         KeyCode::Esc => {
@@ -41,8 +41,7 @@ pub async fn run_tag_deleting_state(
                     .name()
             );
             State::TagsManaging(
-                TagsManagingStateData::from_pattern(tags_managing_data.pattern, notebook.db())
-                    .await?,
+                TagsManagingStateData::from_pattern(tags_managing_data.pattern, notebook).await?,
             )
         }
         KeyCode::Enter => {
@@ -58,7 +57,7 @@ pub async fn run_tag_deleting_state(
                 tags_managing_data
                     .tags
                     .swap_remove(tags_managing_data.selected)
-                    .delete(notebook.db())
+                    .delete(notebook)
                     .await?;
             } else {
                 info!(
@@ -70,8 +69,7 @@ pub async fn run_tag_deleting_state(
                 );
             }
             State::TagsManaging(
-                TagsManagingStateData::from_pattern(tags_managing_data.pattern, notebook.db())
-                    .await?,
+                TagsManagingStateData::from_pattern(tags_managing_data.pattern, notebook).await?,
             )
         }
         KeyCode::Tab => State::TagDeleting(TagsDeletingStateData {

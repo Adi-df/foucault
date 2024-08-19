@@ -1,6 +1,5 @@
 use std::path::Path;
 
-use futures::future::join_all;
 use tokio::fs;
 
 use anyhow::Result;
@@ -8,7 +7,7 @@ use anyhow::Result;
 use foucault_server::note_repr::NoteError;
 
 use crate::links::Link;
-use crate::tag::{Tag, TagError};
+use crate::tag::Tag;
 use crate::NotebookAPI;
 
 #[derive(Debug)]
@@ -71,7 +70,9 @@ impl Note {
         Tag::list_note_tags(self.id, notebook).await
     }
 
-    pub async fn has_tag(&self, tag_id: i64, notebook: &NotebookAPI) -> Result<bool> {}
+    pub async fn has_tag(&self, tag_id: i64, notebook: &NotebookAPI) -> Result<bool> {
+        todo!();
+    }
 
     pub async fn rename(&mut self, name: String, notebook: &NotebookAPI) -> Result<()> {
         todo!();

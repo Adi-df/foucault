@@ -1,13 +1,12 @@
 use anyhow::Result;
+use foucault_server::tag_repr;
 
 use crate::note::NoteSummary;
 use crate::NotebookAPI;
 
 #[derive(Debug)]
 pub struct Tag {
-    id: i64,
-    name: String,
-    color: u32,
+    inner: tag_repr::Tag,
 }
 
 impl Tag {
@@ -40,13 +39,13 @@ impl Tag {
     }
 
     pub fn id(&self) -> i64 {
-        self.id
+        self.inner.id
     }
     pub fn name(&self) -> &str {
-        &self.name
+        &self.inner.name
     }
     pub fn color(&self) -> u32 {
-        self.color
+        self.inner.color
     }
 
     pub async fn delete(self, notebook: &NotebookAPI) -> Result<()> {
@@ -54,6 +53,6 @@ impl Tag {
     }
 
     pub async fn get_related_notes(&self, notebook: &NotebookAPI) -> Result<Vec<NoteSummary>> {
-        NoteSummary::fetch_by_tag(self.id, notebook).await
+        NoteSummary::fetch_by_tag(self.id(), notebook).await
     }
 }
