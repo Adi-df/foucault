@@ -12,8 +12,7 @@ use crossterm::{
 
 use ratatui::{prelude::CrosstermBackend, widgets::Clear, Terminal};
 
-use crate::states::State;
-use crate::NotebookAPI;
+use crate::{states::State, NotebookAPI};
 
 pub async fn explore(notebook: &NotebookAPI) -> Result<()> {
     info!("Explore notebook : {}", notebook.name);

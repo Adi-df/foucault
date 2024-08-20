@@ -8,6 +8,7 @@
 use std::{fmt::Display, path::PathBuf, sync::LazyLock};
 
 use anyhow::Result;
+use colored::Colorize;
 use log::error;
 use thiserror::Error;
 
@@ -44,7 +45,7 @@ where
         match self {
             Ok(val) => val,
             Err(err) => {
-                eprintln!("error : {err}");
+                eprintln!("{} : {err}", "error".red().bold());
                 todo!();
             }
         }
