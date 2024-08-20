@@ -5,10 +5,10 @@ use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::Block;
 
 use crate::helpers::{draw_text_prompt, DiscardResult};
-use crate::notebook::Notebook;
 use crate::states::tags_managing::{draw_tags_managing, TagsManagingStateData};
 use crate::states::{State, Terminal};
 use crate::tag::Tag;
+use crate::NotebookAPI;
 
 pub struct TagsCreatingStateData {
     pub tags_managing_data: TagsManagingStateData,
@@ -29,7 +29,7 @@ impl TagsCreatingStateData {
 pub async fn run_tag_creating_state(
     mut state_data: TagsCreatingStateData,
     key_event: KeyEvent,
-    notebook: &Notebook,
+    notebook: &NotebookAPI,
 ) -> Result<State> {
     Ok(match key_event.code {
         KeyCode::Esc => {
@@ -37,27 +37,24 @@ pub async fn run_tag_creating_state(
             State::TagsManaging(
                 TagsManagingStateData::from_pattern(
                     state_data.tags_managing_data.pattern,
-                    notebook.db(),
+                    notebook,
                 )
                 .await?,
             )
         }
         KeyCode::Enter => {
-            if Tag::validate_new_tag(state_data.name.as_str(), notebook.db())
-                .await
-                .is_err()
-            {
+            if !Tag::validate_new_tag(state_data.name.as_str(), notebook).await? {
                 State::TagCreating(TagsCreatingStateData {
                     valid: false,
                     ..state_data
                 })
             } else {
                 info!("Create tag {}.", state_data.name);
-                Tag::new(state_data.name.as_str(), notebook.db()).await?;
+                Tag::new(state_data.name.as_str(), notebook).await?;
                 State::TagsManaging(
                     TagsManagingStateData::from_pattern(
                         state_data.tags_managing_data.pattern,
-                        notebook.db(),
+                        notebook,
                     )
                     .await?,
                 )
@@ -65,16 +62,12 @@ pub async fn run_tag_creating_state(
         }
         KeyCode::Backspace => {
             state_data.name.pop();
-            state_data.valid = Tag::validate_new_tag(state_data.name.as_str(), notebook.db())
-                .await
-                .is_ok();
+            state_data.valid = Tag::validate_new_tag(state_data.name.as_str(), notebook).await?;
             State::TagCreating(state_data)
         }
         KeyCode::Char(c) if !c.is_whitespace() => {
             state_data.name.push(c);
-            state_data.valid = Tag::validate_new_tag(state_data.name.as_str(), notebook.db())
-                .await
-                .is_ok();
+            state_data.valid = Tag::validate_new_tag(state_data.name.as_str(), notebook).await?;
             State::TagCreating(state_data)
         }
         _ => State::TagCreating(state_data),

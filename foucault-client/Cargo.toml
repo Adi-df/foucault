@@ -1,0 +1,22 @@
+[package]
+name = "foucault-client"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0"
+authors = ["Adrien Degliame--Fecchio"]
+repository = "https://github.com/Adi-df/foucault/"
+
+[dependencies]
+foucault-server = { path = "../foucault-server" }
+dirs = "5.0.1"
+opener = "0.6.1"
+anyhow = "1.0.86"
+ratatui = "0.26.3"
+scopeguard = "1.2.0"
+crossterm = "0.27.0"
+serde-error = "0.1.2"
+markdown = "1.0.0-alpha.20"
+unicode-segmentation = "1.11.0"
+log = { version = "0.4.22", features = ["std"] }
+tokio = { version = "1.39.3", features = ["full"] }
+reqwest = { version = "0.12.7", features = ["json"] }

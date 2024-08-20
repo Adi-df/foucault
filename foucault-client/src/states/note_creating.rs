@@ -6,9 +6,9 @@ use ratatui::widgets::Block;
 
 use crate::helpers::{draw_text_prompt, DiscardResult};
 use crate::note::Note;
-use crate::notebook::Notebook;
 use crate::states::note_viewing::NoteViewingStateData;
 use crate::states::{State, Terminal};
+use crate::NotebookAPI;
 
 pub struct NoteCreatingStateData {
     pub name: String,
@@ -27,21 +27,18 @@ impl NoteCreatingStateData {
 pub async fn run_note_creating_state(
     NoteCreatingStateData { mut name, valid }: NoteCreatingStateData,
     key_event: KeyEvent,
-    notebook: &Notebook,
+    notebook: &NotebookAPI,
 ) -> Result<State> {
     Ok(match key_event.code {
         KeyCode::Enter => {
-            if Note::validate_new_name(name.as_str(), notebook.db())
-                .await
-                .is_err()
-            {
+            if !Note::validate_new_name(name.as_str(), notebook).await? {
                 State::NoteCreating(NoteCreatingStateData { name, valid: false })
             } else {
                 info!("Create note : {}.", name.as_str());
 
-                let new_note = Note::new(name.clone(), String::new(), notebook.db()).await?;
+                let new_note = Note::new(name.clone(), String::new(), notebook).await?;
 
-                State::NoteViewing(NoteViewingStateData::new(new_note, notebook.db()).await?)
+                State::NoteViewing(NoteViewingStateData::new(new_note, notebook).await?)
             }
         }
         KeyCode::Esc => {
@@ -51,18 +48,15 @@ pub async fn run_note_creating_state(
         KeyCode::Backspace => {
             name.pop();
             State::NoteCreating(NoteCreatingStateData {
-                valid: Note::validate_new_name(name.as_str(), notebook.db())
-                    .await
-                    .is_ok(),
+                valid: Note::validate_new_name(name.as_str(), notebook).await?,
                 name,
             })
         }
         KeyCode::Char(c) => {
             name.push(c);
             State::NoteCreating(NoteCreatingStateData {
-                valid: Note::validate_new_name(name.as_str(), notebook.db())
-                    .await
-                    .is_ok(),
+                valid: Note::validate_new_name(name.as_str(), notebook).await?,
+
                 name,
             })
         }

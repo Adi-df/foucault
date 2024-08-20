@@ -9,13 +9,13 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Cell, Padding, Paragraph, Row, Table};
 
 use crate::helpers::{create_popup_proportion, Capitalize, DiscardResult};
-use crate::notebook::Notebook;
 use crate::states::note_creating::NoteCreatingStateData;
 use crate::states::notes_managing::NotesManagingStateData;
 use crate::states::tags_managing::TagsManagingStateData;
 use crate::states::{State, Terminal};
+use crate::NotebookAPI;
 
-pub async fn run_nothing_state(key_event: KeyEvent, notebook: &Notebook) -> Result<State> {
+pub async fn run_nothing_state(key_event: KeyEvent, notebook: &NotebookAPI) -> Result<State> {
     Ok(match key_event.code {
         KeyCode::Esc | KeyCode::Char('q') => {
             info!("Quit foucault.");
@@ -27,11 +27,11 @@ pub async fn run_nothing_state(key_event: KeyEvent, notebook: &Notebook) -> Resu
         }
         KeyCode::Char('s') => {
             info!("Open notes listing.");
-            State::NotesManaging(NotesManagingStateData::empty(notebook.db()).await?)
+            State::NotesManaging(NotesManagingStateData::empty(notebook).await?)
         }
         KeyCode::Char('t') => {
             info!("Open tags manager.");
-            State::TagsManaging(TagsManagingStateData::empty(notebook.db()).await?)
+            State::TagsManaging(TagsManagingStateData::empty(notebook).await?)
         }
         _ => State::Nothing,
     })
@@ -39,7 +39,7 @@ pub async fn run_nothing_state(key_event: KeyEvent, notebook: &Notebook) -> Resu
 
 pub fn draw_nothing_state(
     terminal: &mut Terminal,
-    notebook: &Notebook,
+    notebook: &NotebookAPI,
     main_frame: Block,
 ) -> Result<()> {
     terminal

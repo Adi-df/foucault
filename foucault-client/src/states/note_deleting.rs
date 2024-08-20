@@ -5,9 +5,9 @@ use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::Block;
 
 use crate::helpers::{draw_yes_no_prompt, DiscardResult};
-use crate::notebook::Notebook;
 use crate::states::note_viewing::{draw_viewed_note, NoteViewingStateData};
 use crate::states::{State, Terminal};
+use crate::NotebookAPI;
 
 pub struct NoteDeletingStateData {
     pub note_viewing_data: NoteViewingStateData,
@@ -29,14 +29,12 @@ pub async fn run_note_deleting_state(
         delete,
     }: NoteDeletingStateData,
     key_event: KeyEvent,
-    notebook: &Notebook,
+    notebook: &NotebookAPI,
 ) -> Result<State> {
     Ok(match key_event.code {
         KeyCode::Esc => {
             info!("Cancel deleting note {}.", note_viewing_data.note.name());
-            State::NoteViewing(
-                NoteViewingStateData::new(note_viewing_data.note, notebook.db()).await?,
-            )
+            State::NoteViewing(NoteViewingStateData::new(note_viewing_data.note, notebook).await?)
         }
         KeyCode::Tab => State::NoteDeleting(NoteDeletingStateData {
             note_viewing_data,
@@ -45,12 +43,12 @@ pub async fn run_note_deleting_state(
         KeyCode::Enter => {
             if delete {
                 info!("Delete note {}.", note_viewing_data.note.name());
-                note_viewing_data.note.delete(notebook.db()).await?;
+                note_viewing_data.note.delete(notebook).await?;
                 State::Nothing
             } else {
                 info!("Cancel deleting note {}.", note_viewing_data.note.name());
                 State::NoteViewing(
-                    NoteViewingStateData::new(note_viewing_data.note, notebook.db()).await?,
+                    NoteViewingStateData::new(note_viewing_data.note, notebook).await?,
                 )
             }
         }

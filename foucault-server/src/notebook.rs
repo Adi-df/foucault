@@ -34,10 +34,12 @@ pub enum SuppressionError {
 }
 
 impl Notebook {
+    #[must_use]
     pub fn db(&self) -> &SqlitePool {
         &self.db_pool
     }
 
+    #[must_use]
     pub fn dir(&self) -> Option<&Path> {
         self.file.parent()
     }

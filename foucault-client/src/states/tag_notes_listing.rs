@@ -1,8 +1,6 @@
 use anyhow::Result;
 use log::info;
 
-use sqlx::SqlitePool;
-
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::prelude::{Constraint, Direction, Layout, Margin};
 use ratatui::style::{Color, Style};
@@ -14,10 +12,10 @@ use ratatui::widgets::{
 
 use crate::helpers::DiscardResult;
 use crate::note::{Note, NoteSummary};
-use crate::notebook::Notebook;
 use crate::states::note_viewing::NoteViewingStateData;
 use crate::states::{State, Terminal};
 use crate::tag::Tag;
+use crate::NotebookAPI;
 
 pub struct TagNotesListingStateData {
     pub tag: Tag,
@@ -26,9 +24,9 @@ pub struct TagNotesListingStateData {
 }
 
 impl TagNotesListingStateData {
-    pub async fn new(tag: Tag, db: &SqlitePool) -> Result<Self> {
+    pub async fn new(tag: Tag, notebook: &NotebookAPI) -> Result<Self> {
         Ok(TagNotesListingStateData {
-            notes: tag.get_related_notes(db).await?,
+            notes: tag.get_related_notes(notebook).await?,
             selected: 0,
             tag,
         })
@@ -38,7 +36,7 @@ impl TagNotesListingStateData {
 pub async fn run_tag_notes_listing_state(
     state_data: TagNotesListingStateData,
     key_event: KeyEvent,
-    notebook: &Notebook,
+    notebook: &NotebookAPI,
 ) -> Result<State> {
     Ok(match key_event.code {
         KeyCode::Esc => {
@@ -47,9 +45,9 @@ pub async fn run_tag_notes_listing_state(
         }
         KeyCode::Enter if !state_data.notes.is_empty() => {
             let summary = &state_data.notes[state_data.selected];
-            if let Some(note) = Note::load_by_id(summary.id(), notebook.db()).await? {
+            if let Some(note) = Note::load_by_id(summary.id(), notebook).await? {
                 info!("Open note {} viewing.", note.name());
-                State::NoteViewing(NoteViewingStateData::new(note, notebook.db()).await?)
+                State::NoteViewing(NoteViewingStateData::new(note, notebook).await?)
             } else {
                 State::TagNotesListing(state_data)
             }

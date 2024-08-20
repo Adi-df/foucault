@@ -1,7 +1,6 @@
 use std::env;
 use std::io::stdout;
 
-use sqlx::SqlitePool;
 use tokio::fs;
 use tokio::process::Command;
 
@@ -21,18 +20,20 @@ use ratatui::widgets::{
 };
 use ratatui::Frame;
 
+use crate::APP_DIR_PATH;
+
 use crate::helpers::{create_bottom_line, create_row_help_layout, DiscardResult};
 use crate::links::Link;
 use crate::markdown::elements::{InlineElements, SelectableInlineElements};
 use crate::markdown::{combine, lines, parse, ParsedMarkdown};
 use crate::note::Note;
-use crate::notebook::Notebook;
 use crate::states::note_deleting::NoteDeletingStateData;
 use crate::states::note_renaming::NoteRenamingStateData;
 use crate::states::note_tags_managing::NoteTagsManagingStateData;
 use crate::states::notes_managing::NotesManagingStateData;
 use crate::states::{State, Terminal};
 use crate::tag::Tag;
+use crate::NotebookAPI;
 
 pub struct NoteViewingStateData {
     pub note: Note,
@@ -43,11 +44,11 @@ pub struct NoteViewingStateData {
 }
 
 impl NoteViewingStateData {
-    pub async fn new(note: Note, db: &SqlitePool) -> Result<Self> {
+    pub async fn new(note: Note, notebook: &NotebookAPI) -> Result<Self> {
         let mut parsed_content = parse(note.content());
         parsed_content.select((0, 0), true);
         Ok(NoteViewingStateData {
-            tags: note.tags(db).await?,
+            tags: note.tags(notebook).await?,
             note,
             parsed_content,
             selected: (0, 0),
@@ -71,10 +72,7 @@ impl NoteViewingStateData {
         self.parsed_content
             .list_links()
             .into_iter()
-            .map(|to| Link {
-                from: self.note.id(),
-                to: to.to_string(),
-            })
+            .map(|to| Link::new(self.note.id(), to.to_string()))
             .collect()
     }
 }
@@ -82,7 +80,7 @@ impl NoteViewingStateData {
 pub async fn run_note_viewing_state(
     mut state_data: NoteViewingStateData,
     key_event: KeyEvent,
-    notebook: &Notebook,
+    notebook: &NotebookAPI,
     force_redraw: &mut bool,
 ) -> Result<State> {
     Ok(match key_event.code {
@@ -107,7 +105,7 @@ pub async fn run_note_viewing_state(
             state_data.re_parse_content();
             state_data
                 .note
-                .update_links(&state_data.compute_links(), notebook.db())
+                .update_links(&state_data.compute_links(), notebook)
                 .await?;
             state_data.selected = (0, 0);
             state_data.select_current(true);
@@ -117,7 +115,7 @@ pub async fn run_note_viewing_state(
         }
         KeyCode::Char('s') => {
             info!("Enter notes listing.");
-            State::NotesManaging(NotesManagingStateData::empty(notebook.db()).await?)
+            State::NotesManaging(NotesManagingStateData::empty(notebook).await?)
         }
         KeyCode::Char('d') => {
             info!("Open deleting prompt for note {}.", state_data.note.name());
@@ -130,7 +128,7 @@ pub async fn run_note_viewing_state(
         KeyCode::Char('t') => {
             info!("Open tags manager for note {}", state_data.note.name());
             State::NoteTagsManaging(
-                NoteTagsManagingStateData::new(state_data.note, notebook.db()).await?,
+                NoteTagsManagingStateData::new(state_data.note, notebook).await?,
             )
         }
         KeyCode::Enter => {
@@ -142,11 +140,8 @@ pub async fn run_note_viewing_state(
                         State::NoteViewing(state_data)
                     }
                     InlineElements::CrossRef { dest, .. } => {
-                        if let Some(note) = Note::load_by_name(dest.as_str(), notebook.db()).await?
-                        {
-                            State::NoteViewing(
-                                NoteViewingStateData::new(note, notebook.db()).await?,
-                            )
+                        if let Some(note) = Note::load_by_name(dest.as_str(), notebook).await? {
+                            State::NoteViewing(NoteViewingStateData::new(note, notebook).await?)
                         } else {
                             State::NoteViewing(state_data)
                         }
@@ -222,11 +217,8 @@ pub async fn run_note_viewing_state(
     })
 }
 
-async fn edit_note(note: &mut Note, notebook: &Notebook) -> Result<()> {
-    let tmp_file_path = notebook
-        .dir()
-        .unwrap()
-        .join(format!("{}.tmp.md", note.name()));
+async fn edit_note(note: &mut Note, notebook: &NotebookAPI) -> Result<()> {
+    let tmp_file_path = APP_DIR_PATH.join(format!("{}.tmp.md", note.name()));
     note.export_content(tmp_file_path.as_path()).await?;
 
     let editor = env::var("EDITOR")?;
@@ -241,11 +233,11 @@ async fn edit_note(note: &mut Note, notebook: &Notebook) -> Result<()> {
 
     Command::new(editor)
         .args([&tmp_file_path])
-        .current_dir(notebook.dir().unwrap())
+        .current_dir(&*APP_DIR_PATH)
         .status()
         .await?;
 
-    note.import_content(tmp_file_path.as_path(), notebook.db())
+    note.import_content(tmp_file_path.as_path(), notebook)
         .await?;
 
     fs::remove_file(&tmp_file_path).await?;
