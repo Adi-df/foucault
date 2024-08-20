@@ -8,7 +8,7 @@ prepare-queries:
     @echo "Prepare SQLx compile-time queries."
     cd foucault-server && env DATABASE_URL="{{mock-db-url}}" cargo sqlx migrate run
     cd foucault-server && env DATABASE_URL="{{mock-db-url}}" cargo sqlx prepare
-    rm {{mock-db-filepath}}
+    rm "{{mock-db-filepath}}"
 
 prepare-dist:
     cargo dist init
