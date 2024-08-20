@@ -18,7 +18,7 @@ use clap::{Parser, Subcommand};
 use question::{Answer, Question};
 
 use foucault_client::explore::explore;
-use foucault_client::APP_DIR_PATH;
+use foucault_client::{NotebookAPI, APP_DIR_PATH};
 use foucault_server::notebook::Notebook;
 
 use crate::notebook_selector::open_selector;
@@ -84,7 +84,12 @@ async fn main() -> Result<()> {
             }
             Commands::Open { name } => {
                 info!("Open notebook {name}.");
-                explore(&Notebook::open_notebook(name, &APP_DIR_PATH).await?).await?;
+                let notebook = Notebook::open_notebook(name, &APP_DIR_PATH).await?;
+                let notebook_api = NotebookAPI {
+                    name: notebook.name.clone(),
+                    endpoint: todo!(),
+                };
+                explore(&notebook_api).await?;
             }
             Commands::Delete { name } => {
                 info!("Delete notebook {name}.");
@@ -109,7 +114,12 @@ async fn main() -> Result<()> {
 
         if let Some(name) = open_selector(&APP_DIR_PATH)? {
             info!("Open notebook selected : {name}.");
-            explore(&Notebook::open_notebook(name.as_str(), &APP_DIR_PATH).await?).await?;
+            let notebook = Notebook::open_notebook(name.as_str(), &APP_DIR_PATH).await?;
+            let notebook_api = NotebookAPI {
+                name: notebook.name.clone(),
+                endpoint: todo!(),
+            };
+            explore(&notebook_api).await?;
         }
     }
 
