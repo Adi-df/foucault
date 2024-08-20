@@ -17,7 +17,7 @@ use tokio::fs;
 use clap::{Parser, Subcommand};
 use question::{Answer, Question};
 
-use foucault_client::{explore::explore, NotebookAPI, APP_DIR_PATH};
+use foucault_client::{explore::explore, NotebookAPI, PrettyError, APP_DIR_PATH};
 use foucault_server::notebook::Notebook;
 
 use crate::notebook_selector::open_selector;
@@ -116,16 +116,12 @@ async fn main() -> Result<()> {
                     notebook,
                     port.unwrap_or(DEFAULT_PORT),
                 ));
-                let notebook_api = NotebookAPI::new(endpoint)
-                    .await
-                    .expect("Unable to access the notebook");
+                let notebook_api = NotebookAPI::new(endpoint).await.pretty_unwrap();
                 explore(&notebook_api).await?;
             }
             Commands::Connect { endpoint } => {
                 info!("Connect to notebook at address {endpoint}.");
-                let notebook_api = NotebookAPI::new(endpoint.clone())
-                    .await
-                    .expect("Unable to access the notebook");
+                let notebook_api = NotebookAPI::new(endpoint.clone()).await.pretty_unwrap();
                 explore(&notebook_api).await?;
             }
             Commands::Serve { name, port } => {
@@ -166,9 +162,7 @@ async fn main() -> Result<()> {
             let notebook = Arc::new(Notebook::open_notebook(name.as_str(), &APP_DIR_PATH).await?);
             let endpoint = format!("http://{LOCAL_ADRESS}:{DEFAULT_PORT}");
             tokio::spawn(foucault_server::serve(notebook, DEFAULT_PORT));
-            let notebook_api = NotebookAPI::new(endpoint)
-                .await
-                .expect("Unable to access the notebook");
+            let notebook_api = NotebookAPI::new(endpoint).await.pretty_unwrap();
             explore(&notebook_api).await?;
         }
     }

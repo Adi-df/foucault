@@ -659,6 +659,7 @@ dependencies = [
  "reqwest",
  "scopeguard",
  "serde-error",
+ "thiserror",
  "tokio",
  "unicode-segmentation",
 ]

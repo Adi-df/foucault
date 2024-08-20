@@ -5,10 +5,11 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::module_name_repetitions)]
 
-use std::{path::PathBuf, sync::LazyLock};
+use std::{fmt::Display, path::PathBuf, sync::LazyLock};
 
 use anyhow::Result;
 use log::error;
+use thiserror::Error;
 
 use reqwest::Client;
 
@@ -29,6 +30,35 @@ pub static APP_DIR_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     }
 });
 
+pub trait PrettyError {
+    type Item;
+    fn pretty_unwrap(self) -> Self::Item;
+}
+
+impl<T, E> PrettyError for Result<T, E>
+where
+    E: Display,
+{
+    type Item = T;
+    fn pretty_unwrap(self) -> Self::Item {
+        match self {
+            Ok(val) => val,
+            Err(err) => {
+                eprintln!("error : {err}");
+                todo!();
+            }
+        }
+    }
+}
+
+#[derive(Debug, Error)]
+pub enum ApiError {
+    #[error("Unable to connect to the remote endpoint : {0}")]
+    UnableToConnect(reqwest::Error),
+    #[error("Unable to ping notebook name : {0}")]
+    UnableToPingName(reqwest::Error),
+}
+
 pub struct NotebookAPI {
     pub name: String,
     pub endpoint: String,
@@ -38,9 +68,11 @@ pub struct NotebookAPI {
 impl NotebookAPI {
     pub async fn new(endpoint: String) -> Result<Self> {
         let name = reqwest::get(format!("{endpoint}/name"))
-            .await?
+            .await
+            .map_err(|err| ApiError::UnableToConnect(err))?
             .text()
-            .await?;
+            .await
+            .map_err(|err| ApiError::UnableToPingName(err))?;
 
         Ok(Self {
             name,
