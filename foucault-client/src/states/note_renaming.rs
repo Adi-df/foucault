@@ -42,12 +42,7 @@ pub async fn run_note_renaming_state(
             )
         }
         KeyCode::Enter => {
-            if !Note::validate_new_name(state_data.new_name.as_str(), notebook).await? {
-                State::NoteRenaming(NoteRenamingStateData {
-                    valid: false,
-                    ..state_data
-                })
-            } else {
+            if Note::validate_new_name(state_data.new_name.as_str(), notebook).await? {
                 info!(
                     "Renaming note {} to {}.",
                     state_data.note_viewing_data.note.name(),
@@ -61,6 +56,11 @@ pub async fn run_note_renaming_state(
                 State::NoteViewing(
                     NoteViewingStateData::new(state_data.note_viewing_data.note, notebook).await?,
                 )
+            } else {
+                State::NoteRenaming(NoteRenamingStateData {
+                    valid: false,
+                    ..state_data
+                })
             }
         }
         KeyCode::Backspace => {

@@ -38,6 +38,7 @@ pub struct NotebookAPI {
 }
 
 impl NotebookAPI {
+    #[must_use]
     pub fn new(notebook: &Notebook) -> Self {
         Self {
             name: notebook.name.clone(),
@@ -46,6 +47,7 @@ impl NotebookAPI {
         }
     }
 
+    #[must_use]
     pub fn build_url(&self, path: &str) -> String {
         format!("{}{}", self.endpoint, path)
     }

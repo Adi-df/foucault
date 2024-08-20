@@ -31,14 +31,14 @@ pub async fn run_note_creating_state(
 ) -> Result<State> {
     Ok(match key_event.code {
         KeyCode::Enter => {
-            if !Note::validate_new_name(name.as_str(), notebook).await? {
-                State::NoteCreating(NoteCreatingStateData { name, valid: false })
-            } else {
+            if Note::validate_new_name(name.as_str(), notebook).await? {
                 info!("Create note : {}.", name.as_str());
 
                 let new_note = Note::new(name.clone(), String::new(), notebook).await?;
 
                 State::NoteViewing(NoteViewingStateData::new(new_note, notebook).await?)
+            } else {
+                State::NoteCreating(NoteCreatingStateData { name, valid: false })
             }
         }
         KeyCode::Esc => {

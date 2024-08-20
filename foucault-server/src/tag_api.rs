@@ -18,7 +18,7 @@ pub(crate) async fn create(
             if let Some(tag_err) = err.downcast_ref::<TagError>() {
                 (StatusCode::NOT_ACCEPTABLE, Json::from(Err(*tag_err)))
             } else {
-                panic!("Error encountered during tag creation : {}", err);
+                panic!("Error encountered during tag creation : {err}");
             }
         }
     }

@@ -43,12 +43,7 @@ pub async fn run_tag_creating_state(
             )
         }
         KeyCode::Enter => {
-            if !Tag::validate_new_tag(state_data.name.as_str(), notebook).await? {
-                State::TagCreating(TagsCreatingStateData {
-                    valid: false,
-                    ..state_data
-                })
-            } else {
+            if Tag::validate_new_tag(state_data.name.as_str(), notebook).await? {
                 info!("Create tag {}.", state_data.name);
                 Tag::new(state_data.name.as_str(), notebook).await?;
                 State::TagsManaging(
@@ -58,6 +53,11 @@ pub async fn run_tag_creating_state(
                     )
                     .await?,
                 )
+            } else {
+                State::TagCreating(TagsCreatingStateData {
+                    valid: false,
+                    ..state_data
+                })
             }
         }
         KeyCode::Backspace => {

@@ -189,7 +189,7 @@ impl Note {
             .json(&note_api::UpdateLinksParam {
                 id: self.id(),
                 links: new_links
-                    .into_iter()
+                    .iter()
                     .map(|link| link.get_inner().clone())
                     .collect(),
             })
