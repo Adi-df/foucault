@@ -32,16 +32,17 @@ pub static APP_DIR_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
 
 pub struct NotebookAPI {
     pub name: String,
-    pub endpoint: &'static str,
+    pub endpoint: String,
     pub client: Client,
 }
 
 impl NotebookAPI {
     #[must_use]
-    pub fn new(notebook: &Notebook) -> Self {
+    pub fn new(notebook: &Notebook, port: u16) -> Self {
+        let endpoint = format!("0.0.0.0:{port}");
         Self {
             name: notebook.name.clone(),
-            endpoint: "http://0.0.0.0:8078",
+            endpoint,
             client: Client::new(),
         }
     }

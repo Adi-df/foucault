@@ -22,6 +22,8 @@ use foucault_server::notebook::Notebook;
 
 use crate::notebook_selector::open_selector;
 
+pub const DEFAULT_PORT: u16 = 8078;
+
 #[derive(Parser)]
 #[command(
     author = "Adrien Degliame <adidf-web@laposte.net>",
@@ -42,12 +44,16 @@ enum Commands {
     },
     Open {
         name: String,
+        #[arg(short, long)]
+        port: Option<u16>,
     },
     Delete {
         name: String,
     },
     Serve {
         name: String,
+        #[arg(short, long)]
+        port: Option<u16>,
     },
 }
 
@@ -84,18 +90,25 @@ async fn main() -> Result<()> {
                 };
                 println!("Notebook {name} was successfully created.");
             }
-            Commands::Open { name } => {
+            Commands::Open { name, port } => {
                 info!("Open notebook {name}.");
                 let notebook = Arc::new(Notebook::open_notebook(name, &APP_DIR_PATH).await?);
-                let notebook_api = NotebookAPI::new(&notebook);
-                tokio::spawn(foucault_server::serve(notebook));
+                let notebook_api = NotebookAPI::new(&notebook, port.unwrap_or(DEFAULT_PORT));
+                tokio::spawn(foucault_server::serve(
+                    notebook,
+                    port.unwrap_or(DEFAULT_PORT),
+                ));
                 explore(&notebook_api).await?;
             }
-            Commands::Serve { name } => {
+            Commands::Serve { name, port } => {
                 info!("Open notebook {name}.");
                 let notebook = Arc::new(Notebook::open_notebook(name, &APP_DIR_PATH).await?);
-                println!("Serving notebook {} at 0.0.0.0:8078", &notebook.name);
-                foucault_server::serve(notebook)
+                println!(
+                    "Serving notebook {} at 0.0.0.0:{}.",
+                    &notebook.name,
+                    port.unwrap_or(DEFAULT_PORT)
+                );
+                foucault_server::serve(notebook, port.unwrap_or(DEFAULT_PORT))
                     .await
                     .expect("An error occured when serving the notebook");
             }
@@ -123,8 +136,8 @@ async fn main() -> Result<()> {
         if let Some(name) = open_selector(&APP_DIR_PATH)? {
             info!("Open notebook selected : {name}.");
             let notebook = Arc::new(Notebook::open_notebook(name.as_str(), &APP_DIR_PATH).await?);
-            let notebook_api = NotebookAPI::new(&notebook);
-            tokio::spawn(foucault_server::serve(notebook));
+            let notebook_api = NotebookAPI::new(&notebook, DEFAULT_PORT);
+            tokio::spawn(foucault_server::serve(notebook, DEFAULT_PORT));
             explore(&notebook_api).await?;
         }
     }

@@ -31,7 +31,7 @@ struct AppState {
     notebook: Arc<Notebook>,
 }
 
-pub async fn serve(notebook: Arc<Notebook>) -> Result<()> {
+pub async fn serve(notebook: Arc<Notebook>, port: u16) -> Result<()> {
     let state = AppState { notebook };
     let app = Router::new()
         .route("/name", get(notebook_name))
@@ -56,7 +56,8 @@ pub async fn serve(notebook: Arc<Notebook>) -> Result<()> {
         .route("/tag/search/name", get(tag_api::search_by_name))
         .with_state(state);
 
-    let listener = TcpListener::bind("0.0.0.0:8078")
+    let address = format!("0.0.0.0:{port}");
+    let listener = TcpListener::bind(&address)
         .await
         .expect("Listener should bind successfuly");
     axum::serve(listener, app)
