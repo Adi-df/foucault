@@ -28,7 +28,7 @@ pub const DEFAULT_PORT: u16 = 8078;
 #[derive(Parser)]
 #[command(
     author = "Adrien Degliame <adidf-web@laposte.net>",
-    version = "0.2.1",
+    version = "0.2.2",
     about = "The Foucault notebook CLI"
 )]
 struct Cli {
