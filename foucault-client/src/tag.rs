@@ -32,10 +32,6 @@ impl Tag {
         todo!();
     }
 
-    pub async fn list_note_tags(note_id: i64, notebook: &NotebookAPI) -> Result<Vec<Self>> {
-        todo!();
-    }
-
     pub fn id(&self) -> i64 {
         self.inner.id
     }

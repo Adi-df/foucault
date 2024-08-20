@@ -68,7 +68,7 @@ impl Note {
     }
 
     pub async fn tags(&self, notebook: &NotebookAPI) -> Result<Vec<Tag>> {
-        Tag::list_note_tags(self.inner.id, notebook).await
+        todo!();
     }
 
     pub async fn rename(&mut self, name: String, notebook: &NotebookAPI) -> Result<()> {

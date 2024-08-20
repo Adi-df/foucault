@@ -13,7 +13,7 @@ pub struct Tag {
     pub color: u32,
 }
 
-#[derive(Debug, Error, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Error, Serialize, Deserialize)]
 pub enum TagError {
     #[error("A simillarly named tag already exists")]
     AlreadyExists,
@@ -29,7 +29,9 @@ fn rand_color() -> u32 {
 }
 
 pub(crate) async fn create(name: &str, connection: &SqlitePool) -> Result<i64> {
-    validate_name(name, connection).await?;
+    if let Some(err) = validate_name(name, connection).await? {
+        return Err(err.into());
+    };
 
     let color = rand_color();
     let id = sqlx::query!(
@@ -44,13 +46,13 @@ pub(crate) async fn create(name: &str, connection: &SqlitePool) -> Result<i64> {
     Ok(id)
 }
 
-pub(crate) async fn validate_name(name: &str, connection: &SqlitePool) -> Result<()> {
+pub(crate) async fn validate_name(name: &str, connection: &SqlitePool) -> Result<Option<TagError>> {
     if name.is_empty() {
-        Err(TagError::EmptyName.into())
+        Ok(Some(TagError::EmptyName))
     } else if name_exists(name, connection).await? {
-        Err(TagError::AlreadyExists.into())
+        Ok(Some(TagError::AlreadyExists))
     } else {
-        Ok(())
+        Ok(None)
     }
 }
 
@@ -100,22 +102,6 @@ pub(crate) async fn search_by_name(pattern: &str, connection: &SqlitePool) -> Re
             color: u32::try_from(row.color)?,
         })
     })
-    .collect()
-}
-
-pub async fn list_note_tags(note_id: i64, connection: &SqlitePool) -> Result<Vec<Tag>> {
-    sqlx::query!(
-        "SELECT tags_table.id,tags_table.name,tags_table.color FROM tags_join_table INNER JOIN tags_table ON tags_join_table.tag_id = tags_table.id WHERE tags_join_table.note_id=$1",
-        note_id
-    )
-    .fetch_all(connection)
-    .await?
-    .into_iter()
-    .map(|row| Ok(Tag {
-        id: row.id,
-        name: row.name,
-        color: u32::try_from(row.color)?,
-    }))
     .collect()
 }
 

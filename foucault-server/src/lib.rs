@@ -9,6 +9,7 @@ pub mod link_repr;
 pub mod note_api;
 pub mod note_repr;
 pub mod notebook;
+pub mod tag_api;
 pub mod tag_repr;
 
 use std::sync::Arc;
@@ -43,8 +44,14 @@ pub async fn serve(notebook: Arc<Notebook>) -> Result<()> {
         .route("/note/update/name", put(note_api::rename))
         .route("/note/update/content", put(note_api::update_content))
         .route("/note/update/links", put(note_api::update_links))
+        .route("/note/tag/list", get(note_api::list_tags))
         .route("/note/tag/add", post(note_api::add_tag))
         .route("/note/tag/remove", delete(note_api::remove_tag))
+        .route("/tag/create", post(tag_api::create))
+        .route("/tag/delete", delete(tag_api::delete))
+        .route("/tag/validate/name", get(tag_api::validate_name))
+        .route("/tag/load/name", get(tag_api::load_by_name))
+        .route("/tag/search/name", get(tag_api::search_by_name))
         .with_state(state);
 
     let listener = TcpListener::bind("0.0.0.0:8078")

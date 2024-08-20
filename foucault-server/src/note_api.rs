@@ -10,7 +10,7 @@ use serde_error::Error;
 use crate::link_repr::Link;
 use crate::note_repr;
 use crate::note_repr::{Note, NoteError, NoteSummary};
-use crate::tag_repr::TagError;
+use crate::tag_repr::{Tag, TagError};
 use crate::AppState;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -146,6 +146,17 @@ pub(crate) async fn update_links(
         .expect("Error encountered when updating note links");
 
     StatusCode::OK
+}
+
+pub(crate) async fn list_tags(
+    State(state): State<AppState>,
+    Json(id): Json<i64>,
+) -> (StatusCode, Json<Vec<Tag>>) {
+    let res = note_repr::list_tags(id, state.notebook.db())
+        .await
+        .expect("Error encountered while listing note's tags");
+
+    (StatusCode::OK, Json::from(res))
 }
 
 pub(crate) async fn validate_new_tag(

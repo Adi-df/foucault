@@ -118,6 +118,22 @@ pub(crate) async fn list_links(id: i64, connection: &SqlitePool) -> Result<Vec<L
         .collect()
 }
 
+pub async fn list_tags(id: i64, connection: &SqlitePool) -> Result<Vec<Tag>> {
+    sqlx::query!(
+        "SELECT tags_table.id,tags_table.name,tags_table.color FROM tags_join_table INNER JOIN tags_table ON tags_join_table.tag_id = tags_table.id WHERE tags_join_table.note_id=$1",
+        id
+    )
+    .fetch_all(connection)
+    .await?
+    .into_iter()
+    .map(|row| Ok(Tag {
+        id: row.id,
+        name: row.name,
+        color: u32::try_from(row.color)?,
+    }))
+    .collect()
+}
+
 pub(crate) async fn has_tag(id: i64, tag_id: i64, connection: &SqlitePool) -> Result<bool> {
     Ok(sqlx::query!(
         "SELECT tag_id FROM tags_join_table WHERE tag_id=$1 AND note_id=$2",
@@ -256,7 +272,7 @@ pub(crate) async fn search_by_name(
             Ok(NoteSummary {
                 id,
                 name: row.name.expect("There should be a note name"),
-                tags: tag_repr::list_note_tags(id, connection).await?,
+                tags: list_tags(id, connection).await?,
             })
         }),
     )
@@ -281,7 +297,7 @@ pub(crate) async fn search_by_tag(
                 Ok(NoteSummary {
                     id: row.id,
                     name: row.name.expect("There should be a note name"),
-                    tags: tag_repr::list_note_tags(row.id, connection).await?
+                    tags: list_tags(row.id, connection).await?
                 })
             })
         )
