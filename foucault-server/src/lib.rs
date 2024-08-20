@@ -18,7 +18,7 @@ use anyhow::Result;
 
 use axum::extract::State;
 use axum::http::StatusCode;
-use axum::routing::{delete, get, post, put};
+use axum::routing::{delete, get, patch, post};
 use axum::Router;
 use tokio::net::TcpListener;
 
@@ -41,9 +41,9 @@ pub async fn serve(notebook: Arc<Notebook>) -> Result<()> {
         .route("/note/load/name", get(note_api::load_by_name))
         .route("/note/search/name", get(note_api::search_by_name))
         .route("/note/search/tag", get(note_api::search_by_tag))
-        .route("/note/update/name", put(note_api::rename))
-        .route("/note/update/content", put(note_api::update_content))
-        .route("/note/update/links", put(note_api::update_links))
+        .route("/note/update/name", patch(note_api::rename))
+        .route("/note/update/content", patch(note_api::update_content))
+        .route("/note/update/links", patch(note_api::update_links))
         .route("/note/tag/list", get(note_api::list_tags))
         .route("/note/tag/add", post(note_api::add_tag))
         .route("/note/tag/remove", delete(note_api::remove_tag))

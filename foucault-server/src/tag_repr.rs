@@ -28,7 +28,7 @@ fn rand_color() -> u32 {
     (u32::from(r) << 16) + (u32::from(g) << 4) + u32::from(b)
 }
 
-pub(crate) async fn create(name: &str, connection: &SqlitePool) -> Result<i64> {
+pub(crate) async fn create(name: &str, connection: &SqlitePool) -> Result<Tag> {
     if let Some(err) = validate_name(name, connection).await? {
         return Err(err.into());
     };
@@ -43,7 +43,11 @@ pub(crate) async fn create(name: &str, connection: &SqlitePool) -> Result<i64> {
     .await?
     .id;
 
-    Ok(id)
+    Ok(Tag {
+        id,
+        name: name.to_string(),
+        color,
+    })
 }
 
 pub(crate) async fn validate_name(name: &str, connection: &SqlitePool) -> Result<Option<TagError>> {

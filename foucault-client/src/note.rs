@@ -54,7 +54,7 @@ impl Note {
                 inner: note_repr::Note { id, name, content },
             }),
             Err(err) => {
-                panic!("The note name was invalid : {}", err)
+                panic!("The note name was invalid : {}", err);
             }
         }
     }
@@ -131,7 +131,7 @@ impl Note {
     pub async fn rename(&mut self, name: String, notebook: &NotebookAPI) -> Result<()> {
         let res = notebook
             .client
-            .get(notebook.build_url("/note/update/name"))
+            .patch(notebook.build_url("/note/update/name"))
             .json(&note_api::RenameParam {
                 id: self.id(),
                 name: name.clone(),
@@ -152,7 +152,7 @@ impl Note {
     pub async fn delete(self, notebook: &NotebookAPI) -> Result<()> {
         notebook
             .client
-            .get(notebook.build_url("/note/delete"))
+            .delete(notebook.build_url("/note/delete"))
             .json(&self.id())
             .send()
             .await?;
@@ -170,7 +170,7 @@ impl Note {
 
         notebook
             .client
-            .get(notebook.build_url("/note/update/content"))
+            .patch(notebook.build_url("/note/update/content"))
             .json(&note_api::UpdateContentParam {
                 id: self.id(),
                 content: new_content.clone(),
@@ -185,7 +185,7 @@ impl Note {
     pub async fn update_links(&self, new_links: &[Link], notebook: &NotebookAPI) -> Result<()> {
         notebook
             .client
-            .get(notebook.build_url("/note/update/links"))
+            .patch(notebook.build_url("/note/update/links"))
             .json(&note_api::UpdateLinksParam {
                 id: self.id(),
                 links: new_links
@@ -218,7 +218,7 @@ impl Note {
     pub async fn add_tag(&self, tag_id: i64, notebook: &NotebookAPI) -> Result<()> {
         let res = notebook
             .client
-            .get(notebook.build_url("/note/tag/add"))
+            .post(notebook.build_url("/note/tag/add"))
             .json(&note_api::AddTagParam {
                 id: self.id(),
                 tag_id,
@@ -238,7 +238,7 @@ impl Note {
     pub async fn remove_tag(&mut self, tag_id: i64, notebook: &NotebookAPI) -> Result<()> {
         notebook
             .client
-            .get(notebook.build_url("/note/tag/remove"))
+            .delete(notebook.build_url("/note/tag/remove"))
             .json(&note_api::RemoveTagParam(note_api::AddTagParam {
                 id: self.id(),
                 tag_id,

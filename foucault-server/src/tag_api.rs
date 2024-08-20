@@ -9,11 +9,11 @@ use crate::AppState;
 pub(crate) async fn create(
     State(state): State<AppState>,
     Json(name): Json<String>,
-) -> (StatusCode, Json<Result<i64, TagError>>) {
+) -> (StatusCode, Json<Result<Tag, TagError>>) {
     let res = tag_repr::create(&name, state.notebook.db()).await;
 
     match res {
-        Ok(id) => (StatusCode::OK, Json::from(Ok(id))),
+        Ok(tag) => (StatusCode::OK, Json::from(Ok(tag))),
         Err(err) => {
             if let Some(tag_err) = err.downcast_ref::<TagError>() {
                 (StatusCode::NOT_ACCEPTABLE, Json::from(Err(*tag_err)))
