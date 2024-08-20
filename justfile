@@ -10,6 +10,10 @@ prepare-queries:
     cd foucault-server && env DATABASE_URL="{{mock-db-url}}" cargo sqlx prepare
     rm {{mock-db-filepath}}
 
+prepare-dist:
+    cargo dist init
+    cargo dist plan
+
 build-dev:
     cargo build
 
