@@ -1,11 +1,13 @@
+use core::panic;
 use std::path::Path;
 
 use tokio::fs;
 
 use anyhow::Result;
+use serde_error::Error;
 
 use foucault_server::note_repr::NoteError;
-use foucault_server::{note_api, note_repr};
+use foucault_server::{note_api, note_repr, tag_repr};
 
 use crate::links::Link;
 use crate::tag::Tag;
@@ -67,11 +69,20 @@ impl Note {
             .json::<Option<NoteError>>()
             .await?;
 
-        Ok(!res.is_some())
+        Ok(res.is_none())
     }
 
     pub async fn load_by_id(id: i64, notebook: &NotebookAPI) -> Result<Option<Self>> {
-        todo!();
+        let res = notebook
+            .client
+            .get(notebook.build_url("/note/load/id"))
+            .json(&id)
+            .send()
+            .await?
+            .json::<Option<note_repr::Note>>()
+            .await?;
+
+        Ok(res.map(Self::from))
     }
 
     pub async fn load_from_summary(summary: &NoteSummary, notebook: &NotebookAPI) -> Result<Self> {
@@ -82,7 +93,16 @@ impl Note {
     }
 
     pub async fn load_by_name(name: &str, notebook: &NotebookAPI) -> Result<Option<Self>> {
-        todo!();
+        let res = notebook
+            .client
+            .get(notebook.build_url("/note/load/name"))
+            .json(name)
+            .send()
+            .await?
+            .json::<Option<note_repr::Note>>()
+            .await?;
+
+        Ok(res.map(Self::from))
     }
 
     pub fn id(&self) -> i64 {
@@ -96,16 +116,47 @@ impl Note {
     }
 
     pub async fn tags(&self, notebook: &NotebookAPI) -> Result<Vec<Tag>> {
-        todo!();
+        let res = notebook
+            .client
+            .get(notebook.build_url("/note/tag/list"))
+            .json(&self.id())
+            .send()
+            .await?
+            .json::<Vec<tag_repr::Tag>>()
+            .await?;
+
+        Ok(res.into_iter().map(Tag::from).collect())
     }
 
     pub async fn rename(&mut self, name: String, notebook: &NotebookAPI) -> Result<()> {
-        todo!();
+        let res = notebook
+            .client
+            .get(notebook.build_url("/note/update/name"))
+            .json(&note_api::RenameParam {
+                id: self.id(),
+                name: name.clone(),
+            })
+            .send()
+            .await?
+            .json::<Option<NoteError>>()
+            .await?;
+
+        if let Some(err) = res {
+            panic!("The note name is invalid : {}", err);
+        }
+
         self.inner.name = name;
+        Ok(())
     }
 
     pub async fn delete(self, notebook: &NotebookAPI) -> Result<()> {
-        todo!()
+        notebook
+            .client
+            .get(notebook.build_url("/note/delete"))
+            .json(&self.id())
+            .send()
+            .await?;
+        Ok(())
     }
 
     pub async fn export_content(&self, file: &Path) -> Result<()> {
@@ -117,26 +168,85 @@ impl Note {
     pub async fn import_content(&mut self, file: &Path, notebook: &NotebookAPI) -> Result<()> {
         let new_content = String::from_utf8(fs::read(file).await?)?;
 
-        todo!();
+        notebook
+            .client
+            .get(notebook.build_url("/note/update/content"))
+            .json(&note_api::UpdateContentParam {
+                id: self.id(),
+                content: new_content.clone(),
+            })
+            .send()
+            .await?;
 
         self.inner.content = new_content;
         Ok(())
     }
 
     pub async fn update_links(&self, new_links: &[Link], notebook: &NotebookAPI) -> Result<()> {
-        todo!();
+        notebook
+            .client
+            .get(notebook.build_url("/note/update/links"))
+            .json(&note_api::UpdateLinksParam {
+                id: self.id(),
+                links: new_links
+                    .into_iter()
+                    .map(|link| link.get_inner().clone())
+                    .collect(),
+            })
+            .send()
+            .await?;
+
+        Ok(())
     }
 
-    pub async fn validate_new_tag(&self, tag_id: i64, notebook: &NotebookAPI) -> Result<()> {
-        todo!();
+    pub async fn validate_new_tag(&self, tag_id: i64, notebook: &NotebookAPI) -> Result<bool> {
+        let res = notebook
+            .client
+            .get(notebook.build_url("/note/validate/tag"))
+            .json(&note_api::ValidateNewTagParam(note_api::AddTagParam {
+                id: self.id(),
+                tag_id,
+            }))
+            .send()
+            .await?
+            .json::<Option<Error>>()
+            .await?;
+
+        Ok(res.is_none())
     }
 
     pub async fn add_tag(&self, tag_id: i64, notebook: &NotebookAPI) -> Result<()> {
-        todo!();
+        let res = notebook
+            .client
+            .get(notebook.build_url("/note/tag/add"))
+            .json(&note_api::AddTagParam {
+                id: self.id(),
+                tag_id,
+            })
+            .send()
+            .await?
+            .json::<Option<Error>>()
+            .await?;
+
+        if let Some(err) = res {
+            panic!("Failled to add tag : {}", err);
+        }
+
+        Ok(())
     }
 
     pub async fn remove_tag(&mut self, tag_id: i64, notebook: &NotebookAPI) -> Result<()> {
-        todo!();
+        notebook
+            .client
+            .get(notebook.build_url("/note/tag/remove"))
+            .json(&note_api::RemoveTagParam(note_api::AddTagParam {
+                id: self.id(),
+                tag_id,
+            }))
+            .send()
+            .await?;
+
+        Ok(())
     }
 }
 
@@ -152,10 +262,28 @@ impl NoteSummary {
     }
 
     pub async fn search_by_name(pattern: &str, notebook: &NotebookAPI) -> Result<Vec<Self>> {
-        todo!();
+        let res = notebook
+            .client
+            .get(notebook.build_url("/note/search/name"))
+            .json(pattern)
+            .send()
+            .await?
+            .json::<Vec<note_repr::NoteSummary>>()
+            .await?;
+
+        Ok(res.into_iter().map(Self::from).collect())
     }
 
     pub async fn fetch_by_tag(tag_id: i64, notebook: &NotebookAPI) -> Result<Vec<Self>> {
-        todo!();
+        let res = notebook
+            .client
+            .get(notebook.build_url("/note/search/tag"))
+            .json(&tag_id)
+            .send()
+            .await?
+            .json::<Vec<note_repr::NoteSummary>>()
+            .await?;
+
+        Ok(res.into_iter().map(Self::from).collect())
     }
 }

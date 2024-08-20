@@ -658,6 +658,7 @@ dependencies = [
  "ratatui",
  "reqwest",
  "scopeguard",
+ "serde-error",
  "tokio",
  "unicode-segmentation",
 ]

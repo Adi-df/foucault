@@ -52,8 +52,7 @@ pub async fn run_note_tag_adding_state(
                         .note_tags_managing_data
                         .note
                         .validate_new_tag(tag.id(), notebook)
-                        .await
-                        .is_ok()
+                        .await?
                 } else {
                     false
                 }
@@ -70,8 +69,7 @@ pub async fn run_note_tag_adding_state(
                     .note_tags_managing_data
                     .note
                     .validate_new_tag(tag.id(), notebook)
-                    .await
-                    .is_ok()
+                    .await?
             } else {
                 false
             };
@@ -84,8 +82,7 @@ pub async fn run_note_tag_adding_state(
                     .note_tags_managing_data
                     .note
                     .validate_new_tag(tag.id(), notebook)
-                    .await
-                    .is_ok() =>
+                    .await? =>
             {
                 info!(
                     "Add tag {} to note {}.",

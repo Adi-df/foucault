@@ -14,6 +14,7 @@ anyhow = "1.0.86"
 ratatui = "0.26.3"
 scopeguard = "1.2.0"
 crossterm = "0.27.0"
+serde-error = "0.1.2"
 markdown = "1.0.0-alpha.20"
 unicode-segmentation = "1.11.0"
 log = { version = "0.4.22", features = ["std"] }

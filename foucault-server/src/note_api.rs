@@ -38,7 +38,7 @@ pub struct UpdateLinksParam {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ValidateNewTagParam(AddTagParam);
+pub struct ValidateNewTagParam(pub AddTagParam);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AddTagParam {
@@ -47,7 +47,7 @@ pub struct AddTagParam {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RemoveTagParam(AddTagParam);
+pub struct RemoveTagParam(pub AddTagParam);
 
 pub(crate) async fn create(
     State(state): State<AppState>,

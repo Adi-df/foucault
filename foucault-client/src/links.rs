@@ -17,4 +17,8 @@ impl Link {
             inner: link_repr::Link { from, to },
         }
     }
+
+    pub fn get_inner(&self) -> &link_repr::Link {
+        &self.inner
+    }
 }
