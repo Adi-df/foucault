@@ -10,6 +10,10 @@ use std::sync::LazyLock;
 
 use log::error;
 
+use reqwest::Client;
+
+use foucault_server::notebook::Notebook;
+
 pub mod explore;
 mod helpers;
 mod links;
@@ -30,4 +34,15 @@ pub static APP_DIR_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
 pub struct NotebookAPI {
     pub name: String,
     pub endpoint: &'static str,
+    pub client: Client,
+}
+
+impl NotebookAPI {
+    pub fn new(notebook: &Notebook) -> Self {
+        Self {
+            name: notebook.name.clone(),
+            endpoint: "0.0.0.0:8078",
+            client: Client::new(),
+        }
+    }
 }

@@ -86,10 +86,7 @@ async fn main() -> Result<()> {
             Commands::Open { name } => {
                 info!("Open notebook {name}.");
                 let notebook = Arc::new(Notebook::open_notebook(name, &APP_DIR_PATH).await?);
-                let notebook_api = NotebookAPI {
-                    name: notebook.name.clone(),
-                    endpoint: "0.0.0.0:8078",
-                };
+                let notebook_api = NotebookAPI::new(&notebook);
                 tokio::spawn(foucault_server::serve(notebook));
                 explore(&notebook_api).await?;
             }
@@ -117,10 +114,7 @@ async fn main() -> Result<()> {
         if let Some(name) = open_selector(&APP_DIR_PATH)? {
             info!("Open notebook selected : {name}.");
             let notebook = Arc::new(Notebook::open_notebook(name.as_str(), &APP_DIR_PATH).await?);
-            let notebook_api = NotebookAPI {
-                name: notebook.name.clone(),
-                endpoint: "0.0.0.0:8078",
-            };
+            let notebook_api = NotebookAPI::new(&notebook);
             tokio::spawn(foucault_server::serve(notebook));
             explore(&notebook_api).await?;
         }
