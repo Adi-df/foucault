@@ -265,7 +265,10 @@ pub(crate) async fn search_by_name(
     .collect()
 }
 
-pub(crate) async fn fetch_by_tag(tag_id: i64, connection: &SqlitePool) -> Result<Vec<NoteSummary>> {
+pub(crate) async fn search_by_tag(
+    tag_id: i64,
+    connection: &SqlitePool,
+) -> Result<Vec<NoteSummary>> {
     join_all(
             sqlx::query!(
                 "SELECT notes_table.id, notes_table.name FROM tags_join_table INNER JOIN notes_table ON tags_join_table.note_id = notes_table.id WHERE tag_id=$1",

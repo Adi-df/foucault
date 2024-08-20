@@ -6,7 +6,7 @@
 #![allow(clippy::module_name_repetitions)]
 
 pub mod link_repr;
-mod note_api;
+pub mod note_api;
 pub mod note_repr;
 pub mod notebook;
 pub mod tag_repr;
@@ -17,7 +17,7 @@ use anyhow::Result;
 
 use axum::extract::State;
 use axum::http::StatusCode;
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post, put};
 use axum::Router;
 use tokio::net::TcpListener;
 
@@ -33,6 +33,18 @@ pub async fn serve(notebook: Arc<Notebook>) -> Result<()> {
     let app = Router::new()
         .route("/name", get(notebook_name))
         .route("/note/create", post(note_api::create))
+        .route("/note/delete", delete(note_api::delete))
+        .route("/note/validate/name", get(note_api::validate_name))
+        .route("/note/validate/tag", get(note_api::validate_new_tag))
+        .route("/note/load/id", get(note_api::load_by_id))
+        .route("/note/load/name", get(note_api::load_by_name))
+        .route("/note/search/name", get(note_api::search_by_name))
+        .route("/note/search/tag", get(note_api::search_by_tag))
+        .route("/note/update/name", put(note_api::rename))
+        .route("/note/update/content", put(note_api::update_content))
+        .route("/note/update/links", put(note_api::update_links))
+        .route("/note/tag/add", post(note_api::add_tag))
+        .route("/note/tag/remove", delete(note_api::remove_tag))
         .with_state(state);
 
     let listener = TcpListener::bind("0.0.0.0:8078")
