@@ -11,9 +11,7 @@ use foucault_server::{
     tag_repr,
 };
 
-use crate::links::Link;
-use crate::tag::Tag;
-use crate::NotebookAPI;
+use crate::{links::Link, tag::Tag, NotebookAPI};
 
 #[derive(Debug)]
 pub struct Note {
@@ -56,7 +54,7 @@ impl Note {
                 inner: note_repr::Note { id, name, content },
             }),
             Err(err) => {
-                panic!("The note name was invalid : {}", err);
+                panic!("The note name was invalid : {err}");
             }
         }
     }
@@ -144,7 +142,7 @@ impl Note {
             .await?;
 
         if let Some(err) = res {
-            panic!("The note name is invalid : {}", err);
+            panic!("The note name is invalid : {err}");
         }
 
         self.inner.name = name;
@@ -231,7 +229,7 @@ impl Note {
             .await?;
 
         if let Some(err) = res {
-            panic!("Failled to add tag : {}", err);
+            panic!("Failled to add tag : {err}");
         }
 
         Ok(())

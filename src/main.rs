@@ -46,6 +46,9 @@ enum Commands {
     Delete {
         name: String,
     },
+    Serve {
+        name: String,
+    },
 }
 
 #[tokio::main]
@@ -87,6 +90,14 @@ async fn main() -> Result<()> {
                 let notebook_api = NotebookAPI::new(&notebook);
                 tokio::spawn(foucault_server::serve(notebook));
                 explore(&notebook_api).await?;
+            }
+            Commands::Serve { name } => {
+                info!("Open notebook {name}.");
+                let notebook = Arc::new(Notebook::open_notebook(name, &APP_DIR_PATH).await?);
+                println!("Serving notebook {} at 0.0.0.0:8078", &notebook.name);
+                foucault_server::serve(notebook)
+                    .await
+                    .expect("An error occured when serving the notebook");
             }
             Commands::Delete { name } => {
                 info!("Delete notebook {name}.");

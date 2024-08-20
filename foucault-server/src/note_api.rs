@@ -67,7 +67,7 @@ pub(crate) async fn create(
             if let Some(note_err) = err.downcast_ref::<NoteError>() {
                 (StatusCode::NOT_ACCEPTABLE, Json::from(Err(*note_err)))
             } else {
-                panic!("Error encountered during note creation : {}", err);
+                panic!("Error encountered during note creation : {err}");
             }
         }
     }
@@ -118,7 +118,7 @@ pub(crate) async fn rename(
             if let Some(note_err) = err.downcast_ref::<NoteError>() {
                 (StatusCode::NOT_ACCEPTABLE, Json::from(Some(*note_err)))
             } else {
-                panic!("Error encountered during note renaming : {}", err);
+                panic!("Error encountered during note renaming : {err}");
             }
         }
     }
@@ -191,7 +191,7 @@ pub(crate) async fn add_tag(
                     Json::from(Some(Error::new(&*err))),
                 )
             } else {
-                panic!("Error encountered while adding tag : {}", err);
+                panic!("Error encountered while adding tag : {err}");
             }
         }
     }

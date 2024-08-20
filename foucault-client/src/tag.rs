@@ -29,7 +29,7 @@ impl Tag {
         match res {
             Ok(tag) => Ok(Self::from(tag)),
             Err(err) => {
-                panic!("The tag name was invalid : {}", err);
+                panic!("The tag name was invalid : {err}");
             }
         }
     }
