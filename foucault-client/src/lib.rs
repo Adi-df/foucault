@@ -57,6 +57,10 @@ pub enum ApiError {
     UnableToConnect(reqwest::Error),
     #[error("Unable to ping notebook name : {0}")]
     UnableToPingName(reqwest::Error),
+    #[error("Unable to contact the remote notebook : {0}")]
+    UnableToContactRemoteNotebook(reqwest::Error),
+    #[error("Unable to parse the request result : {0}")]
+    UnableToParseResponse(reqwest::Error),
 }
 
 pub struct NotebookAPI {
@@ -69,10 +73,10 @@ impl NotebookAPI {
     pub async fn new(endpoint: String) -> Result<Self> {
         let name = reqwest::get(format!("{endpoint}/name"))
             .await
-            .map_err(|err| ApiError::UnableToConnect(err))?
+            .map_err(ApiError::UnableToConnect)?
             .text()
             .await
-            .map_err(|err| ApiError::UnableToPingName(err))?;
+            .map_err(ApiError::UnableToPingName)?;
 
         Ok(Self {
             name,

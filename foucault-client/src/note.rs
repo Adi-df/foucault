@@ -11,7 +11,7 @@ use foucault_server::{
     tag_repr,
 };
 
-use crate::{links::Link, tag::Tag, NotebookAPI};
+use crate::{links::Link, tag::Tag, ApiError, NotebookAPI};
 
 #[derive(Debug)]
 pub struct Note {
@@ -45,18 +45,16 @@ impl Note {
                 content: content.clone(),
             })
             .send()
-            .await?
+            .await
+            .map_err(ApiError::UnableToContactRemoteNotebook)?
             .json::<Result<i64, NoteError>>()
-            .await?;
+            .await
+            .map_err(ApiError::UnableToParseResponse)?;
 
-        match res {
-            Ok(id) => Ok(Self {
-                inner: note_repr::Note { id, name, content },
-            }),
-            Err(err) => {
-                panic!("The note name was invalid : {err}");
-            }
-        }
+        res.map(|id| Self {
+            inner: note_repr::Note { id, name, content },
+        })
+        .map_err(anyhow::Error::from)
     }
 
     pub async fn validate_name(name: &str, notebook: &NotebookAPI) -> Result<bool> {
@@ -65,9 +63,11 @@ impl Note {
             .get(notebook.build_url("/note/validate/name"))
             .json(name)
             .send()
-            .await?
+            .await
+            .map_err(ApiError::UnableToContactRemoteNotebook)?
             .json::<Option<NoteError>>()
-            .await?;
+            .await
+            .map_err(ApiError::UnableToParseResponse)?;
 
         Ok(res.is_none())
     }
@@ -78,9 +78,11 @@ impl Note {
             .get(notebook.build_url("/note/load/id"))
             .json(&id)
             .send()
-            .await?
+            .await
+            .map_err(ApiError::UnableToContactRemoteNotebook)?
             .json::<Option<note_repr::Note>>()
-            .await?;
+            .await
+            .map_err(ApiError::UnableToParseResponse)?;
 
         Ok(res.map(Self::from))
     }
@@ -98,9 +100,11 @@ impl Note {
             .get(notebook.build_url("/note/load/name"))
             .json(name)
             .send()
-            .await?
+            .await
+            .map_err(ApiError::UnableToContactRemoteNotebook)?
             .json::<Option<note_repr::Note>>()
-            .await?;
+            .await
+            .map_err(ApiError::UnableToParseResponse)?;
 
         Ok(res.map(Self::from))
     }
@@ -121,9 +125,11 @@ impl Note {
             .get(notebook.build_url("/note/tag/list"))
             .json(&self.id())
             .send()
-            .await?
+            .await
+            .map_err(ApiError::UnableToContactRemoteNotebook)?
             .json::<Vec<tag_repr::Tag>>()
-            .await?;
+            .await
+            .map_err(ApiError::UnableToParseResponse)?;
 
         Ok(res.into_iter().map(Tag::from).collect())
     }
@@ -137,9 +143,11 @@ impl Note {
                 name: name.clone(),
             })
             .send()
-            .await?
+            .await
+            .map_err(ApiError::UnableToContactRemoteNotebook)?
             .json::<Option<NoteError>>()
-            .await?;
+            .await
+            .map_err(ApiError::UnableToParseResponse)?;
 
         if let Some(err) = res {
             panic!("The note name is invalid : {err}");
@@ -155,7 +163,8 @@ impl Note {
             .delete(notebook.build_url("/note/delete"))
             .json(&self.id())
             .send()
-            .await?;
+            .await
+            .map_err(ApiError::UnableToContactRemoteNotebook)?;
         Ok(())
     }
 
@@ -176,7 +185,8 @@ impl Note {
                 content: new_content.clone(),
             })
             .send()
-            .await?;
+            .await
+            .map_err(ApiError::UnableToContactRemoteNotebook)?;
 
         self.inner.content = new_content;
         Ok(())
@@ -194,7 +204,8 @@ impl Note {
                     .collect(),
             })
             .send()
-            .await?;
+            .await
+            .map_err(ApiError::UnableToContactRemoteNotebook)?;
 
         Ok(())
     }
@@ -208,9 +219,11 @@ impl Note {
                 tag_id,
             })
             .send()
-            .await?
+            .await
+            .map_err(ApiError::UnableToContactRemoteNotebook)?
             .json::<Option<Error>>()
-            .await?;
+            .await
+            .map_err(ApiError::UnableToParseResponse)?;
 
         Ok(res.is_none())
     }
@@ -224,9 +237,11 @@ impl Note {
                 tag_id,
             })
             .send()
-            .await?
+            .await
+            .map_err(ApiError::UnableToContactRemoteNotebook)?
             .json::<Option<Error>>()
-            .await?;
+            .await
+            .map_err(ApiError::UnableToParseResponse)?;
 
         if let Some(err) = res {
             panic!("Failled to add tag : {err}");
@@ -244,7 +259,8 @@ impl Note {
                 tag_id,
             })
             .send()
-            .await?;
+            .await
+            .map_err(ApiError::UnableToContactRemoteNotebook)?;
 
         Ok(())
     }
@@ -267,9 +283,11 @@ impl NoteSummary {
             .get(notebook.build_url("/note/search/name"))
             .json(pattern)
             .send()
-            .await?
+            .await
+            .map_err(ApiError::UnableToContactRemoteNotebook)?
             .json::<Vec<note_repr::NoteSummary>>()
-            .await?;
+            .await
+            .map_err(ApiError::UnableToParseResponse)?;
 
         Ok(res.into_iter().map(Self::from).collect())
     }
@@ -280,9 +298,11 @@ impl NoteSummary {
             .get(notebook.build_url("/note/search/tag"))
             .json(&tag_id)
             .send()
-            .await?
+            .await
+            .map_err(ApiError::UnableToContactRemoteNotebook)?
             .json::<Vec<note_repr::NoteSummary>>()
-            .await?;
+            .await
+            .map_err(ApiError::UnableToParseResponse)?;
 
         Ok(res.into_iter().map(Self::from).collect())
     }
