@@ -49,12 +49,12 @@ pub fn open_selector(dir: &Path) -> Result<Option<String>> {
             file_path.and_then(|file_path| {
                 file_path
                     .file_stem()
-                    .ok_or(
+                    .ok_or_else(|| {
                         NotebookSelectorError::InvalidNotebookName {
                             name: file_path.file_name().unwrap().to_os_string(),
                         }
-                        .into(),
-                    )
+                        .into()
+                    })
                     .and_then(|stem| {
                         stem.to_os_string().into_string().map_err(|e| {
                             NotebookSelectorError::InvalidNotebookName { name: e.clone() }.into()

@@ -9,7 +9,6 @@ mod notebook_selector;
 
 use std::{env, sync::Arc};
 
-use anyhow::Result;
 use log::{error, info};
 
 use tokio::fs;
