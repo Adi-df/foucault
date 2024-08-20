@@ -1,18 +1,16 @@
-use std::io::stdout;
-use std::time::Duration;
+use std::{io::stdout, time::Duration};
 
 use anyhow::Result;
 use log::info;
 use scopeguard::defer;
 
-use crossterm::event::{Event, KeyEventKind};
-use crossterm::terminal::{
-    disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
-};
 use crossterm::{event, ExecutableCommand};
-use ratatui::prelude::CrosstermBackend;
-use ratatui::widgets::Clear;
-use ratatui::Terminal;
+use crossterm::{
+    event::{Event, KeyEventKind},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+};
+
+use ratatui::{prelude::CrosstermBackend, widgets::Clear, Terminal};
 
 use crate::states::State;
 use crate::NotebookAPI;

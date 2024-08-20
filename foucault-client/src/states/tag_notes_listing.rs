@@ -2,20 +2,23 @@ use anyhow::Result;
 use log::info;
 
 use crossterm::event::{KeyCode, KeyEvent};
-use ratatui::prelude::{Constraint, Direction, Layout, Margin};
-use ratatui::style::{Color, Style};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{
-    Block, BorderType, Borders, List, ListState, Padding, Paragraph, Scrollbar,
-    ScrollbarOrientation, ScrollbarState,
+use ratatui::{
+    prelude::{Constraint, Direction, Layout, Margin},
+    style::{Color, Style},
+    text::{Line, Span},
+    widgets::{
+        Block, BorderType, Borders, List, ListState, Padding, Paragraph, Scrollbar,
+        ScrollbarOrientation, ScrollbarState,
+    },
 };
 
-use crate::helpers::DiscardResult;
-use crate::note::{Note, NoteSummary};
-use crate::states::note_viewing::NoteViewingStateData;
-use crate::states::{State, Terminal};
-use crate::tag::Tag;
-use crate::NotebookAPI;
+use crate::{
+    helpers::DiscardResult,
+    note::{Note, NoteSummary},
+    states::{note_viewing::NoteViewingStateData, State, Terminal},
+    tag::Tag,
+    NotebookAPI,
+};
 
 pub struct TagNotesListingStateData {
     pub tag: Tag,

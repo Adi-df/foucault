@@ -7,8 +7,7 @@
 
 mod notebook_selector;
 
-use std::env;
-use std::sync::Arc;
+use std::{env, sync::Arc};
 
 use anyhow::Result;
 use log::{error, info};
@@ -18,8 +17,7 @@ use tokio::fs;
 use clap::{Parser, Subcommand};
 use question::{Answer, Question};
 
-use foucault_client::explore::explore;
-use foucault_client::{NotebookAPI, APP_DIR_PATH};
+use foucault_client::{explore::explore, NotebookAPI, APP_DIR_PATH};
 use foucault_server::notebook::Notebook;
 
 use crate::notebook_selector::open_selector;

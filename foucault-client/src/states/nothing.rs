@@ -2,18 +2,22 @@ use anyhow::Result;
 use log::info;
 
 use crossterm::event::{KeyCode, KeyEvent};
-use ratatui::layout::{Constraint, Direction, Layout};
-use ratatui::prelude::Alignment;
-use ratatui::style::{Color, Modifier, Style};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, BorderType, Borders, Cell, Padding, Paragraph, Row, Table};
+use ratatui::{
+    layout::{Constraint, Direction, Layout},
+    prelude::Alignment,
+    style::{Color, Modifier, Style},
+    text::{Line, Span},
+    widgets::{Block, BorderType, Borders, Cell, Padding, Paragraph, Row, Table},
+};
 
-use crate::helpers::{create_popup_proportion, Capitalize, DiscardResult};
-use crate::states::note_creating::NoteCreatingStateData;
-use crate::states::notes_managing::NotesManagingStateData;
-use crate::states::tags_managing::TagsManagingStateData;
-use crate::states::{State, Terminal};
-use crate::NotebookAPI;
+use crate::{
+    helpers::{create_popup_proportion, Capitalize, DiscardResult},
+    states::{
+        note_creating::NoteCreatingStateData, notes_managing::NotesManagingStateData,
+        tags_managing::TagsManagingStateData, State, Terminal,
+    },
+    NotebookAPI,
+};
 
 pub async fn run_nothing_state(key_event: KeyEvent, notebook: &NotebookAPI) -> Result<State> {
     Ok(match key_event.code {

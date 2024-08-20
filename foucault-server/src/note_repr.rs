@@ -1,15 +1,16 @@
 use anyhow::{Error, Result};
-use serde::{Deserialize, Serialize};
+use log::info;
 use thiserror::Error;
 
-use log::info;
+use serde::{Deserialize, Serialize};
 
 use futures::future::join_all;
 use sqlx::SqlitePool;
 
-use crate::link_repr::Link;
-use crate::tag_repr;
-use crate::tag_repr::{Tag, TagError};
+use crate::{
+    link_repr::Link,
+    tag_repr::{self, Tag, TagError},
+};
 
 #[derive(Debug, Clone, Copy, Error, Serialize, Deserialize)]
 pub enum NoteError {

@@ -16,10 +16,12 @@ use std::sync::Arc;
 
 use anyhow::Result;
 
-use axum::extract::State;
-use axum::http::StatusCode;
-use axum::routing::{delete, get, patch, post};
-use axum::Router;
+use axum::{
+    extract::State,
+    http::StatusCode,
+    routing::{delete, get, patch, post},
+    Router,
+};
 use tokio::net::TcpListener;
 
 use crate::notebook::Notebook;

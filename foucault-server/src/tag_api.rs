@@ -1,10 +1,9 @@
-use axum::extract::State;
-use axum::http::StatusCode;
-use axum::Json;
+use axum::{extract::State, http::StatusCode, Json};
 
-use crate::tag_repr;
-use crate::tag_repr::{Tag, TagError};
-use crate::AppState;
+use crate::{
+    tag_repr::{self, Tag, TagError},
+    AppState,
+};
 
 pub(crate) async fn create(
     State(state): State<AppState>,

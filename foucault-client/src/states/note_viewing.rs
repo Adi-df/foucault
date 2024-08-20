@@ -1,39 +1,44 @@
-use std::env;
-use std::io::stdout;
-
-use tokio::fs;
-use tokio::process::Command;
+use std::{env, io::stdout};
 
 use anyhow::Result;
 use log::info;
 use scopeguard::defer;
 
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
-use crossterm::ExecutableCommand;
-use ratatui::prelude::{Alignment, Constraint, Direction, Layout, Margin, Rect};
-use ratatui::style::{Color, Modifier, Style};
-use ratatui::text::Text;
-use ratatui::widgets::{
-    Block, BorderType, Borders, Clear, Padding, Paragraph, Row, Scrollbar, ScrollbarOrientation,
-    ScrollbarState, Table,
+use tokio::{fs, process::Command};
+
+use crossterm::{
+    event::{KeyCode, KeyEvent, KeyModifiers},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen},
+    ExecutableCommand,
 };
-use ratatui::Frame;
+use ratatui::{
+    prelude::{Alignment, Constraint, Direction, Layout, Margin, Rect},
+    style::{Color, Modifier, Style},
+    text::Text,
+    widgets::{
+        Block, BorderType, Borders, Clear, Padding, Paragraph, Row, Scrollbar,
+        ScrollbarOrientation, ScrollbarState, Table,
+    },
+    Frame,
+};
 
-use crate::APP_DIR_PATH;
-
-use crate::helpers::{create_bottom_line, create_row_help_layout, DiscardResult};
-use crate::links::Link;
-use crate::markdown::elements::{InlineElements, SelectableInlineElements};
-use crate::markdown::{combine, lines, parse, ParsedMarkdown};
-use crate::note::Note;
-use crate::states::note_deleting::NoteDeletingStateData;
-use crate::states::note_renaming::NoteRenamingStateData;
-use crate::states::note_tags_managing::NoteTagsManagingStateData;
-use crate::states::notes_managing::NotesManagingStateData;
-use crate::states::{State, Terminal};
-use crate::tag::Tag;
-use crate::NotebookAPI;
+use crate::{
+    helpers::{create_bottom_line, create_row_help_layout, DiscardResult},
+    links::Link,
+    markdown::{
+        combine,
+        elements::{InlineElements, SelectableInlineElements},
+        lines, parse, ParsedMarkdown,
+    },
+    note::Note,
+    states::{
+        note_deleting::NoteDeletingStateData, note_renaming::NoteRenamingStateData,
+        note_tags_managing::NoteTagsManagingStateData, notes_managing::NotesManagingStateData,
+        State, Terminal,
+    },
+    tag::Tag,
+    NotebookAPI, APP_DIR_PATH,
+};
 
 pub struct NoteViewingStateData {
     pub note: Note,

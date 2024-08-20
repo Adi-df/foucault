@@ -1,4 +1,3 @@
-use core::panic;
 use std::path::Path;
 
 use tokio::fs;
@@ -6,8 +5,11 @@ use tokio::fs;
 use anyhow::Result;
 use serde_error::Error;
 
-use foucault_server::note_repr::NoteError;
-use foucault_server::{note_api, note_repr, tag_repr};
+use foucault_server::{
+    note_api,
+    note_repr::{self, NoteError},
+    tag_repr,
+};
 
 use crate::links::Link;
 use crate::tag::Tag;

@@ -1,28 +1,25 @@
-use std::ffi::OsString;
-use std::io::stdout;
-use std::path::Path;
-use std::time::Duration;
-use std::{env, fs};
+use std::{env, ffi::OsString, fs, io::stdout, path::Path, time::Duration};
 
 use anyhow::Result;
 use log::info;
 use scopeguard::defer;
 use thiserror::Error;
 
-use crossterm::event::{self, Event, KeyCode, KeyEventKind};
-use crossterm::terminal::{
-    disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
+use crossterm::{
+    event::{self, Event, KeyCode, KeyEventKind},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    ExecutableCommand,
 };
-use crossterm::ExecutableCommand;
-use ratatui::prelude::{Alignment, CrosstermBackend, Margin};
-use ratatui::style::Style;
-use ratatui::style::{Color, Modifier};
-use ratatui::text::Text;
-use ratatui::widgets::{
-    Block, BorderType, Borders, List, ListDirection, ListState, Padding, Scrollbar,
-    ScrollbarOrientation, ScrollbarState,
+use ratatui::{
+    prelude::{Alignment, CrosstermBackend, Margin},
+    style::{Color, Modifier, Style},
+    text::Text,
+    widgets::{
+        Block, BorderType, Borders, List, ListDirection, ListState, Padding, Scrollbar,
+        ScrollbarOrientation, ScrollbarState,
+    },
+    Terminal,
 };
-use ratatui::Terminal;
 
 #[derive(Clone, Debug, Error)]
 pub enum NotebookSelectorError {

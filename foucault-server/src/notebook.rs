@@ -1,13 +1,15 @@
-use std::env;
-use std::path::{Path, PathBuf};
-use tokio::fs;
-
-use sqlx::sqlite::SqlitePoolOptions;
-use sqlx::SqlitePool;
+use std::{
+    env,
+    path::{Path, PathBuf},
+};
 
 use anyhow::Result;
 use log::error;
 use thiserror::Error;
+
+use tokio::fs;
+
+use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
 
 pub struct Notebook {
     pub name: String,

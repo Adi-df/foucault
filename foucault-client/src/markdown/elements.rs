@@ -1,11 +1,13 @@
-use std::borrow::Cow;
-use std::ops::Deref;
+use std::{borrow::Cow, ops::Deref};
 
 use markdown::mdast;
 
-use ratatui::style::{Color, Modifier, Style, Stylize};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::Paragraph;
+use ratatui::{
+    style::{Color, Modifier, Style, Stylize},
+    text::{Line, Span},
+    widgets::Paragraph,
+};
+
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::markdown::{

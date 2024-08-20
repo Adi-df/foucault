@@ -2,22 +2,26 @@ use anyhow::Result;
 use log::info;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use ratatui::prelude::{Constraint, Direction, Layout, Margin, Rect};
-use ratatui::style::{Color, Modifier, Style};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{
-    Block, BorderType, Borders, Clear, List, ListState, Padding, Paragraph, Scrollbar,
-    ScrollbarOrientation, ScrollbarState,
+use ratatui::{
+    prelude::{Constraint, Direction, Layout, Margin, Rect},
+    style::{Color, Modifier, Style},
+    text::{Line, Span},
+    widgets::{
+        Block, BorderType, Borders, Clear, List, ListState, Padding, Paragraph, Scrollbar,
+        ScrollbarOrientation, ScrollbarState,
+    },
+    Frame,
 };
-use ratatui::Frame;
 
-use crate::helpers::{create_bottom_line, create_row_help_layout, DiscardResult};
-use crate::states::tag_creating::TagsCreatingStateData;
-use crate::states::tag_deleting::TagsDeletingStateData;
-use crate::states::tag_notes_listing::TagNotesListingStateData;
-use crate::states::{State, Terminal};
-use crate::tag::Tag;
-use crate::NotebookAPI;
+use crate::{
+    helpers::{create_bottom_line, create_row_help_layout, DiscardResult},
+    states::{
+        tag_creating::TagsCreatingStateData, tag_deleting::TagsDeletingStateData,
+        tag_notes_listing::TagNotesListingStateData, State, Terminal,
+    },
+    tag::Tag,
+    NotebookAPI,
+};
 
 pub struct TagsManagingStateData {
     pub pattern: String,

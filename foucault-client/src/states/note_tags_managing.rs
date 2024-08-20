@@ -2,21 +2,25 @@ use anyhow::Result;
 use log::info;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use ratatui::prelude::{Constraint, Direction, Layout, Rect};
-use ratatui::style::{Color, Style};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, BorderType, Borders, Clear, List, ListState, Padding, Paragraph};
-use ratatui::Frame;
+use ratatui::{
+    prelude::{Constraint, Direction, Layout, Rect},
+    style::{Color, Style},
+    text::{Line, Span},
+    widgets::{Block, BorderType, Borders, Clear, List, ListState, Padding, Paragraph},
+    Frame,
+};
 
-use crate::helpers::{create_bottom_line, create_row_help_layout, DiscardResult};
-use crate::note::Note;
-use crate::states::note_tag_adding::NoteTagAddingStateData;
-use crate::states::note_tag_deleting::NoteTagDeletingStateData;
-use crate::states::note_viewing::NoteViewingStateData;
-use crate::states::tag_notes_listing::TagNotesListingStateData;
-use crate::states::{State, Terminal};
-use crate::tag::Tag;
-use crate::NotebookAPI;
+use crate::{
+    helpers::{create_bottom_line, create_row_help_layout, DiscardResult},
+    note::Note,
+    states::{
+        note_tag_adding::NoteTagAddingStateData, note_tag_deleting::NoteTagDeletingStateData,
+        note_viewing::NoteViewingStateData, tag_notes_listing::TagNotesListingStateData, State,
+        Terminal,
+    },
+    tag::Tag,
+    NotebookAPI,
+};
 
 pub struct NoteTagsManagingStateData {
     pub note: Note,

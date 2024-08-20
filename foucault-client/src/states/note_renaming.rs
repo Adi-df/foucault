@@ -4,11 +4,15 @@ use log::info;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::Block;
 
-use crate::helpers::{draw_text_prompt, DiscardResult};
-use crate::note::Note;
-use crate::states::note_viewing::{draw_viewed_note, NoteViewingStateData};
-use crate::states::{State, Terminal};
-use crate::NotebookAPI;
+use crate::{
+    helpers::{draw_text_prompt, DiscardResult},
+    note::Note,
+    states::{
+        note_viewing::{draw_viewed_note, NoteViewingStateData},
+        State, Terminal,
+    },
+    NotebookAPI,
+};
 
 pub struct NoteRenamingStateData {
     pub note_viewing_data: NoteViewingStateData,

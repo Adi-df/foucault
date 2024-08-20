@@ -17,51 +17,41 @@ use std::io::Stdout;
 use anyhow::Result;
 
 use crossterm::event::KeyEvent;
-use ratatui::prelude::CrosstermBackend;
-use ratatui::style::{Color, Style};
-use ratatui::widgets::{Block, BorderType, Borders, Padding};
-use ratatui::Terminal as UITerminal;
-
-use crate::NotebookAPI;
-
-use crate::states::note_creating::{
-    draw_note_creating_state, run_note_creating_state, NoteCreatingStateData,
-};
-use crate::states::note_deleting::{
-    draw_note_deleting_state, run_note_deleting_state, NoteDeletingStateData,
-};
-use crate::states::note_renaming::{
-    draw_note_renaming_state, run_note_renaming_state, NoteRenamingStateData,
-};
-use crate::states::note_tags_managing::NoteTagsManagingStateData;
-use crate::states::note_viewing::{
-    draw_note_viewing_state, run_note_viewing_state, NoteViewingStateData,
-};
-use crate::states::notes_managing::{
-    draw_note_managing_state, run_note_managing_state, NotesManagingStateData,
-};
-use crate::states::nothing::{draw_nothing_state, run_nothing_state};
-use crate::states::tag_creating::{
-    draw_tag_creating_state, run_tag_creating_state, TagsCreatingStateData,
-};
-use crate::states::tag_deleting::{
-    draw_tag_deleting_state, run_tag_deleting_state, TagsDeletingStateData,
-};
-use crate::states::tags_managing::{
-    draw_tags_managing_state, run_tags_managing_state, TagsManagingStateData,
+use ratatui::{
+    prelude::CrosstermBackend,
+    style::{Color, Style},
+    widgets::{Block, BorderType, Borders, Padding},
+    Terminal as UITerminal,
 };
 
-use crate::states::note_tag_adding::{
-    draw_note_tag_adding_state_data, run_note_tag_adding_state, NoteTagAddingStateData,
-};
-use crate::states::note_tag_deleting::{
-    draw_note_tag_deleting_state_data, run_note_tag_deleting_state, NoteTagDeletingStateData,
-};
-use crate::states::note_tags_managing::{
-    draw_note_tags_managing_state, run_note_tags_managing_state,
-};
-use crate::states::tag_notes_listing::{
-    draw_tag_notes_listing_state, run_tag_notes_listing_state, TagNotesListingStateData,
+use crate::{
+    states::{
+        note_creating::{draw_note_creating_state, run_note_creating_state, NoteCreatingStateData},
+        note_deleting::{draw_note_deleting_state, run_note_deleting_state, NoteDeletingStateData},
+        note_renaming::{draw_note_renaming_state, run_note_renaming_state, NoteRenamingStateData},
+        note_tag_adding::{
+            draw_note_tag_adding_state_data, run_note_tag_adding_state, NoteTagAddingStateData,
+        },
+        note_tag_deleting::{
+            draw_note_tag_deleting_state_data, run_note_tag_deleting_state,
+            NoteTagDeletingStateData,
+        },
+        note_tags_managing::{
+            draw_note_tags_managing_state, run_note_tags_managing_state, NoteTagsManagingStateData,
+        },
+        note_viewing::{draw_note_viewing_state, run_note_viewing_state, NoteViewingStateData},
+        notes_managing::{
+            draw_note_managing_state, run_note_managing_state, NotesManagingStateData,
+        },
+        nothing::{draw_nothing_state, run_nothing_state},
+        tag_creating::{draw_tag_creating_state, run_tag_creating_state, TagsCreatingStateData},
+        tag_deleting::{draw_tag_deleting_state, run_tag_deleting_state, TagsDeletingStateData},
+        tag_notes_listing::{
+            draw_tag_notes_listing_state, run_tag_notes_listing_state, TagNotesListingStateData,
+        },
+        tags_managing::{draw_tags_managing_state, run_tags_managing_state, TagsManagingStateData},
+    },
+    NotebookAPI,
 };
 
 pub type Terminal = UITerminal<CrosstermBackend<Stdout>>;

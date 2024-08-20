@@ -4,11 +4,15 @@ use log::info;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::Block;
 
-use crate::helpers::{draw_text_prompt, DiscardResult};
-use crate::states::note_tags_managing::{draw_note_tags_managing, NoteTagsManagingStateData};
-use crate::states::{State, Terminal};
-use crate::tag::Tag;
-use crate::NotebookAPI;
+use crate::{
+    helpers::{draw_text_prompt, DiscardResult},
+    states::{
+        note_tags_managing::{draw_note_tags_managing, NoteTagsManagingStateData},
+        State, Terminal,
+    },
+    tag::Tag,
+    NotebookAPI,
+};
 
 pub struct NoteTagAddingStateData {
     pub note_tags_managing_data: NoteTagsManagingStateData,

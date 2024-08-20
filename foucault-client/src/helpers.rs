@@ -1,10 +1,12 @@
 use anyhow::Result;
 
-use ratatui::prelude::{Alignment, Constraint, Direction, Layout, Rect};
-use ratatui::style::{Color, Modifier, Style, Stylize};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, BorderType, Borders, Cell, Clear, Padding, Paragraph, Row, Table};
-use ratatui::Frame;
+use ratatui::{
+    prelude::{Alignment, Constraint, Direction, Layout, Rect},
+    style::{Color, Modifier, Style, Stylize},
+    text::{Line, Span},
+    widgets::{Block, BorderType, Borders, Cell, Clear, Padding, Paragraph, Row, Table},
+    Frame,
+};
 
 pub fn create_popup_proportion(proportion: (u16, u16), rect: Rect) -> Rect {
     let vertical = Layout::new(

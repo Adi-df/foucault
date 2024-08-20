@@ -2,8 +2,10 @@ pub mod elements;
 
 use markdown::{to_mdast, ParseOptions};
 
-use ratatui::prelude::Alignment;
-use ratatui::style::{Color, Modifier};
+use ratatui::{
+    prelude::Alignment,
+    style::{Color, Modifier},
+};
 
 use crate::markdown::elements::{
     BlockElement, BlockElements, RenderedBlock, SelectableInlineElements,

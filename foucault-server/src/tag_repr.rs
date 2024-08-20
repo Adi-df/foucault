@@ -1,6 +1,7 @@
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
+
+use serde::{Deserialize, Serialize};
 
 use random_color::RandomColor;
 

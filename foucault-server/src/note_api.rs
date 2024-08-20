@@ -1,17 +1,17 @@
-use core::panic;
-
-use axum::extract::Json;
-use axum::extract::State;
-use axum::http::StatusCode;
+use axum::{
+    extract::{Json, State},
+    http::StatusCode,
+};
 
 use serde::{Deserialize, Serialize};
 use serde_error::Error;
 
-use crate::link_repr::Link;
-use crate::note_repr;
-use crate::note_repr::{Note, NoteError, NoteSummary};
-use crate::tag_repr::{Tag, TagError};
-use crate::AppState;
+use crate::{
+    link_repr::Link,
+    note_repr::{self, Note, NoteError, NoteSummary},
+    tag_repr::{Tag, TagError},
+    AppState,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateParam {

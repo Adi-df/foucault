@@ -4,10 +4,14 @@ use log::info;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::Block;
 
-use crate::helpers::{draw_yes_no_prompt, DiscardResult};
-use crate::states::note_viewing::{draw_viewed_note, NoteViewingStateData};
-use crate::states::{State, Terminal};
-use crate::NotebookAPI;
+use crate::{
+    helpers::{draw_yes_no_prompt, DiscardResult},
+    states::{
+        note_viewing::{draw_viewed_note, NoteViewingStateData},
+        State, Terminal,
+    },
+    NotebookAPI,
+};
 
 pub struct NoteDeletingStateData {
     pub note_viewing_data: NoteViewingStateData,

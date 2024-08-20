@@ -5,8 +5,7 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::module_name_repetitions)]
 
-use std::path::PathBuf;
-use std::sync::LazyLock;
+use std::{path::PathBuf, sync::LazyLock};
 
 use log::error;
 

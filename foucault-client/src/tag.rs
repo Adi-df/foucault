@@ -1,11 +1,8 @@
-use core::panic;
-
 use anyhow::Result;
-use foucault_server::tag_repr;
-use foucault_server::tag_repr::TagError;
 
-use crate::note::NoteSummary;
-use crate::NotebookAPI;
+use foucault_server::tag_repr::{self, TagError};
+
+use crate::{note::NoteSummary, NotebookAPI};
 
 #[derive(Debug, Clone)]
 pub struct Tag {
