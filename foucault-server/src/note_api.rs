@@ -15,26 +15,26 @@ use crate::AppState;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateParam {
-    name: String,
-    content: String,
+    pub name: String,
+    pub content: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RenameParam {
-    id: i64,
-    name: String,
+    pub id: i64,
+    pub name: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateContentParam {
-    id: i64,
-    content: String,
+    pub id: i64,
+    pub content: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateLinksParam {
-    id: i64,
-    links: Vec<Link>,
+    pub id: i64,
+    pub links: Vec<Link>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -42,8 +42,8 @@ pub struct ValidateNewTagParam(AddTagParam);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AddTagParam {
-    id: i64,
-    tag_id: i64,
+    pub id: i64,
+    pub tag_id: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

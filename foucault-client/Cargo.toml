@@ -18,4 +18,4 @@ markdown = "1.0.0-alpha.20"
 unicode-segmentation = "1.11.0"
 log = { version = "0.4.22", features = ["std"] }
 tokio = { version = "1.39.3", features = ["full"] }
-reqwest = "0.12.7"
+reqwest = { version = "0.12.7", features = ["json"] }

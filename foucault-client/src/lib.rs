@@ -41,8 +41,12 @@ impl NotebookAPI {
     pub fn new(notebook: &Notebook) -> Self {
         Self {
             name: notebook.name.clone(),
-            endpoint: "0.0.0.0:8078",
+            endpoint: "http://0.0.0.0:8078",
             client: Client::new(),
         }
+    }
+
+    pub fn build_url(&self, path: &str) -> String {
+        format!("{}{}", self.endpoint, path)
     }
 }

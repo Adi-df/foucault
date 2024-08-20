@@ -4,8 +4,8 @@ use tokio::fs;
 
 use anyhow::Result;
 
-use foucault_server::note_repr;
 use foucault_server::note_repr::NoteError;
+use foucault_server::{note_api, note_repr};
 
 use crate::links::Link;
 use crate::tag::Tag;
@@ -35,11 +35,39 @@ impl From<note_repr::NoteSummary> for NoteSummary {
 
 impl Note {
     pub async fn new(name: String, content: String, notebook: &NotebookAPI) -> Result<Self> {
-        todo!();
+        let res = notebook
+            .client
+            .post(notebook.build_url("/note/create"))
+            .json(&note_api::CreateParam {
+                name: name.clone(),
+                content: content.clone(),
+            })
+            .send()
+            .await?
+            .json::<Result<i64, NoteError>>()
+            .await?;
+
+        match res {
+            Ok(id) => Ok(Self {
+                inner: note_repr::Note { id, name, content },
+            }),
+            Err(err) => {
+                panic!("The note name was invalid : {}", err)
+            }
+        }
     }
 
-    pub async fn validate_new_name(name: &str, notebook: &NotebookAPI) -> Result<()> {
-        todo!();
+    pub async fn validate_new_name(name: &str, notebook: &NotebookAPI) -> Result<bool> {
+        let res = notebook
+            .client
+            .get(notebook.build_url("/note/validate/name"))
+            .json(name)
+            .send()
+            .await?
+            .json::<Option<NoteError>>()
+            .await?;
+
+        Ok(!res.is_some())
     }
 
     pub async fn load_by_id(id: i64, notebook: &NotebookAPI) -> Result<Option<Self>> {

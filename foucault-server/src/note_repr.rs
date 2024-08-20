@@ -2,6 +2,8 @@ use anyhow::{Error, Result};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+use log::info;
+
 use futures::future::join_all;
 use sqlx::SqlitePool;
 
@@ -36,6 +38,8 @@ pub struct NoteSummary {
 }
 
 pub(crate) async fn create(name: &str, content: &str, connection: &SqlitePool) -> Result<i64> {
+    info!("Insert note {} in the notebook", name);
+
     if let Some(err) = validate_name(name, connection).await? {
         return Err(err.into());
     };
@@ -57,14 +61,12 @@ pub(crate) async fn validate_name(
     connection: &SqlitePool,
 ) -> Result<Option<NoteError>> {
     if name.is_empty() {
-        return Ok(Some(NoteError::EmptyName));
+        Ok(Some(NoteError::EmptyName))
+    } else if name_exists(name, connection).await? {
+        Ok(Some(NoteError::AlreadyExists))
+    } else {
+        Ok(None)
     }
-
-    if name_exists(name, connection).await? {
-        return Ok(Some(NoteError::AlreadyExists));
-    }
-
-    Ok(None)
 }
 
 pub(crate) async fn name_exists(name: &str, connection: &SqlitePool) -> Result<bool> {
