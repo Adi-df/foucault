@@ -38,25 +38,39 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    #[command(about = "Create a new notebook")]
     Create {
+        #[arg(help = "The new notebook's name")]
         name: String,
-        #[arg(short, long)]
+        #[arg(short, long, help = "Create the notebook in the current directory")]
         local: bool,
     },
+    #[command(about = "Open a notebook")]
     Open {
+        #[arg(help = "The name of the notebook to open")]
         name: String,
-        #[arg(short, long)]
+        #[arg(
+            short,
+            long,
+            help = "The internal port that should be used by foucault"
+        )]
         port: Option<u16>,
     },
+    #[command(about = "Serve a notebook for remote connection")]
     Serve {
+        #[arg(help = "The name of the notebook to serve")]
         name: String,
-        #[arg(short, long)]
+        #[arg(short, long, help = "The port on which the notebook should be exposed")]
         port: Option<u16>,
     },
+    #[command(about = "Connect to a remote notebook")]
     Connect {
+        #[arg(help = "The address at which the notebook is hosted")]
         endpoint: String,
     },
+    #[command(about = "Delete a notebook")]
     Delete {
+        #[arg(help = "The name of the notebook to delete")]
         name: String,
     },
 }
