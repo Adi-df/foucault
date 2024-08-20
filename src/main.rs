@@ -22,6 +22,7 @@ use foucault_server::notebook::Notebook;
 
 use crate::notebook_selector::open_selector;
 
+pub const LOCAL_ADRESS: &str = "0.0.0.0";
 pub const DEFAULT_PORT: u16 = 8078;
 
 #[derive(Parser)]
@@ -47,13 +48,16 @@ enum Commands {
         #[arg(short, long)]
         port: Option<u16>,
     },
-    Delete {
-        name: String,
-    },
     Serve {
         name: String,
         #[arg(short, long)]
         port: Option<u16>,
+    },
+    Connect {
+        endpoint: String,
+    },
+    Delete {
+        name: String,
     },
 }
 
@@ -93,18 +97,28 @@ async fn main() -> Result<()> {
             Commands::Open { name, port } => {
                 info!("Open notebook {name}.");
                 let notebook = Arc::new(Notebook::open_notebook(name, &APP_DIR_PATH).await?);
-                let notebook_api = NotebookAPI::new(&notebook, port.unwrap_or(DEFAULT_PORT));
+                let endpoint = format!("http://{LOCAL_ADRESS}:{}", port.unwrap_or(DEFAULT_PORT));
                 tokio::spawn(foucault_server::serve(
                     notebook,
                     port.unwrap_or(DEFAULT_PORT),
                 ));
+                let notebook_api = NotebookAPI::new(endpoint)
+                    .await
+                    .expect("Unable to access the notebook");
+                explore(&notebook_api).await?;
+            }
+            Commands::Connect { endpoint } => {
+                info!("Connect to notebook at address {endpoint}.");
+                let notebook_api = NotebookAPI::new(endpoint.clone())
+                    .await
+                    .expect("Unable to access the notebook");
                 explore(&notebook_api).await?;
             }
             Commands::Serve { name, port } => {
                 info!("Open notebook {name}.");
                 let notebook = Arc::new(Notebook::open_notebook(name, &APP_DIR_PATH).await?);
                 println!(
-                    "Serving notebook {} at 0.0.0.0:{}.",
+                    "Serving notebook {} at {LOCAL_ADRESS}:{}",
                     &notebook.name,
                     port.unwrap_or(DEFAULT_PORT)
                 );
@@ -136,8 +150,11 @@ async fn main() -> Result<()> {
         if let Some(name) = open_selector(&APP_DIR_PATH)? {
             info!("Open notebook selected : {name}.");
             let notebook = Arc::new(Notebook::open_notebook(name.as_str(), &APP_DIR_PATH).await?);
-            let notebook_api = NotebookAPI::new(&notebook, DEFAULT_PORT);
+            let endpoint = format!("http://{LOCAL_ADRESS}:{DEFAULT_PORT}");
             tokio::spawn(foucault_server::serve(notebook, DEFAULT_PORT));
+            let notebook_api = NotebookAPI::new(endpoint)
+                .await
+                .expect("Unable to access the notebook");
             explore(&notebook_api).await?;
         }
     }

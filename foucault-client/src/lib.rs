@@ -7,11 +7,10 @@
 
 use std::{path::PathBuf, sync::LazyLock};
 
+use anyhow::Result;
 use log::error;
 
 use reqwest::Client;
-
-use foucault_server::notebook::Notebook;
 
 pub mod explore;
 mod helpers;
@@ -37,14 +36,17 @@ pub struct NotebookAPI {
 }
 
 impl NotebookAPI {
-    #[must_use]
-    pub fn new(notebook: &Notebook, port: u16) -> Self {
-        let endpoint = format!("0.0.0.0:{port}");
-        Self {
-            name: notebook.name.clone(),
+    pub async fn new(endpoint: String) -> Result<Self> {
+        let name = reqwest::get(format!("{endpoint}/name"))
+            .await?
+            .text()
+            .await?;
+
+        Ok(Self {
+            name,
             endpoint,
             client: Client::new(),
-        }
+        })
     }
 
     #[must_use]
