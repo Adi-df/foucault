@@ -205,10 +205,10 @@ impl Note {
         let res = notebook
             .client
             .get(notebook.build_url("/note/validate/tag"))
-            .json(&note_api::ValidateNewTagParam(note_api::AddTagParam {
+            .json(&note_api::ValidateNewTagParam {
                 id: self.id(),
                 tag_id,
-            }))
+            })
             .send()
             .await?
             .json::<Option<Error>>()
@@ -241,10 +241,10 @@ impl Note {
         notebook
             .client
             .delete(notebook.build_url("/note/tag/remove"))
-            .json(&note_api::RemoveTagParam(note_api::AddTagParam {
+            .json(&note_api::RemoveTagParam {
                 id: self.id(),
                 tag_id,
-            }))
+            })
             .send()
             .await?;
 

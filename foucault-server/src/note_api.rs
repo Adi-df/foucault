@@ -38,7 +38,10 @@ pub struct UpdateLinksParam {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ValidateNewTagParam(pub AddTagParam);
+pub struct ValidateNewTagParam {
+    pub id: i64,
+    pub tag_id: i64,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AddTagParam {
@@ -47,7 +50,10 @@ pub struct AddTagParam {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RemoveTagParam(pub AddTagParam);
+pub struct RemoveTagParam {
+    pub id: i64,
+    pub tag_id: i64,
+}
 
 pub(crate) async fn create(
     State(state): State<AppState>,
@@ -161,7 +167,7 @@ pub(crate) async fn list_tags(
 
 pub(crate) async fn validate_new_tag(
     State(state): State<AppState>,
-    Json(ValidateNewTagParam(AddTagParam { id, tag_id })): Json<ValidateNewTagParam>,
+    Json(ValidateNewTagParam { id, tag_id }): Json<ValidateNewTagParam>,
 ) -> (StatusCode, Json<Option<Error>>) {
     let res = note_repr::validate_new_tag(id, tag_id, state.notebook.db())
         .await
@@ -193,7 +199,7 @@ pub(crate) async fn add_tag(
 
 pub(crate) async fn remove_tag(
     State(state): State<AppState>,
-    Json(RemoveTagParam(AddTagParam { id, tag_id })): Json<RemoveTagParam>,
+    Json(RemoveTagParam { id, tag_id }): Json<RemoveTagParam>,
 ) -> StatusCode {
     note_repr::remove_tag(id, tag_id, state.notebook.db())
         .await
