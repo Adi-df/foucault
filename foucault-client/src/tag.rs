@@ -34,7 +34,7 @@ impl Tag {
         }
     }
 
-    pub async fn validate_new_tag(name: &str, notebook: &NotebookAPI) -> Result<bool> {
+    pub async fn validate_name(name: &str, notebook: &NotebookAPI) -> Result<bool> {
         let res = notebook
             .client
             .get(notebook.build_url("/tag/validate/name"))

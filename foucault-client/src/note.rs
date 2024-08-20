@@ -61,7 +61,7 @@ impl Note {
         }
     }
 
-    pub async fn validate_new_name(name: &str, notebook: &NotebookAPI) -> Result<bool> {
+    pub async fn validate_name(name: &str, notebook: &NotebookAPI) -> Result<bool> {
         let res = notebook
             .client
             .get(notebook.build_url("/note/validate/name"))
@@ -201,7 +201,7 @@ impl Note {
         Ok(())
     }
 
-    pub async fn validate_new_tag(&self, tag_id: i64, notebook: &NotebookAPI) -> Result<bool> {
+    pub async fn validate_tag(&self, tag_id: i64, notebook: &NotebookAPI) -> Result<bool> {
         let res = notebook
             .client
             .get(notebook.build_url("/note/validate/tag"))

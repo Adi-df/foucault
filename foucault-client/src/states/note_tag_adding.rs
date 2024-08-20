@@ -55,7 +55,7 @@ pub async fn run_note_tag_adding_state(
                     state_data
                         .note_tags_managing_data
                         .note
-                        .validate_new_tag(tag.id(), notebook)
+                        .validate_tag(tag.id(), notebook)
                         .await?
                 } else {
                     false
@@ -72,7 +72,7 @@ pub async fn run_note_tag_adding_state(
                 state_data
                     .note_tags_managing_data
                     .note
-                    .validate_new_tag(tag.id(), notebook)
+                    .validate_tag(tag.id(), notebook)
                     .await?
             } else {
                 false
@@ -85,7 +85,7 @@ pub async fn run_note_tag_adding_state(
                 if state_data
                     .note_tags_managing_data
                     .note
-                    .validate_new_tag(tag.id(), notebook)
+                    .validate_tag(tag.id(), notebook)
                     .await? =>
             {
                 info!(
