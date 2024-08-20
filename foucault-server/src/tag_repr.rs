@@ -1,18 +1,19 @@
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use random_color::RandomColor;
 
 use sqlx::SqlitePool;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Tag {
     pub id: i64,
     pub name: String,
     pub color: u32,
 }
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Serialize, Deserialize)]
 pub enum TagError {
     #[error("A simillarly named tag already exists")]
     AlreadyExists,

@@ -545,6 +545,7 @@ dependencies = [
  "futures",
  "log",
  "random_color",
+ "serde",
  "sqlx",
  "thiserror",
  "tokio",

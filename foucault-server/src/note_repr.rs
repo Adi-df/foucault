@@ -1,4 +1,5 @@
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use futures::future::join_all;
@@ -8,7 +9,7 @@ use crate::link_repr::Link;
 use crate::tag_repr;
 use crate::tag_repr::{Tag, TagError};
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Serialize, Deserialize)]
 pub enum NoteError {
     #[error("No such note exists")]
     DoesNotExist,
@@ -20,14 +21,14 @@ pub enum NoteError {
     NoteAlreadyTagged,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Note {
     pub id: i64,
     pub name: String,
     pub content: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NoteSummary {
     pub id: i64,
     pub name: String,
