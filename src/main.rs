@@ -8,6 +8,7 @@
 mod notebook_selector;
 
 use std::env;
+use std::sync::Arc;
 
 use anyhow::Result;
 use log::{error, info};
@@ -84,11 +85,12 @@ async fn main() -> Result<()> {
             }
             Commands::Open { name } => {
                 info!("Open notebook {name}.");
-                let notebook = Notebook::open_notebook(name, &APP_DIR_PATH).await?;
+                let notebook = Arc::new(Notebook::open_notebook(name, &APP_DIR_PATH).await?);
                 let notebook_api = NotebookAPI {
                     name: notebook.name.clone(),
                     endpoint: todo!(),
                 };
+                tokio::spawn(foucault_server::serve(notebook));
                 explore(&notebook_api).await?;
             }
             Commands::Delete { name } => {
@@ -114,11 +116,12 @@ async fn main() -> Result<()> {
 
         if let Some(name) = open_selector(&APP_DIR_PATH)? {
             info!("Open notebook selected : {name}.");
-            let notebook = Notebook::open_notebook(name.as_str(), &APP_DIR_PATH).await?;
+            let notebook = Arc::new(Notebook::open_notebook(name.as_str(), &APP_DIR_PATH).await?);
             let notebook_api = NotebookAPI {
                 name: notebook.name.clone(),
                 endpoint: todo!(),
             };
+            tokio::spawn(foucault_server::serve(notebook));
             explore(&notebook_api).await?;
         }
     }
