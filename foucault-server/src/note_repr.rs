@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Error, Result};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -9,7 +9,7 @@ use crate::link_repr::Link;
 use crate::tag_repr;
 use crate::tag_repr::{Tag, TagError};
 
-#[derive(Debug, Error, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Error, Serialize, Deserialize)]
 pub enum NoteError {
     #[error("No such note exists")]
     DoesNotExist,
@@ -36,7 +36,9 @@ pub struct NoteSummary {
 }
 
 pub(crate) async fn create(name: &str, content: &str, connection: &SqlitePool) -> Result<i64> {
-    validate_name(name, connection).await?;
+    if let Some(err) = validate_name(name, connection).await? {
+        return Err(err.into());
+    };
 
     let id = sqlx::query!(
         "INSERT INTO notes_table (name, content) VALUES ($1, $2) RETURNING id",
@@ -50,16 +52,19 @@ pub(crate) async fn create(name: &str, content: &str, connection: &SqlitePool) -
     Ok(id)
 }
 
-pub(crate) async fn validate_name(name: &str, connection: &SqlitePool) -> Result<()> {
+pub(crate) async fn validate_name(
+    name: &str,
+    connection: &SqlitePool,
+) -> Result<Option<NoteError>> {
     if name.is_empty() {
-        return Err(NoteError::EmptyName.into());
+        return Ok(Some(NoteError::EmptyName));
     }
 
     if name_exists(name, connection).await? {
-        return Err(NoteError::AlreadyExists.into());
+        return Ok(Some(NoteError::AlreadyExists));
     }
 
-    Ok(())
+    Ok(None)
 }
 
 pub(crate) async fn name_exists(name: &str, connection: &SqlitePool) -> Result<bool> {
@@ -191,18 +196,24 @@ pub(crate) async fn update_links(
     Ok(())
 }
 
-pub(crate) async fn validate_new_tag(id: i64, tag_id: i64, notebook: &SqlitePool) -> Result<()> {
+pub(crate) async fn validate_new_tag(
+    id: i64,
+    tag_id: i64,
+    notebook: &SqlitePool,
+) -> Result<Option<Error>> {
     if !tag_repr::id_exists(tag_id, notebook).await? {
-        Err(TagError::DoesNotExists.into())
+        Ok(Some(TagError::DoesNotExists.into()))
     } else if has_tag(id, tag_id, notebook).await? {
-        Err(NoteError::NoteAlreadyTagged.into())
+        Ok(Some(NoteError::NoteAlreadyTagged.into()))
     } else {
-        Ok(())
+        Ok(None)
     }
 }
 
 pub(crate) async fn add_tag(id: i64, tag_id: i64, connection: &SqlitePool) -> Result<()> {
-    validate_new_tag(id, tag_id, connection).await?;
+    if let Some(err) = validate_new_tag(id, tag_id, connection).await? {
+        return Err(err);
+    };
 
     sqlx::query!(
         "INSERT INTO tags_join_table (note_id, tag_id) VALUES ($1, $2)",

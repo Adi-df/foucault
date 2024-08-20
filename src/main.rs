@@ -88,7 +88,7 @@ async fn main() -> Result<()> {
                 let notebook = Arc::new(Notebook::open_notebook(name, &APP_DIR_PATH).await?);
                 let notebook_api = NotebookAPI {
                     name: notebook.name.clone(),
-                    endpoint: todo!(),
+                    endpoint: "0.0.0.0:8078",
                 };
                 tokio::spawn(foucault_server::serve(notebook));
                 explore(&notebook_api).await?;
@@ -119,7 +119,7 @@ async fn main() -> Result<()> {
             let notebook = Arc::new(Notebook::open_notebook(name.as_str(), &APP_DIR_PATH).await?);
             let notebook_api = NotebookAPI {
                 name: notebook.name.clone(),
-                endpoint: todo!(),
+                endpoint: "0.0.0.0:8078",
             };
             tokio::spawn(foucault_server::serve(notebook));
             explore(&notebook_api).await?;

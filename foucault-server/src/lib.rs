@@ -6,6 +6,7 @@
 #![allow(clippy::module_name_repetitions)]
 
 pub mod link_repr;
+mod note_api;
 pub mod note_repr;
 pub mod notebook;
 pub mod tag_repr;
@@ -16,7 +17,7 @@ use anyhow::Result;
 
 use axum::extract::State;
 use axum::http::StatusCode;
-use axum::routing::get;
+use axum::routing::{get, post};
 use axum::Router;
 use tokio::net::TcpListener;
 
@@ -31,6 +32,7 @@ pub async fn serve(notebook: Arc<Notebook>) -> Result<()> {
     let state = AppState { notebook };
     let app = Router::new()
         .route("/name", get(notebook_name))
+        .route("/note/create", post(note_api::create))
         .with_state(state);
 
     let listener = TcpListener::bind("0.0.0.0:8078")
