@@ -19,19 +19,19 @@ pub struct Notebook {
 
 #[derive(Error, Debug)]
 pub enum OpeningError {
-    #[error("No notebook named {name:?} was found.")]
+    #[error("No notebook named {name} was found.")]
     NotebookNotFound { name: String },
 }
 
 #[derive(Error, Debug)]
 pub enum CreationError {
-    #[error("Another notebook named {name:?} was found.")]
+    #[error("Another notebook named {name} was found.")]
     NotebookAlreadyExists { name: String },
 }
 
 #[derive(Error, Debug)]
 pub enum SuppressionError {
-    #[error("No notebook named {name:?} was found.")]
+    #[error("No notebook named {name} was found.")]
     NoNotebookExists { name: String },
 }
 
@@ -112,7 +112,7 @@ impl Notebook {
         sqlx::migrate!().run(&database).await?;
 
         Ok(Notebook {
-            name: name.to_owned(),
+            name: name.to_string(),
             file: notebook_path,
             db_pool: database,
         })

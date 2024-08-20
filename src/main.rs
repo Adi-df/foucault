@@ -76,7 +76,7 @@ enum Commands {
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() {
     env_logger::init();
 
     info!("Start foucault");
@@ -102,31 +102,42 @@ async fn main() -> Result<()> {
                         name.trim(),
                         &env::current_dir().expect("The current directory isn't accessible"),
                     )
-                    .await?;
+                    .await
+                    .pretty_unwrap();
                 } else {
-                    Notebook::new_notebook(name.trim(), &APP_DIR_PATH).await?;
+                    Notebook::new_notebook(name.trim(), &APP_DIR_PATH)
+                        .await
+                        .pretty_unwrap();
                 };
                 println!("Notebook {name} was successfully created.");
             }
             Commands::Open { name, port } => {
                 info!("Open notebook {name}.");
-                let notebook = Arc::new(Notebook::open_notebook(name, &APP_DIR_PATH).await?);
+                let notebook = Arc::new(
+                    Notebook::open_notebook(name, &APP_DIR_PATH)
+                        .await
+                        .pretty_unwrap(),
+                );
                 let endpoint = format!("http://{LOCAL_ADRESS}:{}", port.unwrap_or(DEFAULT_PORT));
                 tokio::spawn(foucault_server::serve(
                     notebook,
                     port.unwrap_or(DEFAULT_PORT),
                 ));
                 let notebook_api = NotebookAPI::new(endpoint).await.pretty_unwrap();
-                explore(&notebook_api).await?;
+                explore(&notebook_api).await.pretty_unwrap();
             }
             Commands::Connect { endpoint } => {
                 info!("Connect to notebook at address {endpoint}.");
                 let notebook_api = NotebookAPI::new(endpoint.clone()).await.pretty_unwrap();
-                explore(&notebook_api).await?;
+                explore(&notebook_api).await.pretty_unwrap();
             }
             Commands::Serve { name, port } => {
                 info!("Open notebook {name}.");
-                let notebook = Arc::new(Notebook::open_notebook(name, &APP_DIR_PATH).await?);
+                let notebook = Arc::new(
+                    Notebook::open_notebook(name, &APP_DIR_PATH)
+                        .await
+                        .pretty_unwrap(),
+                );
                 println!(
                     "Serving notebook {} at {LOCAL_ADRESS}:{}",
                     &notebook.name,
@@ -148,7 +159,9 @@ async fn main() -> Result<()> {
                     Answer::YES
                 ) {
                     println!("Proceed.");
-                    Notebook::delete_notebook(name, &APP_DIR_PATH).await?;
+                    Notebook::delete_notebook(name, &APP_DIR_PATH)
+                        .await
+                        .pretty_unwrap();
                 } else {
                     println!("Cancel.");
                 }
@@ -157,15 +170,17 @@ async fn main() -> Result<()> {
     } else {
         info!("Open default notebook manager.");
 
-        if let Some(name) = open_selector(&APP_DIR_PATH)? {
+        if let Some(name) = open_selector(&APP_DIR_PATH).pretty_unwrap() {
             info!("Open notebook selected : {name}.");
-            let notebook = Arc::new(Notebook::open_notebook(name.as_str(), &APP_DIR_PATH).await?);
+            let notebook = Arc::new(
+                Notebook::open_notebook(name.as_str(), &APP_DIR_PATH)
+                    .await
+                    .pretty_unwrap(),
+            );
             let endpoint = format!("http://{LOCAL_ADRESS}:{DEFAULT_PORT}");
             tokio::spawn(foucault_server::serve(notebook, DEFAULT_PORT));
             let notebook_api = NotebookAPI::new(endpoint).await.pretty_unwrap();
-            explore(&notebook_api).await?;
+            explore(&notebook_api).await.pretty_unwrap();
         }
     }
-
-    Ok(())
 }
