@@ -53,12 +53,13 @@ pub async fn explore(notebook: &NotebookAPI) -> Result<()> {
         }
 
         {
-            terminal.draw(|frame| {
-                if forced_redraw {
+            if forced_redraw {
+                terminal.draw(|frame| {
                     frame.render_widget(Clear, frame.size());
-                }
+                })?;
                 forced_redraw = false;
-
+            }
+            terminal.draw(|frame| {
                 let main_frame = Block::new()
                     .title(notebook.name.as_str())
                     .padding(Padding::uniform(1))
