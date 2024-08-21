@@ -13,6 +13,7 @@ use crate::{
     NotebookAPI,
 };
 
+#[derive(Clone)]
 pub struct NoteDeletingStateData {
     pub note_viewing_data: NoteViewingStateData,
     pub delete: bool,

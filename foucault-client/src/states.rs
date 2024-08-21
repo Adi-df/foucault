@@ -1,4 +1,4 @@
-mod error;
+pub mod error;
 mod note_creating;
 mod note_deleting;
 mod note_renaming;
@@ -48,6 +48,7 @@ use crate::{
     NotebookAPI,
 };
 
+#[derive(Clone)]
 pub enum State {
     Nothing,
     Exit,

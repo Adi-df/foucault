@@ -23,6 +23,7 @@ use crate::{
     NotebookAPI,
 };
 
+#[derive(Clone)]
 pub struct TagsManagingStateData {
     pub pattern: String,
     pub selected: usize,

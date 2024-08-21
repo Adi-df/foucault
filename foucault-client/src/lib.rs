@@ -13,7 +13,6 @@ use thiserror::Error;
 
 use reqwest::Client;
 
-mod error;
 pub mod explore;
 mod helpers;
 mod links;

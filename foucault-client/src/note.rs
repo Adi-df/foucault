@@ -13,7 +13,7 @@ use foucault_core::{
 
 use crate::{links::Link, tag::Tag, ApiError, NotebookAPI};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Note {
     inner: note_repr::Note,
 }

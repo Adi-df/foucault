@@ -16,7 +16,7 @@ pub enum NoteError {
     NoteAlreadyTagged,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Note {
     pub id: i64,
     pub name: String,

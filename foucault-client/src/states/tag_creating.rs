@@ -14,6 +14,7 @@ use crate::{
     NotebookAPI,
 };
 
+#[derive(Clone)]
 pub struct TagsCreatingStateData {
     pub tags_managing_data: TagsManagingStateData,
     pub name: String,

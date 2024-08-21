@@ -20,6 +20,7 @@ use crate::{
     NotebookAPI,
 };
 
+#[derive(Clone)]
 pub struct NotesManagingStateData {
     pub pattern: String,
     pub selected: usize,

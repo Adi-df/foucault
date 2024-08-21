@@ -32,14 +32,15 @@ use crate::{
     },
     note::Note,
     states::{
-        error::ErrorStateData, note_deleting::NoteDeletingStateData,
-        note_renaming::NoteRenamingStateData, note_tags_managing::NoteTagsManagingStateData,
-        notes_managing::NotesManagingStateData, State,
+        note_deleting::NoteDeletingStateData, note_renaming::NoteRenamingStateData,
+        note_tags_managing::NoteTagsManagingStateData, notes_managing::NotesManagingStateData,
+        State,
     },
     tag::Tag,
-    try_err, NotebookAPI, APP_DIR_PATH,
+    NotebookAPI, APP_DIR_PATH,
 };
 
+#[derive(Clone)]
 pub struct NoteViewingStateData {
     pub note: Note,
     pub tags: Vec<Tag>,
@@ -105,19 +106,13 @@ pub async fn run_note_viewing_state(
         }
         KeyCode::Char('e') => {
             info!("Edit note {}.", state_data.note.name());
-            try_err!(
-                edit_note(&mut state_data.note, notebook).await,
-                State::NoteViewing(state_data)
-            );
+            edit_note(&mut state_data.note, notebook).await?;
 
             state_data.re_parse_content();
-            try_err!(
-                state_data
-                    .note
-                    .update_links(&state_data.compute_links(), notebook)
-                    .await,
-                State::NoteViewing(state_data)
-            );
+            state_data
+                .note
+                .update_links(&state_data.compute_links(), notebook)
+                .await?;
             state_data.selected = (0, 0);
             state_data.select_current(true);
             *force_redraw = true;
@@ -126,10 +121,7 @@ pub async fn run_note_viewing_state(
         }
         KeyCode::Char('s') => {
             info!("Enter notes listing.");
-            State::NotesManaging(try_err!(
-                NotesManagingStateData::empty(notebook).await,
-                State::NoteViewing(state_data)
-            ))
+            State::NotesManaging(NotesManagingStateData::empty(notebook).await?)
         }
         KeyCode::Char('d') => {
             info!("Open deleting prompt for note {}.", state_data.note.name());
@@ -154,14 +146,8 @@ pub async fn run_note_viewing_state(
                         State::NoteViewing(state_data)
                     }
                     InlineElements::CrossRef { dest, .. } => {
-                        if let Some(note) = try_err!(
-                            Note::load_by_name(dest.as_str(), notebook).await,
-                            State::NoteViewing(state_data)
-                        ) {
-                            State::NoteViewing(try_err!(
-                                NoteViewingStateData::new(note, notebook).await,
-                                State::NoteViewing(state_data)
-                            ))
+                        if let Some(note) = Note::load_by_name(dest.as_str(), notebook).await? {
+                            State::NoteViewing(NoteViewingStateData::new(note, notebook).await?)
                         } else {
                             State::NoteViewing(state_data)
                         }
