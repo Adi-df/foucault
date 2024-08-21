@@ -6,12 +6,12 @@
 #![allow(clippy::module_name_repetitions)]
 
 mod error;
-pub mod link_repr;
-pub mod note_api;
-pub mod note_repr;
+mod link_repr;
+mod note_api;
+mod note_repr;
 pub mod notebook;
-pub mod tag_api;
-pub mod tag_repr;
+mod tag_api;
+mod tag_repr;
 
 use std::sync::Arc;
 

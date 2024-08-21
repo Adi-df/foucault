@@ -662,7 +662,7 @@ dependencies = [
  "colored",
  "crossterm",
  "dirs",
- "foucault-server",
+ "foucault-core",
  "log",
  "markdown",
  "opener",
@@ -678,6 +678,10 @@ dependencies = [
 [[package]]
 name = "foucault-core"
 version = "0.1.0"
+dependencies = [
+ "serde",
+ "thiserror",
+]
 
 [[package]]
 name = "foucault-server"
@@ -685,6 +689,7 @@ version = "0.2.0"
 dependencies = [
  "anyhow",
  "axum",
+ "foucault-core",
  "futures",
  "log",
  "random_color",

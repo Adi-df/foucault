@@ -7,7 +7,7 @@ authors = ["Adrien Degliame--Fecchio <adidf-web@laposte.net>"]
 repository = "https://github.com/Adi-df/foucault/"
 
 [dependencies]
-foucault-server = { path = "../foucault-server" }
+foucault-core = { path = "../foucault-core" }
 dirs = "5.0.1"
 opener = "0.6.1"
 anyhow = "1.0.86"

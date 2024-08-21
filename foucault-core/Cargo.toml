@@ -1,0 +1,11 @@
+[package]
+name = "foucault-core"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0"
+authors = ["Adrien Degliame--Fecchio <adidf-web@laposte.net>"]
+repository = "https://github.com/Adi-df/foucault/"
+
+[dependencies]
+thiserror = "1.0.63"
+serde = { version = "1.0.208", features = ["derive"] }

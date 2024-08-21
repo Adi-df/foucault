@@ -12,32 +12,6 @@ use crate::{
     tag_repr::{self, Tag, TagError},
 };
 
-#[derive(Debug, Clone, Copy, Error, Serialize, Deserialize)]
-pub enum NoteError {
-    #[error("No such note exists")]
-    DoesNotExist,
-    #[error("A similarly named note already exists")]
-    AlreadyExists,
-    #[error("The provided note name is empty")]
-    EmptyName,
-    #[error("The note already has the provided tag")]
-    NoteAlreadyTagged,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Note {
-    pub id: i64,
-    pub name: String,
-    pub content: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NoteSummary {
-    pub id: i64,
-    pub name: String,
-    pub tags: Vec<Tag>,
-}
-
 pub(crate) async fn create(name: &str, content: &str, connection: &SqlitePool) -> Result<i64> {
     info!("Insert note {} in the notebook", name);
 
