@@ -342,6 +342,8 @@ pub fn draw_note_viewing_state(
                 ("d", "Delete"),
                 ("t", "Tags"),
                 ("r", "Rename"),
+                ("g", "Go to note start"),
+                ("E", "Go to note end"),
                 ("⏎", "Open link"),
             ],
             4,
