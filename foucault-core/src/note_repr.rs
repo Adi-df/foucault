@@ -21,13 +21,13 @@ pub enum NoteError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Note {
     pub id: i64,
-    pub name: Arc<str>,
-    pub content: Arc<str>,
+    pub name: Arc<String>,
+    pub content: Arc<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NoteSummary {
     pub id: i64,
-    pub name: Arc<str>,
+    pub name: Arc<String>,
     pub tags: Vec<Tag>,
 }

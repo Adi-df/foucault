@@ -69,7 +69,7 @@ pub(crate) async fn load_by_id(id: i64, connection: &SqlitePool) -> Result<Optio
         .transpose()
 }
 
-pub(crate) async fn load_by_name(name: &str, connection: &SqlitePool) -> Result<Option<Note>> {
+pub(crate) async fn load_by_name(name: String, connection: &SqlitePool) -> Result<Option<Note>> {
     sqlx::query!("SELECT id, content FROM notes_table WHERE name=$1", name)
         .fetch_optional(connection)
         .await?

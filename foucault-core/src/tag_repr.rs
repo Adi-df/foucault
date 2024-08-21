@@ -6,7 +6,7 @@ use thiserror::Error;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Tag {
     pub id: i64,
-    pub name: Arc<str>,
+    pub name: Arc<String>,
     pub color: u32,
 }
 

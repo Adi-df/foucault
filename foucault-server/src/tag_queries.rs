@@ -13,8 +13,8 @@ fn rand_color() -> u32 {
     (u32::from(r) << 16) + (u32::from(g) << 4) + u32::from(b)
 }
 
-pub(crate) async fn create(name: &str, connection: &SqlitePool) -> Result<Tag> {
-    if let Some(err) = validate_name(name, connection).await? {
+pub(crate) async fn create(name: String, connection: &SqlitePool) -> Result<Tag> {
+    if let Some(err) = validate_name(&name, connection).await? {
         return Err(err.into());
     };
 
@@ -61,7 +61,7 @@ pub(crate) async fn name_exists(name: &str, connection: &SqlitePool) -> Result<b
     )
 }
 
-pub(crate) async fn load_by_name(name: &str, connection: &SqlitePool) -> Result<Option<Tag>> {
+pub(crate) async fn load_by_name(name: String, connection: &SqlitePool) -> Result<Option<Tag>> {
     sqlx::query!("SELECT id,color FROM tags_table WHERE name=$1", name)
         .fetch_optional(connection)
         .await?

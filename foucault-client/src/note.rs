@@ -36,13 +36,13 @@ impl From<note_repr::NoteSummary> for NoteSummary {
 }
 
 impl Note {
-    pub async fn new(name: &str, content: &str, notebook: &NotebookAPI) -> Result<Self> {
+    pub async fn new(name: String, content: String, notebook: &NotebookAPI) -> Result<Self> {
         let res = notebook
             .client
             .post(notebook.build_url("/note/create"))
             .json(&api::note::CreateParam {
-                name: String::from(name),
-                content: String::from(content),
+                name: name.clone(),
+                content: content.clone(),
             })
             .send()
             .await
@@ -138,13 +138,13 @@ impl Note {
         Ok(res.into_iter().map(Tag::from).collect())
     }
 
-    pub async fn rename(&mut self, name: &str, notebook: &NotebookAPI) -> Result<()> {
+    pub async fn rename(&mut self, name: String, notebook: &NotebookAPI) -> Result<()> {
         let res = notebook
             .client
             .patch(notebook.build_url("/note/update/name"))
             .json(&api::note::RenameParam {
                 id: self.id(),
-                name: String::from(name),
+                name: name.clone(),
             })
             .send()
             .await
