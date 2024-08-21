@@ -50,28 +50,48 @@ pub fn create_popup_size(size: (u16, u16), rect: Rect) -> Rect {
     horizontal[1]
 }
 
-pub fn create_bottom_line(rect: Rect) -> Rect {
-    let vertical = Layout::new(
-        Direction::Vertical,
-        [Constraint::Percentage(100), Constraint::Min(5)],
-    )
-    .split(rect);
-    vertical[1]
-}
-
-pub fn create_row_help_layout<'a>(help: &[(&'a str, &'a str)]) -> Table<'a> {
-    Table::new(
-        [Row::new(help.iter().flat_map(|(key, def)| {
-            [
-                Cell::from(*key).style(Style::new().bg(Color::Blue).add_modifier(Modifier::BOLD)),
-                Cell::from(*def).style(Style::new().bg(Color::Black)),
-            ]
-        }))],
+pub fn create_help_bar<'a>(
+    help: &[(&'a str, &'a str)],
+    max_by_row: usize,
+    rect: Rect,
+) -> (Table<'a>, Rect) {
+    let rows: Vec<_> = help
+        .chunks(max_by_row)
+        .map(|infos| {
+            Row::new(infos.iter().flat_map(|(key, def)| {
+                [
+                    Cell::from(*key)
+                        .style(Style::new().bg(Color::Blue).add_modifier(Modifier::BOLD)),
+                    Cell::from(*def).style(Style::new().bg(Color::Black)),
+                ]
+            }))
+        })
+        .collect();
+    let row_count = rows.len();
+    let table = Table::new(
+        rows,
         [Constraint::Fill(1), Constraint::Fill(2)]
             .into_iter()
             .cycle()
-            .take(help.len() * 2),
+            .take((help.len() * 2).min(max_by_row * 2)),
     )
+    .block(
+        Block::new()
+            .padding(Padding::horizontal(1))
+            .borders(Borders::all())
+            .border_type(BorderType::Double)
+            .border_style(Style::new().fg(Color::White)),
+    );
+
+    let vertical = Layout::new(
+        Direction::Vertical,
+        [
+            Constraint::Percentage(100),
+            Constraint::Min(u16::try_from(row_count).unwrap() + 2),
+        ],
+    )
+    .split(rect);
+    (table, vertical[1])
 }
 
 pub fn draw_yes_no_prompt(frame: &mut Frame, choice: bool, title: &str, main_rect: Rect) {

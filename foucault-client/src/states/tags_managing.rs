@@ -14,7 +14,7 @@ use ratatui::{
 };
 
 use crate::{
-    helpers::{create_bottom_line, create_row_help_layout},
+    helpers::create_help_bar,
     states::{
         tag_creating::TagsCreatingStateData, tag_deleting::TagsDeletingStateData,
         tag_notes_listing::TagNotesListingStateData, State,
@@ -181,21 +181,17 @@ pub fn draw_tags_managing_state(
     );
 
     if *help_display {
-        let command_area = create_bottom_line(main_rect);
-        let commands = create_row_help_layout(&[
-            ("Ctrl+c", "Create tag"),
-            ("Ctrl+d", "Delete tag"),
-            ("⏎", "List related notes"),
-        ])
-        .block(
-            Block::new()
-                .padding(Padding::uniform(1))
-                .borders(Borders::all())
-                .border_type(BorderType::Double)
-                .border_style(Style::new().fg(Color::White)),
+        let (commands, commands_area) = create_help_bar(
+            &[
+                ("Ctrl+c", "Create tag"),
+                ("Ctrl+d", "Delete tag"),
+                ("⏎", "List related notes"),
+            ],
+            3,
+            main_rect,
         );
 
-        frame.render_widget(Clear, command_area);
-        frame.render_widget(commands, command_area);
+        frame.render_widget(Clear, commands_area);
+        frame.render_widget(commands, commands_area);
     }
 }
