@@ -15,11 +15,7 @@ mod tags_managing;
 use anyhow::Result;
 
 use crossterm::event::KeyEvent;
-use ratatui::{
-    style::{Color, Style},
-    widgets::{Block, BorderType, Borders, Padding},
-    Frame,
-};
+use ratatui::{layout::Rect, Frame};
 
 use crate::{
     states::{
@@ -103,16 +99,7 @@ impl State {
         }
     }
 
-    pub fn draw(&self, notebook: &NotebookAPI, frame: &mut Frame) {
-        let main_frame = Block::new()
-            .title(notebook.name.as_str())
-            .padding(Padding::uniform(1))
-            .borders(Borders::all())
-            .border_type(BorderType::Rounded)
-            .border_style(Style::new().fg(Color::White));
-
-        let main_rect = main_frame.inner(frame.size());
-
+    pub fn draw(&self, notebook: &NotebookAPI, frame: &mut Frame, main_rect: Rect) {
         match self {
             State::Nothing => draw_nothing_state(frame, notebook, main_rect),
             State::NotesManaging(data) => draw_note_managing_state(data, frame, main_rect),
@@ -131,7 +118,5 @@ impl State {
             State::TagNotesListing(data) => draw_tag_notes_listing_state(data, frame, main_rect),
             State::Exit => unreachable!(),
         }
-
-        frame.render_widget(main_frame, frame.size());
     }
 }
