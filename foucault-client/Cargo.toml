@@ -11,7 +11,6 @@ foucault-core = { path = "../foucault-core" }
 dirs = "5.0.1"
 opener = "0.6.1"
 anyhow = "1.0.86"
-colored = "2.1.0"
 ratatui = "0.26.3"
 thiserror = "1.0.63"
 scopeguard = "1.2.0"

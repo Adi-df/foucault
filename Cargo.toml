@@ -11,6 +11,7 @@ repository = "https://github.com/Adi-df/foucault/"
 description = "A minimal TUI note taking app"
 
 [dependencies]
+foucault-core = { path = "foucault-core" }
 foucault-client = { path = "foucault-client" }
 foucault-server = { path = "foucault-server" }
 anyhow = "1.0.86"

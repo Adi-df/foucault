@@ -645,6 +645,7 @@ dependencies = [
  "crossterm",
  "env_logger",
  "foucault-client",
+ "foucault-core",
  "foucault-server",
  "log",
  "question",
@@ -659,7 +660,6 @@ name = "foucault-client"
 version = "0.2.0"
 dependencies = [
  "anyhow",
- "colored",
  "crossterm",
  "dirs",
  "foucault-core",
@@ -679,6 +679,7 @@ dependencies = [
 name = "foucault-core"
 version = "0.1.0"
 dependencies = [
+ "colored",
  "serde",
  "thiserror",
 ]
