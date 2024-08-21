@@ -107,7 +107,7 @@ pub async fn list_tags(id: i64, connection: &SqlitePool) -> Result<Vec<Tag>> {
     .into_iter()
     .map(|row| Ok(Tag {
         id: row.id,
-        name: row.name,
+        name: Arc::from(row.name),
         color: u32::try_from(row.color)?,
     }))
     .collect()

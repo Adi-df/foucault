@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 
 use random_color::RandomColor;
@@ -28,7 +30,7 @@ pub(crate) async fn create(name: &str, connection: &SqlitePool) -> Result<Tag> {
 
     Ok(Tag {
         id,
-        name: name.to_string(),
+        name: Arc::from(name),
         color,
     })
 }
@@ -66,7 +68,7 @@ pub(crate) async fn load_by_name(name: &str, connection: &SqlitePool) -> Result<
         .map(|row| {
             Ok(Tag {
                 id: row.id.expect("There should be a tag id"),
-                name: name.to_string(),
+                name: Arc::from(name),
                 color: u32::try_from(row.color)?,
             })
         })
@@ -85,7 +87,7 @@ pub(crate) async fn search_by_name(pattern: &str, connection: &SqlitePool) -> Re
     .map(|row| {
         Ok(Tag {
             id: row.id,
-            name: row.name,
+            name: Arc::from(row.name),
             color: u32::try_from(row.color)?,
         })
     })
