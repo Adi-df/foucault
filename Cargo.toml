@@ -1,5 +1,5 @@
 [workspace]
-members = ["foucault-client", "foucault-server"]
+members = ["foucault-client", "foucault-core", "foucault-server"]
 
 [package]
 name = "foucault"
