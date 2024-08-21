@@ -10,7 +10,7 @@ use foucault_core::{
     tag_repr::{Tag, TagError},
 };
 
-use crate::tag_repr;
+use crate::tag_queries;
 
 pub(crate) async fn create(name: &str, content: &str, connection: &SqlitePool) -> Result<i64> {
     info!("Insert note {} in the notebook", name);
@@ -194,7 +194,7 @@ pub(crate) async fn validate_new_tag(
     tag_id: i64,
     notebook: &SqlitePool,
 ) -> Result<Option<Error>> {
-    if !tag_repr::id_exists(tag_id, notebook).await? {
+    if !tag_queries::id_exists(tag_id, notebook).await? {
         Ok(Some(TagError::DoesNotExists.into()))
     } else if has_tag(id, tag_id, notebook).await? {
         Ok(Some(NoteError::NoteAlreadyTagged.into()))

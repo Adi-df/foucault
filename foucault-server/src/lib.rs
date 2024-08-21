@@ -7,10 +7,10 @@
 
 mod error;
 mod note_api;
-mod note_repr;
+mod note_queries;
 pub mod notebook;
 mod tag_api;
-mod tag_repr;
+mod tag_queries;
 
 use std::sync::Arc;
 
