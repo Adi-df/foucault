@@ -11,7 +11,7 @@ pub(crate) async fn create(
     State(state): State<AppState>,
     Json(name): Json<String>,
 ) -> FailibleJsonResult<Result<Tag, TagError>> {
-    let res = tag_queries::create(&name, state.notebook.db()).await;
+    let res = tag_queries::create(name, state.notebook.db()).await;
 
     match res {
         Ok(tag) => Ok((StatusCode::OK, Json::from(Ok(tag)))),
@@ -45,7 +45,7 @@ pub(crate) async fn load_by_name(
     State(state): State<AppState>,
     Json(name): Json<String>,
 ) -> FailibleJsonResult<Option<Tag>> {
-    let res = tag_queries::load_by_name(&name, state.notebook.db()).await;
+    let res = tag_queries::load_by_name(name, state.notebook.db()).await;
 
     match res {
         Ok(res) => Ok((StatusCode::OK, Json::from(res))),

@@ -24,7 +24,7 @@ pub trait PrettyError {
 
 impl<T, E> PrettyError for Result<T, E>
 where
-    E: Display + Send + Sync + 'static,
+    E: Display,
 {
     type Item = T;
     fn pretty_unwrap(self) -> Self::Item {
@@ -32,7 +32,7 @@ where
             Ok(val) => val,
             Err(err) => {
                 pretty_error(&format!("{err}"));
-                panic::resume_unwind(Box::new(err));
+                panic::resume_unwind(Box::new(1));
             }
         }
     }

@@ -17,7 +17,10 @@ use ratatui::{
     Terminal,
 };
 
-use crate::{states::State, NotebookAPI};
+use crate::{
+    states::{error::ErrorStateData, State},
+    NotebookAPI,
+};
 
 pub async fn explore(notebook: &NotebookAPI) -> Result<()> {
     info!("Explore notebook : {}", notebook.name);
@@ -42,7 +45,16 @@ pub async fn explore(notebook: &NotebookAPI) -> Result<()> {
             if event::poll(Duration::from_millis(50))? {
                 if let Event::Key(key) = event::read()? {
                     if key.kind == KeyEventKind::Press {
-                        state = state.run(key, notebook, &mut forced_redraw).await?;
+                        let run_state = state.clone();
+                        match run_state.run(key, notebook, &mut forced_redraw).await {
+                            Ok(new_state) => state = new_state,
+                            Err(err) => {
+                                state = State::Error(ErrorStateData {
+                                    inner_state: Box::new(state),
+                                    error_message: err.to_string(),
+                                })
+                            }
+                        }
                     }
                 }
             }

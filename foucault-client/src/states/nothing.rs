@@ -14,10 +14,10 @@ use ratatui::{
 use crate::{
     helpers::{create_popup, Capitalize},
     states::{
-        error::ErrorStateData, note_creating::NoteCreatingStateData,
-        notes_managing::NotesManagingStateData, tags_managing::TagsManagingStateData, State,
+        note_creating::NoteCreatingStateData, notes_managing::NotesManagingStateData,
+        tags_managing::TagsManagingStateData, State,
     },
-    try_err, NotebookAPI,
+    NotebookAPI,
 };
 
 pub async fn run_nothing_state(key_event: KeyEvent, notebook: &NotebookAPI) -> Result<State> {
@@ -32,17 +32,11 @@ pub async fn run_nothing_state(key_event: KeyEvent, notebook: &NotebookAPI) -> R
         }
         KeyCode::Char('s') => {
             info!("Open notes listing.");
-            State::NotesManaging(try_err!(
-                NotesManagingStateData::empty(notebook).await,
-                State::Nothing
-            ))
+            State::NotesManaging(NotesManagingStateData::empty(notebook).await?)
         }
         KeyCode::Char('t') => {
             info!("Open tags manager.");
-            State::TagsManaging(try_err!(
-                TagsManagingStateData::empty(notebook).await,
-                State::Nothing
-            ))
+            State::TagsManaging(TagsManagingStateData::empty(notebook).await?)
         }
         _ => State::Nothing,
     })

@@ -70,7 +70,7 @@ pub(crate) async fn load_by_name(
     State(state): State<AppState>,
     Json(name): Json<String>,
 ) -> FailibleJsonResult<Option<Note>> {
-    let res = note_queries::load_by_name(&name, state.notebook.db()).await;
+    let res = note_queries::load_by_name(name, state.notebook.db()).await;
 
     match res {
         Ok(res) => Ok((StatusCode::OK, Json::from(res))),

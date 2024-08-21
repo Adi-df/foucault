@@ -7,10 +7,11 @@ use ratatui::{layout::Rect, Frame};
 use crate::{
     helpers::draw_text_prompt,
     note::Note,
-    states::{error::ErrorStateData, note_viewing::NoteViewingStateData, State},
-    try_err, NotebookAPI,
+    states::{note_viewing::NoteViewingStateData, State},
+    NotebookAPI,
 };
 
+#[derive(Clone)]
 pub struct NoteCreatingStateData {
     pub name: String,
     pub valid: bool,
@@ -32,23 +33,12 @@ pub async fn run_note_creating_state(
 ) -> Result<State> {
     Ok(match key_event.code {
         KeyCode::Enter => {
-            if try_err!(
-                Note::validate_name(state_data.name.as_str(), notebook).await,
-                State::NoteCreating(state_data)
-            ) {
+            if Note::validate_name(state_data.name.as_str(), notebook).await? {
                 info!("Create note : {}.", state_data.name.as_str());
 
-                let new_note = try_err!(
-                    Note::new(state_data.name.clone(), String::new(), notebook).await,
-                    State::NoteCreating(state_data)
-                );
+                let new_note = Note::new(state_data.name, String::from(""), notebook).await?;
 
-                let data = try_err!(
-                    NoteViewingStateData::new(new_note, notebook).await,
-                    State::NoteCreating(state_data)
-                );
-
-                State::NoteViewing(data)
+                State::NoteViewing(NoteViewingStateData::new(new_note, notebook).await?)
             } else {
                 State::NoteCreating(NoteCreatingStateData {
                     valid: false,
@@ -62,10 +52,7 @@ pub async fn run_note_creating_state(
         }
         KeyCode::Backspace => {
             state_data.name.pop();
-            let valid = try_err!(
-                Note::validate_name(state_data.name.as_str(), notebook).await,
-                State::NoteCreating(state_data)
-            );
+            let valid = Note::validate_name(state_data.name.as_str(), notebook).await?;
             State::NoteCreating(NoteCreatingStateData {
                 valid,
                 ..state_data
@@ -73,10 +60,7 @@ pub async fn run_note_creating_state(
         }
         KeyCode::Char(c) => {
             state_data.name.push(c);
-            let valid = try_err!(
-                Note::validate_name(state_data.name.as_str(), notebook).await,
-                State::NoteCreating(state_data)
-            );
+            let valid = Note::validate_name(state_data.name.as_str(), notebook).await?;
             State::NoteCreating(NoteCreatingStateData {
                 valid,
                 ..state_data

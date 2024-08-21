@@ -11,6 +11,7 @@ use ratatui::{
 
 use crate::{helpers::create_popup, states::State, NotebookAPI};
 
+#[derive(Clone)]
 pub struct ErrorStateData {
     pub inner_state: Box<State>,
     pub error_message: String,

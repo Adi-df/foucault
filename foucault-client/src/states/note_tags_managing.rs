@@ -21,6 +21,7 @@ use crate::{
     NotebookAPI,
 };
 
+#[derive(Clone)]
 pub struct NoteTagsManagingStateData {
     pub note: Note,
     pub tags: Vec<Tag>,

@@ -14,6 +14,7 @@ use crate::{
     NotebookAPI,
 };
 
+#[derive(Clone)]
 pub struct NoteRenamingStateData {
     pub note_viewing_data: NoteViewingStateData,
     pub new_name: String,

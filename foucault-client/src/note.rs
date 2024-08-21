@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 use tokio::fs;
 
@@ -13,7 +13,7 @@ use foucault_core::{
 
 use crate::{links::Link, tag::Tag, ApiError, NotebookAPI};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Note {
     inner: note_repr::Note,
 }
@@ -52,7 +52,11 @@ impl Note {
             .map_err(ApiError::UnableToParseResponse)?;
 
         res.map(|id| Self {
-            inner: note_repr::Note { id, name, content },
+            inner: note_repr::Note {
+                id,
+                name: Arc::from(name),
+                content: Arc::from(content),
+            },
         })
         .map_err(anyhow::Error::from)
     }
@@ -153,7 +157,7 @@ impl Note {
             panic!("The note name is invalid : {err}");
         }
 
-        self.inner.name = name;
+        self.inner.name = Arc::from(name);
         Ok(())
     }
 
@@ -188,7 +192,7 @@ impl Note {
             .await
             .map_err(ApiError::UnableToContactRemoteNotebook)?;
 
-        self.inner.content = new_content;
+        self.inner.content = Arc::from(new_content);
         Ok(())
     }
 

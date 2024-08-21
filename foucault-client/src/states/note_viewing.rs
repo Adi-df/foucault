@@ -1,6 +1,11 @@
-use std::{env, io::stdout};
+use std::{
+    env,
+    io::stdout,
+    sync::{Arc, Mutex},
+};
 
 use anyhow::Result;
+use foucault_core::PrettyError;
 use log::info;
 use scopeguard::defer;
 
@@ -32,18 +37,19 @@ use crate::{
     },
     note::Note,
     states::{
-        error::ErrorStateData, note_deleting::NoteDeletingStateData,
-        note_renaming::NoteRenamingStateData, note_tags_managing::NoteTagsManagingStateData,
-        notes_managing::NotesManagingStateData, State,
+        note_deleting::NoteDeletingStateData, note_renaming::NoteRenamingStateData,
+        note_tags_managing::NoteTagsManagingStateData, notes_managing::NotesManagingStateData,
+        State,
     },
     tag::Tag,
-    try_err, NotebookAPI, APP_DIR_PATH,
+    NotebookAPI, APP_DIR_PATH,
 };
 
+#[derive(Clone)]
 pub struct NoteViewingStateData {
     pub note: Note,
     pub tags: Vec<Tag>,
-    pub parsed_content: ParsedMarkdown,
+    pub parsed_content: Arc<Mutex<ParsedMarkdown>>,
     pub selected: (usize, usize),
     pub help_display: bool,
 }
@@ -55,7 +61,7 @@ impl NoteViewingStateData {
         Ok(NoteViewingStateData {
             tags: note.tags(notebook).await?,
             note,
-            parsed_content,
+            parsed_content: Arc::new(Mutex::new(parsed_content)),
             selected: (0, 0),
             help_display: false,
         })
@@ -64,17 +70,26 @@ impl NoteViewingStateData {
 
 impl NoteViewingStateData {
     fn re_parse_content(&mut self) {
-        self.parsed_content = parse(self.note.content());
+        self.parsed_content = Arc::new(Mutex::new(parse(self.note.content())));
     }
-    fn get_current(&self) -> Option<&SelectableInlineElements> {
-        self.parsed_content.get_element(self.selected)
+    fn get_current(&self) -> Option<SelectableInlineElements> {
+        self.parsed_content
+            .lock()
+            .pretty_unwrap()
+            .get_element(self.selected)
+            .cloned()
     }
     fn select_current(&mut self, selected: bool) {
-        self.parsed_content.select(self.selected, selected);
+        self.parsed_content
+            .lock()
+            .pretty_unwrap()
+            .select(self.selected, selected);
     }
 
     fn compute_links(&self) -> Vec<Link> {
         self.parsed_content
+            .lock()
+            .pretty_unwrap()
             .list_links()
             .into_iter()
             .map(|to| Link::new(self.note.id(), to.to_string()))
@@ -105,19 +120,13 @@ pub async fn run_note_viewing_state(
         }
         KeyCode::Char('e') => {
             info!("Edit note {}.", state_data.note.name());
-            try_err!(
-                edit_note(&mut state_data.note, notebook).await,
-                State::NoteViewing(state_data)
-            );
+            edit_note(&mut state_data.note, notebook).await?;
 
             state_data.re_parse_content();
-            try_err!(
-                state_data
-                    .note
-                    .update_links(&state_data.compute_links(), notebook)
-                    .await,
-                State::NoteViewing(state_data)
-            );
+            state_data
+                .note
+                .update_links(&state_data.compute_links(), notebook)
+                .await?;
             state_data.selected = (0, 0);
             state_data.select_current(true);
             *force_redraw = true;
@@ -126,10 +135,7 @@ pub async fn run_note_viewing_state(
         }
         KeyCode::Char('s') => {
             info!("Enter notes listing.");
-            State::NotesManaging(try_err!(
-                NotesManagingStateData::empty(notebook).await,
-                State::NoteViewing(state_data)
-            ))
+            State::NotesManaging(NotesManagingStateData::empty(notebook).await?)
         }
         KeyCode::Char('d') => {
             info!("Open deleting prompt for note {}.", state_data.note.name());
@@ -148,20 +154,14 @@ pub async fn run_note_viewing_state(
         KeyCode::Enter => {
             info!("Try to trigger element action.");
             if let Some(element) = state_data.get_current() {
-                match <&InlineElements>::from(element) {
+                match <&InlineElements>::from(&element) {
                     InlineElements::HyperLink { dest, .. } => {
                         opener::open(dest.as_str())?;
                         State::NoteViewing(state_data)
                     }
                     InlineElements::CrossRef { dest, .. } => {
-                        if let Some(note) = try_err!(
-                            Note::load_by_name(dest.as_str(), notebook).await,
-                            State::NoteViewing(state_data)
-                        ) {
-                            State::NoteViewing(try_err!(
-                                NoteViewingStateData::new(note, notebook).await,
-                                State::NoteViewing(state_data)
-                            ))
+                        if let Some(note) = Note::load_by_name(dest.as_str(), notebook).await? {
+                            State::NoteViewing(NoteViewingStateData::new(note, notebook).await?)
                         } else {
                             State::NoteViewing(state_data)
                         }
@@ -178,6 +178,8 @@ pub async fn run_note_viewing_state(
             state_data.selected.0 = state_data.selected.0.min(
                 state_data
                     .parsed_content
+                    .lock()
+                    .pretty_unwrap()
                     .block_length(state_data.selected.1)
                     .saturating_sub(1),
             );
@@ -186,13 +188,20 @@ pub async fn run_note_viewing_state(
         }
         KeyCode::Down | KeyCode::Char('j')
             if state_data.selected.1
-                < state_data.parsed_content.block_count().saturating_sub(1) =>
+                < state_data
+                    .parsed_content
+                    .lock()
+                    .pretty_unwrap()
+                    .block_count()
+                    .saturating_sub(1) =>
         {
             state_data.select_current(false);
             state_data.selected.1 += 1;
             state_data.selected.0 = state_data.selected.0.min(
                 state_data
                     .parsed_content
+                    .lock()
+                    .pretty_unwrap()
                     .block_length(state_data.selected.1)
                     .saturating_sub(1),
             );
@@ -209,6 +218,8 @@ pub async fn run_note_viewing_state(
             if state_data.selected.0
                 < state_data
                     .parsed_content
+                    .lock()
+                    .pretty_unwrap()
                     .block_length(state_data.selected.1)
                     .saturating_sub(1) =>
         {
@@ -225,9 +236,16 @@ pub async fn run_note_viewing_state(
         }
         KeyCode::Char('E') => {
             state_data.select_current(false);
-            state_data.selected.1 = state_data.parsed_content.block_count().saturating_sub(1);
+            state_data.selected.1 = state_data
+                .parsed_content
+                .lock()
+                .pretty_unwrap()
+                .block_count()
+                .saturating_sub(1);
             state_data.selected.0 = state_data
                 .parsed_content
+                .lock()
+                .pretty_unwrap()
                 .block_length(state_data.selected.1)
                 .saturating_sub(1);
             state_data.select_current(true);
@@ -275,6 +293,7 @@ pub fn draw_note_viewing_state(
     frame: &mut Frame,
     main_rect: Rect,
 ) {
+    let parsed_content = parsed_content.lock().pretty_unwrap();
     let vertical_layout = Layout::new(
         Direction::Vertical,
         [Constraint::Length(5), Constraint::Min(0)],
@@ -330,7 +349,7 @@ pub fn draw_note_viewing_state(
 
     let note_content = combine(&rendered_content)
         .build_paragraph()
-        .scroll((scroll.try_into().unwrap(), 0));
+        .scroll((scroll.try_into().pretty_unwrap(), 0));
 
     let content_scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
         .begin_symbol(Some("↑"))
