@@ -23,7 +23,7 @@ use ratatui::{
 };
 
 use crate::{
-    helpers::{create_bottom_line, create_row_help_layout, DiscardResult},
+    helpers::{create_bottom_line, create_row_help_layout},
     links::Link,
     markdown::{
         combine,
@@ -34,7 +34,7 @@ use crate::{
     states::{
         note_deleting::NoteDeletingStateData, note_renaming::NoteRenamingStateData,
         note_tags_managing::NoteTagsManagingStateData, notes_managing::NotesManagingStateData,
-        State, Terminal,
+        State,
     },
     tag::Tag,
     NotebookAPI, APP_DIR_PATH,
@@ -250,23 +250,6 @@ async fn edit_note(note: &mut Note, notebook: &NotebookAPI) -> Result<()> {
 }
 
 pub fn draw_note_viewing_state(
-    state_data: &NoteViewingStateData,
-    terminal: &mut Terminal,
-    main_frame: Block,
-) -> Result<()> {
-    terminal
-        .draw(|frame| {
-            let main_rect = main_frame.inner(frame.size());
-
-            draw_viewed_note(frame, state_data, main_rect);
-
-            frame.render_widget(main_frame, frame.size());
-        })
-        .discard_result()
-}
-
-pub fn draw_viewed_note(
-    frame: &mut Frame,
     NoteViewingStateData {
         note,
         tags,
@@ -274,6 +257,7 @@ pub fn draw_viewed_note(
         selected,
         help_display,
     }: &NoteViewingStateData,
+    frame: &mut Frame,
     main_rect: Rect,
 ) {
     let vertical_layout = Layout::new(

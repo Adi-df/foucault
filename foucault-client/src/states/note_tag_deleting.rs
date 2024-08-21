@@ -2,13 +2,13 @@ use anyhow::Result;
 use log::info;
 
 use crossterm::event::{KeyCode, KeyEvent};
-use ratatui::widgets::Block;
+use ratatui::{layout::Rect, Frame};
 
 use crate::{
     helpers::draw_yes_no_prompt,
     states::{
-        note_tags_managing::{draw_note_tags_managing, NoteTagsManagingStateData},
-        State, Terminal,
+        note_tags_managing::{draw_note_tags_managing_state, NoteTagsManagingStateData},
+        State,
     },
     NotebookAPI,
 };
@@ -86,23 +86,14 @@ pub async fn run_note_tag_deleting_state(
     })
 }
 
-pub fn draw_note_tag_deleting_state_data(
+pub fn draw_note_tag_deleting_state(
     NoteTagDeletingStateData {
         note_tags_managing_data,
         delete,
     }: &NoteTagDeletingStateData,
-    terminal: &mut Terminal,
-    main_frame: Block,
-) -> Result<()> {
-    terminal
-        .draw(|frame| {
-            let main_rect = main_frame.inner(frame.size());
-
-            draw_note_tags_managing(frame, note_tags_managing_data, main_rect);
-            draw_yes_no_prompt(frame, *delete, "Remove tag ?", main_rect);
-
-            frame.render_widget(main_frame, frame.size());
-        })
-        .map_err(anyhow::Error::from)
-        .map(|_| ())
+    frame: &mut Frame,
+    main_rect: Rect,
+) {
+    draw_note_tags_managing_state(note_tags_managing_data, frame, main_rect);
+    draw_yes_no_prompt(frame, *delete, "Remove tag ?", main_rect);
 }

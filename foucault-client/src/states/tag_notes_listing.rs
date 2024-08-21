@@ -3,6 +3,7 @@ use log::info;
 
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
+    layout::Rect,
     prelude::{Constraint, Direction, Layout, Margin},
     style::{Color, Style},
     text::{Line, Span},
@@ -10,12 +11,12 @@ use ratatui::{
         Block, BorderType, Borders, List, ListState, Padding, Paragraph, Scrollbar,
         ScrollbarOrientation, ScrollbarState,
     },
+    Frame,
 };
 
 use crate::{
-    helpers::DiscardResult,
     note::{Note, NoteSummary},
-    states::{note_viewing::NoteViewingStateData, State, Terminal},
+    states::{note_viewing::NoteViewingStateData, State},
     tag::Tag,
     NotebookAPI,
 };
@@ -77,58 +78,51 @@ pub fn draw_tag_notes_listing_state(
         notes,
         selected,
     }: &TagNotesListingStateData,
-    terminal: &mut Terminal,
-    main_frame: Block,
-) -> Result<()> {
-    terminal
-        .draw(|frame| {
-            let main_rect = main_frame.inner(frame.size());
+    frame: &mut Frame,
+    main_rect: Rect,
+) {
+    let vertical_layout = Layout::new(
+        Direction::Vertical,
+        [Constraint::Length(5), Constraint::Min(0)],
+    )
+    .split(main_rect);
 
-            let vertical_layout = Layout::new(
-                Direction::Vertical,
-                [Constraint::Length(5), Constraint::Min(0)],
-            )
-            .split(main_rect);
+    let tag_name = Paragraph::new(Line::from(vec![
+        Span::raw(tag.name()).style(Style::new().fg(Color::Green))
+    ]))
+    .block(
+        Block::new()
+            .title("Tag name")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::new().fg(Color::Blue))
+            .padding(Padding::uniform(1)),
+    );
 
-            let tag_name = Paragraph::new(Line::from(vec![
-                Span::raw(tag.name()).style(Style::new().fg(Color::Green))
-            ]))
-            .block(
-                Block::new()
-                    .title("Tag name")
-                    .borders(Borders::ALL)
-                    .border_type(BorderType::Rounded)
-                    .border_style(Style::new().fg(Color::Blue))
-                    .padding(Padding::uniform(1)),
-            );
+    let tag_notes = List::new(notes.iter().map(|tag| Span::raw(tag.name())))
+        .highlight_symbol(">> ")
+        .highlight_style(Style::new().fg(Color::Black).bg(Color::White))
+        .block(
+            Block::new()
+                .title("Tag notes")
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::new().fg(Color::Yellow)),
+        );
 
-            let tag_notes = List::new(notes.iter().map(|tag| Span::raw(tag.name())))
-                .highlight_symbol(">> ")
-                .highlight_style(Style::new().fg(Color::Black).bg(Color::White))
-                .block(
-                    Block::new()
-                        .title("Tag notes")
-                        .borders(Borders::ALL)
-                        .border_type(BorderType::Rounded)
-                        .border_style(Style::new().fg(Color::Yellow)),
-                );
+    let notes_scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+        .begin_symbol(Some("↑"))
+        .end_symbol(Some("↓"));
 
-            let notes_scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
-                .begin_symbol(Some("↑"))
-                .end_symbol(Some("↓"));
-
-            frame.render_widget(tag_name, vertical_layout[0]);
-            frame.render_stateful_widget(
-                tag_notes,
-                vertical_layout[1],
-                &mut ListState::default().with_selected(Some(*selected)),
-            );
-            frame.render_stateful_widget(
-                notes_scrollbar,
-                vertical_layout[1].inner(&Margin::new(0, 1)),
-                &mut ScrollbarState::new(notes.len()).position(*selected),
-            );
-            frame.render_widget(main_frame, frame.size());
-        })
-        .discard_result()
+    frame.render_widget(tag_name, vertical_layout[0]);
+    frame.render_stateful_widget(
+        tag_notes,
+        vertical_layout[1],
+        &mut ListState::default().with_selected(Some(*selected)),
+    );
+    frame.render_stateful_widget(
+        notes_scrollbar,
+        vertical_layout[1].inner(&Margin::new(0, 1)),
+        &mut ScrollbarState::new(notes.len()).position(*selected),
+    );
 }

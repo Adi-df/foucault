@@ -2,13 +2,13 @@ use anyhow::Result;
 use log::info;
 
 use crossterm::event::{KeyCode, KeyEvent};
-use ratatui::widgets::Block;
+use ratatui::{layout::Rect, Frame};
 
 use crate::{
-    helpers::{draw_yes_no_prompt, DiscardResult},
+    helpers::draw_yes_no_prompt,
     states::{
-        note_viewing::{draw_viewed_note, NoteViewingStateData},
-        State, Terminal,
+        note_viewing::{draw_note_viewing_state, NoteViewingStateData},
+        State,
     },
     NotebookAPI,
 };
@@ -68,18 +68,9 @@ pub fn draw_note_deleting_state(
         note_viewing_data,
         delete,
     }: &NoteDeletingStateData,
-    terminal: &mut Terminal,
-    main_frame: Block,
-) -> Result<()> {
-    terminal
-        .draw(|frame| {
-            let main_rect = main_frame.inner(frame.size());
-
-            draw_viewed_note(frame, note_viewing_data, main_rect);
-
-            draw_yes_no_prompt(frame, *delete, "Delete note ?", main_rect);
-
-            frame.render_widget(main_frame, frame.size());
-        })
-        .discard_result()
+    frame: &mut Frame,
+    main_rect: Rect,
+) {
+    draw_note_viewing_state(note_viewing_data, frame, main_rect);
+    draw_yes_no_prompt(frame, *delete, "Delete note ?", main_rect);
 }

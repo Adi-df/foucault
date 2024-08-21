@@ -10,7 +10,12 @@ use crossterm::{
     ExecutableCommand,
 };
 
-use ratatui::{prelude::CrosstermBackend, widgets::Clear, Terminal};
+use ratatui::{
+    prelude::CrosstermBackend,
+    style::{Color, Style},
+    widgets::{Block, BorderType, Borders, Clear, Padding},
+    Terminal,
+};
 
 use crate::{states::State, NotebookAPI};
 
@@ -48,12 +53,24 @@ pub async fn explore(notebook: &NotebookAPI) -> Result<()> {
         }
 
         {
-            if forced_redraw {
-                terminal.draw(|frame| frame.render_widget(Clear, frame.size()))?;
-            }
-            forced_redraw = false;
+            terminal.draw(|frame| {
+                if forced_redraw {
+                    frame.render_widget(Clear, frame.size());
+                }
+                forced_redraw = false;
 
-            state.draw(notebook, &mut terminal)?;
+                let main_frame = Block::new()
+                    .title(notebook.name.as_str())
+                    .padding(Padding::uniform(1))
+                    .borders(Borders::all())
+                    .border_type(BorderType::Rounded)
+                    .border_style(Style::new().fg(Color::White));
+
+                let main_rect = main_frame.inner(frame.size());
+
+                state.draw(notebook, frame, main_rect);
+                frame.render_widget(main_frame, frame.size());
+            })?;
         }
     }
 
