@@ -38,12 +38,13 @@ pub fn draw_error_state(
 ) {
     state_data.inner_state.draw(notebook, frame, main_rect);
 
-    let wrapped_text = textwrap::wrap(state_data.error_message.as_str(), 60);
+    let line_width = main_rect.width * 80 / 100;
+    let wrapped_text = textwrap::wrap(state_data.error_message.as_str(), line_width as usize);
     let line_count = wrapped_text.len();
 
     let popup_area = create_popup(
         (
-            Constraint::Percentage(80),
+            Constraint::Length(80),
             Constraint::Length(u16::try_from(line_count + 2).unwrap()),
         ),
         main_rect,
