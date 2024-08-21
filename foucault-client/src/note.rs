@@ -6,7 +6,7 @@ use anyhow::Result;
 use serde_error::Error;
 
 use foucault_core::{
-    note_api,
+    api,
     note_repr::{self, NoteError},
     tag_repr,
 };
@@ -40,7 +40,7 @@ impl Note {
         let res = notebook
             .client
             .post(notebook.build_url("/note/create"))
-            .json(&note_api::CreateParam {
+            .json(&api::note::CreateParam {
                 name: name.clone(),
                 content: content.clone(),
             })
@@ -138,7 +138,7 @@ impl Note {
         let res = notebook
             .client
             .patch(notebook.build_url("/note/update/name"))
-            .json(&note_api::RenameParam {
+            .json(&api::note::RenameParam {
                 id: self.id(),
                 name: name.clone(),
             })
@@ -180,7 +180,7 @@ impl Note {
         notebook
             .client
             .patch(notebook.build_url("/note/update/content"))
-            .json(&note_api::UpdateContentParam {
+            .json(&api::note::UpdateContentParam {
                 id: self.id(),
                 content: new_content.clone(),
             })
@@ -196,7 +196,7 @@ impl Note {
         notebook
             .client
             .patch(notebook.build_url("/note/update/links"))
-            .json(&note_api::UpdateLinksParam {
+            .json(&api::note::UpdateLinksParam {
                 id: self.id(),
                 links: new_links
                     .iter()
@@ -214,7 +214,7 @@ impl Note {
         let res = notebook
             .client
             .get(notebook.build_url("/note/validate/tag"))
-            .json(&note_api::ValidateNewTagParam {
+            .json(&api::note::ValidateNewTagParam {
                 id: self.id(),
                 tag_id,
             })
@@ -232,7 +232,7 @@ impl Note {
         let res = notebook
             .client
             .post(notebook.build_url("/note/tag/add"))
-            .json(&note_api::AddTagParam {
+            .json(&api::note::AddTagParam {
                 id: self.id(),
                 tag_id,
             })
@@ -254,7 +254,7 @@ impl Note {
         notebook
             .client
             .delete(notebook.build_url("/note/tag/remove"))
-            .json(&note_api::RemoveTagParam {
+            .json(&api::note::RemoveTagParam {
                 id: self.id(),
                 tag_id,
             })

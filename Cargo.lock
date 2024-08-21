@@ -693,7 +693,6 @@ dependencies = [
  "futures",
  "log",
  "random_color",
- "serde",
  "serde-error",
  "sqlx",
  "thiserror",

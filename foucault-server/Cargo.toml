@@ -16,5 +16,4 @@ serde-error = "0.1.2"
 random_color = "0.8.0"
 log = { version = "0.4.22", features = ["std"] }
 tokio = { version = "1.39.3", features = ["full"] }
-serde = { version = "1.0.208", features = ["derive"] }
 sqlx = { version = "0.8.0", features = ["runtime-tokio", "migrate", "macros", "sqlite"] }
