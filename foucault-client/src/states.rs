@@ -76,7 +76,7 @@ impl State {
     ) -> Result<Self> {
         match self {
             State::Nothing => run_nothing_state(key_event, notebook).await,
-            State::Error(data) => run_error_state(data, key_event, notebook).await,
+            State::Error(data) => run_error_state(data, key_event).await,
             State::NotesManaging(data) => run_note_managing_state(data, key_event, notebook).await,
             State::NoteCreating(data) => run_note_creating_state(data, key_event, notebook).await,
             State::NoteViewing(data) => {

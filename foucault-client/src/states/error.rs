@@ -1,6 +1,7 @@
 use anyhow::Result;
+use log::info;
 
-use crossterm::event::KeyEvent;
+use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     layout::Rect,
     style::{Color, Style},
@@ -15,13 +16,18 @@ pub struct ErrorStateData {
     pub error_message: String,
 }
 
-pub async fn run_error_state(
-    mut state_data: ErrorStateData,
-    key_event: KeyEvent,
-    notebook: &NotebookAPI,
-) -> Result<State> {
-    // todo!();
-    Ok(State::Error(state_data))
+pub async fn run_error_state(state_data: ErrorStateData, key_event: KeyEvent) -> Result<State> {
+    Ok(match key_event.code {
+        KeyCode::Char('q') => {
+            info!("Quit foucault.");
+            State::Exit
+        }
+        KeyCode::Enter => {
+            info!("Close error popup.");
+            *state_data.inner_state
+        }
+        _ => State::Error(state_data),
+    })
 }
 
 pub fn draw_error_state(
