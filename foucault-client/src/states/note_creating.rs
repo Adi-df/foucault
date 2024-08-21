@@ -7,7 +7,7 @@ use ratatui::{layout::Rect, Frame};
 use crate::{
     helpers::draw_text_prompt,
     note::Note,
-    states::{note_viewing::NoteViewingStateData, State},
+    states::{error::ErrorStateData, note_viewing::NoteViewingStateData, State},
     NotebookAPI,
 };
 
@@ -26,42 +26,65 @@ impl NoteCreatingStateData {
 }
 
 pub async fn run_note_creating_state(
-    NoteCreatingStateData { mut name, valid }: NoteCreatingStateData,
+    mut state_data: NoteCreatingStateData,
     key_event: KeyEvent,
     notebook: &NotebookAPI,
 ) -> Result<State> {
     Ok(match key_event.code {
-        KeyCode::Enter => {
-            if Note::validate_name(name.as_str(), notebook).await? {
-                info!("Create note : {}.", name.as_str());
+        KeyCode::Enter => match Note::validate_name(state_data.name.as_str(), notebook).await {
+            Ok(true) => {
+                info!("Create note : {}.", state_data.name.as_str());
 
-                let new_note = Note::new(name.clone(), String::new(), notebook).await?;
-
-                State::NoteViewing(NoteViewingStateData::new(new_note, notebook).await?)
-            } else {
-                State::NoteCreating(NoteCreatingStateData { name, valid: false })
+                match Note::new(state_data.name.clone(), String::new(), notebook).await {
+                    Ok(new_note) => {
+                        State::NoteViewing(NoteViewingStateData::new(new_note, notebook).await?)
+                    }
+                    Err(err) => State::Error(ErrorStateData {
+                        inner_state: Box::new(State::NoteCreating(state_data)),
+                        error_message: err.to_string(),
+                    }),
+                }
             }
-        }
+            Ok(false) => State::NoteCreating(NoteCreatingStateData {
+                valid: false,
+                ..state_data
+            }),
+            Err(err) => State::Error(ErrorStateData {
+                inner_state: Box::new(State::NoteCreating(state_data)),
+                error_message: err.to_string(),
+            }),
+        },
         KeyCode::Esc => {
             info!("Cancel note creation.");
             State::Nothing
         }
         KeyCode::Backspace => {
-            name.pop();
-            State::NoteCreating(NoteCreatingStateData {
-                valid: Note::validate_name(name.as_str(), notebook).await?,
-                name,
-            })
+            state_data.name.pop();
+            match Note::validate_name(state_data.name.as_str(), notebook).await {
+                Ok(valid) => State::NoteCreating(NoteCreatingStateData {
+                    valid,
+                    ..state_data
+                }),
+                Err(err) => State::Error(ErrorStateData {
+                    inner_state: Box::new(State::NoteCreating(state_data)),
+                    error_message: err.to_string(),
+                }),
+            }
         }
         KeyCode::Char(c) => {
-            name.push(c);
-            State::NoteCreating(NoteCreatingStateData {
-                valid: Note::validate_name(name.as_str(), notebook).await?,
-
-                name,
-            })
+            state_data.name.push(c);
+            match Note::validate_name(state_data.name.as_str(), notebook).await {
+                Ok(valid) => State::NoteCreating(NoteCreatingStateData {
+                    valid,
+                    ..state_data
+                }),
+                Err(err) => State::Error(ErrorStateData {
+                    inner_state: Box::new(State::NoteCreating(state_data)),
+                    error_message: err.to_string(),
+                }),
+            }
         }
-        _ => State::NoteCreating(NoteCreatingStateData { name, valid }),
+        _ => State::NoteCreating(state_data),
     })
 }
 
