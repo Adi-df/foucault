@@ -6,45 +6,39 @@ use ratatui::{
     Frame,
 };
 
-pub fn create_popup_proportion(proportion: (u16, u16), rect: Rect) -> Rect {
+pub fn create_popup(proportion: (Constraint, Constraint), rect: Rect) -> Rect {
     let vertical = Layout::new(
         Direction::Vertical,
-        [
-            Constraint::Percentage((100u16.saturating_sub(proportion.1)) / 2),
-            Constraint::Percentage(proportion.1),
-            Constraint::Percentage((100u16.saturating_sub(proportion.1)) / 2),
-        ],
+        match proportion.1 {
+            Constraint::Percentage(percent) => [
+                Constraint::Percentage((100u16.saturating_sub(percent)) / 2),
+                Constraint::Percentage(percent),
+                Constraint::Percentage((100u16.saturating_sub(percent)) / 2),
+            ],
+            Constraint::Length(length) => [
+                Constraint::Length((rect.height.saturating_sub(length)) / 2),
+                Constraint::Length(length),
+                Constraint::Length((rect.height.saturating_sub(length)) / 2),
+            ],
+            _ => unimplemented!(),
+        },
     )
     .split(rect);
     let horizontal = Layout::new(
         Direction::Horizontal,
-        [
-            Constraint::Percentage((100u16.saturating_sub(proportion.0)) / 2),
-            Constraint::Percentage(proportion.0),
-            Constraint::Percentage((100u16.saturating_sub(proportion.0)) / 2),
-        ],
-    )
-    .split(vertical[1]);
-    horizontal[1]
-}
-
-pub fn create_popup_size(size: (u16, u16), rect: Rect) -> Rect {
-    let vertical = Layout::new(
-        Direction::Vertical,
-        [
-            Constraint::Length((rect.height.saturating_sub(size.1)) / 2),
-            Constraint::Length(size.1),
-            Constraint::Length((rect.height.saturating_sub(size.1)) / 2),
-        ],
-    )
-    .split(rect);
-    let horizontal = Layout::new(
-        Direction::Horizontal,
-        [
-            Constraint::Length((rect.width.saturating_sub(size.0)) / 2),
-            Constraint::Length(size.0),
-            Constraint::Length((rect.width.saturating_sub(size.0)) / 2),
-        ],
+        match proportion.0 {
+            Constraint::Percentage(percent) => [
+                Constraint::Percentage((100u16.saturating_sub(percent)) / 2),
+                Constraint::Percentage(percent),
+                Constraint::Percentage((100u16.saturating_sub(percent)) / 2),
+            ],
+            Constraint::Length(length) => [
+                Constraint::Length((rect.width.saturating_sub(length)) / 2),
+                Constraint::Length(length),
+                Constraint::Length((rect.width.saturating_sub(length)) / 2),
+            ],
+            _ => unimplemented!(),
+        },
     )
     .split(vertical[1]);
     horizontal[1]
@@ -95,7 +89,7 @@ pub fn create_help_bar<'a>(
 }
 
 pub fn draw_yes_no_prompt(frame: &mut Frame, choice: bool, title: &str, main_rect: Rect) {
-    let popup_area = create_popup_size((50, 5), main_rect);
+    let popup_area = create_popup((Constraint::Length(50), Constraint::Length(5)), main_rect);
     let block = Block::new()
         .title(title)
         .borders(Borders::ALL)
@@ -148,7 +142,7 @@ pub fn draw_text_prompt(
     valid: bool,
     main_rect: ratatui::prelude::Rect,
 ) {
-    let popup_area = create_popup_size((30, 5), main_rect);
+    let popup_area = create_popup((Constraint::Length(30), Constraint::Length(5)), main_rect);
 
     let new_note_entry = Paragraph::new(Line::from(vec![
         Span::raw(text).style(Style::new().add_modifier(Modifier::UNDERLINED))

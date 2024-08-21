@@ -12,7 +12,7 @@ use ratatui::{
 };
 
 use crate::{
-    helpers::{create_popup_proportion, Capitalize},
+    helpers::{create_popup, Capitalize},
     states::{
         note_creating::NoteCreatingStateData, notes_managing::NotesManagingStateData,
         tags_managing::TagsManagingStateData, State,
@@ -72,7 +72,10 @@ pub fn draw_nothing_state(notebook: &NotebookAPI, frame: &mut Frame, main_rect: 
         Direction::Vertical,
         [Constraint::Length(1), Constraint::Fill(1)],
     )
-    .split(create_popup_proportion((40, 30), main_rect));
+    .split(create_popup(
+        (Constraint::Percentage(40), Constraint::Percentage(30)),
+        main_rect,
+    ));
 
     frame.render_widget(title, title_layout[0]);
     frame.render_widget(commands, title_layout[1]);

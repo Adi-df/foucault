@@ -3,13 +3,13 @@ use log::info;
 
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
-    layout::Rect,
+    layout::{Constraint, Rect},
     style::{Color, Style},
     widgets::{Block, BorderType, Borders, Clear, Paragraph},
     Frame,
 };
 
-use crate::{helpers::create_popup_size, states::State, NotebookAPI};
+use crate::{helpers::create_popup, states::State, NotebookAPI};
 
 pub struct ErrorStateData {
     pub inner_state: Box<State>,
@@ -41,7 +41,13 @@ pub fn draw_error_state(
     let wrapped_text = textwrap::wrap(state_data.error_message.as_str(), 60);
     let line_count = wrapped_text.len();
 
-    let popup_area = create_popup_size((60, u16::try_from(line_count + 2).unwrap()), main_rect);
+    let popup_area = create_popup(
+        (
+            Constraint::Percentage(80),
+            Constraint::Length(u16::try_from(line_count + 2).unwrap()),
+        ),
+        main_rect,
+    );
     let err_popup = Paragraph::new(wrapped_text.join("\n")).block(
         Block::new()
             .title("Error")
