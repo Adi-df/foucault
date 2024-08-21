@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 use tokio::fs;
 
@@ -36,13 +36,13 @@ impl From<note_repr::NoteSummary> for NoteSummary {
 }
 
 impl Note {
-    pub async fn new(name: String, content: String, notebook: &NotebookAPI) -> Result<Self> {
+    pub async fn new(name: &str, content: &str, notebook: &NotebookAPI) -> Result<Self> {
         let res = notebook
             .client
             .post(notebook.build_url("/note/create"))
             .json(&api::note::CreateParam {
-                name: name.clone(),
-                content: content.clone(),
+                name: String::from(name),
+                content: String::from(content),
             })
             .send()
             .await
@@ -52,7 +52,11 @@ impl Note {
             .map_err(ApiError::UnableToParseResponse)?;
 
         res.map(|id| Self {
-            inner: note_repr::Note { id, name, content },
+            inner: note_repr::Note {
+                id,
+                name: Arc::from(name),
+                content: Arc::from(content),
+            },
         })
         .map_err(anyhow::Error::from)
     }
@@ -134,13 +138,13 @@ impl Note {
         Ok(res.into_iter().map(Tag::from).collect())
     }
 
-    pub async fn rename(&mut self, name: String, notebook: &NotebookAPI) -> Result<()> {
+    pub async fn rename(&mut self, name: &str, notebook: &NotebookAPI) -> Result<()> {
         let res = notebook
             .client
             .patch(notebook.build_url("/note/update/name"))
             .json(&api::note::RenameParam {
                 id: self.id(),
-                name: name.clone(),
+                name: String::from(name),
             })
             .send()
             .await
@@ -153,7 +157,7 @@ impl Note {
             panic!("The note name is invalid : {err}");
         }
 
-        self.inner.name = name;
+        self.inner.name = Arc::from(name);
         Ok(())
     }
 
@@ -188,7 +192,7 @@ impl Note {
             .await
             .map_err(ApiError::UnableToContactRemoteNotebook)?;
 
-        self.inner.content = new_content;
+        self.inner.content = Arc::from(new_content);
         Ok(())
     }
 

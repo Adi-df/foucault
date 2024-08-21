@@ -56,7 +56,7 @@ pub async fn run_note_renaming_state(
                 state_data
                     .note_viewing_data
                     .note
-                    .rename(state_data.new_name, notebook)
+                    .rename(&state_data.new_name, notebook)
                     .await?;
                 State::NoteViewing(
                     NoteViewingStateData::new(state_data.note_viewing_data.note, notebook).await?,

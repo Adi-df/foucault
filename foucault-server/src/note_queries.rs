@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::{Error, Result};
 use log::info;
 
@@ -60,22 +62,22 @@ pub(crate) async fn load_by_id(id: i64, connection: &SqlitePool) -> Result<Optio
         .map(|row| {
             Ok(Note {
                 id,
-                name: row.name.expect("There should be a note name"),
-                content: row.content.expect("There should be a note content"),
+                name: Arc::from(row.name.expect("There should be a note name")),
+                content: Arc::from(row.content.expect("There should be a note content")),
             })
         })
         .transpose()
 }
 
 pub(crate) async fn load_by_name(name: &str, connection: &SqlitePool) -> Result<Option<Note>> {
-    sqlx::query!("SELECT id,content FROM notes_table WHERE name=$1", name)
+    sqlx::query!("SELECT id, content FROM notes_table WHERE name=$1", name)
         .fetch_optional(connection)
         .await?
         .map(|row| {
             Ok(Note {
                 id: row.id.expect("There should be a note id"),
-                name: name.to_string(),
-                content: row.content.expect("There should be a note content"),
+                name: Arc::from(name),
+                content: Arc::from(row.content.expect("There should be a note content")),
             })
         })
         .transpose()
@@ -238,7 +240,7 @@ pub(crate) async fn search_by_name(
     let sql_pattern = format!("%{pattern}%");
     join_all(
         sqlx::query!(
-            "SELECT id,name FROM notes_table WHERE name LIKE $1 ORDER BY name ASC",
+            "SELECT id, name FROM notes_table WHERE name LIKE $1 ORDER BY name ASC",
             sql_pattern
         )
         .fetch_all(connection)
@@ -248,7 +250,7 @@ pub(crate) async fn search_by_name(
             let id = row.id.expect("There should be a note id");
             Ok(NoteSummary {
                 id,
-                name: row.name.expect("There should be a note name"),
+                name: Arc::from(row.name.expect("There should be a note name")),
                 tags: list_tags(id, connection).await?,
             })
         }),
@@ -273,7 +275,7 @@ pub(crate) async fn search_by_tag(
             .map(|row| async move {
                 Ok(NoteSummary {
                     id: row.id,
-                    name: row.name.expect("There should be a note name"),
+                    name: Arc::from(row.name.expect("There should be a note name")),
                     tags: list_tags(row.id, connection).await?
                 })
             })

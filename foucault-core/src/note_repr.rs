@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use thiserror::Error;
 
 use serde::{Deserialize, Serialize};
@@ -19,13 +21,13 @@ pub enum NoteError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Note {
     pub id: i64,
-    pub name: String,
-    pub content: String,
+    pub name: Arc<str>,
+    pub content: Arc<str>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NoteSummary {
     pub id: i64,
-    pub name: String,
+    pub name: Arc<str>,
     pub tags: Vec<Tag>,
 }

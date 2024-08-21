@@ -36,7 +36,7 @@ pub async fn run_note_creating_state(
             if Note::validate_name(state_data.name.as_str(), notebook).await? {
                 info!("Create note : {}.", state_data.name.as_str());
 
-                let new_note = Note::new(state_data.name.clone(), String::new(), notebook).await?;
+                let new_note = Note::new(&state_data.name, "", notebook).await?;
 
                 State::NoteViewing(NoteViewingStateData::new(new_note, notebook).await?)
             } else {
