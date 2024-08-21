@@ -86,7 +86,7 @@ pub async fn run_note_tag_deleting_state(
     })
 }
 
-pub fn draw_note_tag_deleting_state_data(
+pub fn draw_note_tag_deleting_state(
     NoteTagDeletingStateData {
         note_tags_managing_data,
         delete,

@@ -117,7 +117,7 @@ pub async fn run_note_tag_adding_state(
     })
 }
 
-pub fn draw_note_tag_adding_state_data(
+pub fn draw_note_tag_adding_state(
     NoteTagAddingStateData {
         note_tags_managing_data,
         tag_name,

@@ -25,11 +25,10 @@ use crate::{
         note_deleting::{draw_note_deleting_state, run_note_deleting_state, NoteDeletingStateData},
         note_renaming::{draw_note_renaming_state, run_note_renaming_state, NoteRenamingStateData},
         note_tag_adding::{
-            draw_note_tag_adding_state_data, run_note_tag_adding_state, NoteTagAddingStateData,
+            draw_note_tag_adding_state, run_note_tag_adding_state, NoteTagAddingStateData,
         },
         note_tag_deleting::{
-            draw_note_tag_deleting_state_data, run_note_tag_deleting_state,
-            NoteTagDeletingStateData,
+            draw_note_tag_deleting_state, run_note_tag_deleting_state, NoteTagDeletingStateData,
         },
         note_tags_managing::{
             draw_note_tags_managing_state, run_note_tags_managing_state, NoteTagsManagingStateData,
@@ -113,10 +112,8 @@ impl State {
             State::NoteDeleting(data) => draw_note_deleting_state(data, frame, main_rect),
             State::NoteRenaming(data) => draw_note_renaming_state(data, frame, main_rect),
             State::NoteTagsManaging(data) => draw_note_tags_managing_state(data, frame, main_rect),
-            State::NoteTagAdding(data) => draw_note_tag_adding_state_data(data, frame, main_rect),
-            State::NoteTagDeleting(data) => {
-                draw_note_tag_deleting_state_data(data, frame, main_rect)
-            }
+            State::NoteTagAdding(data) => draw_note_tag_adding_state(data, frame, main_rect),
+            State::NoteTagDeleting(data) => draw_note_tag_deleting_state(data, frame, main_rect),
             State::TagsManaging(data) => draw_tags_managing_state(data, frame, main_rect),
             State::TagCreating(data) => draw_tag_creating_state(data, frame, main_rect),
             State::TagDeleting(data) => draw_tag_deleting_state(data, frame, main_rect),

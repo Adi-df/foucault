@@ -10,18 +10,18 @@ pub fn create_popup_proportion(proportion: (u16, u16), rect: Rect) -> Rect {
     let vertical = Layout::new(
         Direction::Vertical,
         [
-            Constraint::Percentage((100 - proportion.1) / 2),
+            Constraint::Percentage((100u16.saturating_sub(proportion.1)) / 2),
             Constraint::Percentage(proportion.1),
-            Constraint::Percentage((100 - proportion.1) / 2),
+            Constraint::Percentage((100u16.saturating_sub(proportion.1)) / 2),
         ],
     )
     .split(rect);
     let horizontal = Layout::new(
         Direction::Horizontal,
         [
-            Constraint::Percentage((100 - proportion.0) / 2),
+            Constraint::Percentage((100u16.saturating_sub(proportion.0)) / 2),
             Constraint::Percentage(proportion.0),
-            Constraint::Percentage((100 - proportion.0) / 2),
+            Constraint::Percentage((100u16.saturating_sub(proportion.0)) / 2),
         ],
     )
     .split(vertical[1]);
@@ -32,18 +32,18 @@ pub fn create_popup_size(size: (u16, u16), rect: Rect) -> Rect {
     let vertical = Layout::new(
         Direction::Vertical,
         [
-            Constraint::Length((rect.height - size.1) / 2),
+            Constraint::Length((rect.height.saturating_sub(size.1)) / 2),
             Constraint::Length(size.1),
-            Constraint::Length((rect.height - size.1) / 2),
+            Constraint::Length((rect.height.saturating_sub(size.1)) / 2),
         ],
     )
     .split(rect);
     let horizontal = Layout::new(
         Direction::Horizontal,
         [
-            Constraint::Length((rect.width - size.0) / 2),
+            Constraint::Length((rect.width.saturating_sub(size.0)) / 2),
             Constraint::Length(size.0),
-            Constraint::Length((rect.width - size.0) / 2),
+            Constraint::Length((rect.width.saturating_sub(size.0)) / 2),
         ],
     )
     .split(vertical[1]);
