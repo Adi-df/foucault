@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, panic};
 
 use colored::Colorize;
 
@@ -24,7 +24,7 @@ pub trait PrettyError {
 
 impl<T, E> PrettyError for Result<T, E>
 where
-    E: Display,
+    E: Display + Send + Sync + 'static,
 {
     type Item = T;
     fn pretty_unwrap(self) -> Self::Item {
@@ -32,7 +32,7 @@ where
             Ok(val) => val,
             Err(err) => {
                 pretty_error(&format!("{err}"));
-                todo!();
+                panic::resume_unwind(Box::new(err));
             }
         }
     }
