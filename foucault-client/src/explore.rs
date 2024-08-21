@@ -4,16 +4,15 @@ use anyhow::Result;
 use log::info;
 use scopeguard::defer;
 
-use crossterm::{event, ExecutableCommand};
 use crossterm::{
-    event::{Event, KeyEventKind},
+    event::{self, Event, KeyEventKind},
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    ExecutableCommand,
 };
 
 use ratatui::{prelude::CrosstermBackend, widgets::Clear, Terminal};
 
-use crate::states::State;
-use crate::NotebookAPI;
+use crate::{states::State, NotebookAPI};
 
 pub async fn explore(notebook: &NotebookAPI) -> Result<()> {
     info!("Explore notebook : {}", notebook.name);

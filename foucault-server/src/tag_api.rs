@@ -1,23 +1,26 @@
 use axum::{extract::State, http::StatusCode, Json};
 
-use crate::{
-    tag_repr::{self, Tag, TagError},
-    AppState,
+use foucault_core::{
+    pretty_error,
+    tag_repr::{Tag, TagError},
 };
+
+use crate::{error::FailibleJsonResult, tag_queries, AppState};
 
 pub(crate) async fn create(
     State(state): State<AppState>,
     Json(name): Json<String>,
-) -> (StatusCode, Json<Result<Tag, TagError>>) {
-    let res = tag_repr::create(&name, state.notebook.db()).await;
+) -> FailibleJsonResult<Result<Tag, TagError>> {
+    let res = tag_queries::create(&name, state.notebook.db()).await;
 
     match res {
-        Ok(tag) => (StatusCode::OK, Json::from(Ok(tag))),
+        Ok(tag) => Ok((StatusCode::OK, Json::from(Ok(tag)))),
         Err(err) => {
             if let Some(tag_err) = err.downcast_ref::<TagError>() {
-                (StatusCode::NOT_ACCEPTABLE, Json::from(Err(*tag_err)))
+                Ok((StatusCode::NOT_ACCEPTABLE, Json::from(Err(*tag_err))))
             } else {
-                panic!("Error encountered during tag creation : {err}");
+                pretty_error!("Error encountered during tag creation : {err}");
+                Err(StatusCode::INTERNAL_SERVER_ERROR)
             }
         }
     }
@@ -26,39 +29,56 @@ pub(crate) async fn create(
 pub(crate) async fn validate_name(
     State(state): State<AppState>,
     Json(name): Json<String>,
-) -> (StatusCode, Json<Option<TagError>>) {
-    let res = tag_repr::validate_name(&name, state.notebook.db())
-        .await
-        .expect("Error encountered when validating tag name");
+) -> FailibleJsonResult<Option<TagError>> {
+    let res = tag_queries::validate_name(&name, state.notebook.db()).await;
 
-    (StatusCode::OK, Json::from(res))
+    match res {
+        Ok(res) => Ok((StatusCode::OK, Json::from(res))),
+        Err(err) => {
+            pretty_error!("Error encountered during tag creation : {err}");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
 }
 
 pub(crate) async fn load_by_name(
     State(state): State<AppState>,
     Json(name): Json<String>,
-) -> (StatusCode, Json<Option<Tag>>) {
-    let res = tag_repr::load_by_name(&name, state.notebook.db())
-        .await
-        .expect("Error encountered while loading tag by name");
+) -> FailibleJsonResult<Option<Tag>> {
+    let res = tag_queries::load_by_name(&name, state.notebook.db()).await;
 
-    (StatusCode::OK, Json::from(res))
+    match res {
+        Ok(res) => Ok((StatusCode::OK, Json::from(res))),
+        Err(err) => {
+            pretty_error!("Error encountered while loading tag by name : {err}");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
 }
 
 pub(crate) async fn search_by_name(
     State(state): State<AppState>,
     Json(pattern): Json<String>,
-) -> (StatusCode, Json<Vec<Tag>>) {
-    let res = tag_repr::search_by_name(&pattern, state.notebook.db())
-        .await
-        .expect("Error encountered when searching for tags");
+) -> FailibleJsonResult<Vec<Tag>> {
+    let res = tag_queries::search_by_name(&pattern, state.notebook.db()).await;
 
-    (StatusCode::OK, Json::from(res))
+    match res {
+        Ok(res) => Ok((StatusCode::OK, Json::from(res))),
+        Err(err) => {
+            pretty_error!("Error encountered when searching for tags : {err}");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
 }
 
 pub(crate) async fn delete(State(state): State<AppState>, Json(id): Json<i64>) -> StatusCode {
-    tag_repr::delete(id, state.notebook.db())
-        .await
-        .expect("Error encountered when deleting tag");
-    StatusCode::OK
+    let res = tag_queries::delete(id, state.notebook.db()).await;
+
+    match res {
+        Ok(()) => StatusCode::OK,
+        Err(err) => {
+            pretty_error!("Error encountered when deleting tag : {err}");
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
+    }
 }

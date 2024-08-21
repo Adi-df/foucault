@@ -1,4 +1,4 @@
-use foucault_server::link_repr;
+use foucault_core::link_repr;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Link {

@@ -1,42 +1,16 @@
 use anyhow::{Error, Result};
 use log::info;
-use thiserror::Error;
-
-use serde::{Deserialize, Serialize};
 
 use futures::future::join_all;
 use sqlx::SqlitePool;
 
-use crate::{
+use foucault_core::{
     link_repr::Link,
-    tag_repr::{self, Tag, TagError},
+    note_repr::{Note, NoteError, NoteSummary},
+    tag_repr::{Tag, TagError},
 };
 
-#[derive(Debug, Clone, Copy, Error, Serialize, Deserialize)]
-pub enum NoteError {
-    #[error("No such note exists")]
-    DoesNotExist,
-    #[error("A similarly named note already exists")]
-    AlreadyExists,
-    #[error("The provided note name is empty")]
-    EmptyName,
-    #[error("The note already has the provided tag")]
-    NoteAlreadyTagged,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Note {
-    pub id: i64,
-    pub name: String,
-    pub content: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NoteSummary {
-    pub id: i64,
-    pub name: String,
-    pub tags: Vec<Tag>,
-}
+use crate::tag_queries;
 
 pub(crate) async fn create(name: &str, content: &str, connection: &SqlitePool) -> Result<i64> {
     info!("Insert note {} in the notebook", name);
@@ -220,7 +194,7 @@ pub(crate) async fn validate_new_tag(
     tag_id: i64,
     notebook: &SqlitePool,
 ) -> Result<Option<Error>> {
-    if !tag_repr::id_exists(tag_id, notebook).await? {
+    if !tag_queries::id_exists(tag_id, notebook).await? {
         Ok(Some(TagError::DoesNotExists.into()))
     } else if has_tag(id, tag_id, notebook).await? {
         Ok(Some(NoteError::NoteAlreadyTagged.into()))

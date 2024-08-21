@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::Result;
-use log::error;
+use foucault_core::pretty_error;
 use thiserror::Error;
 
 use tokio::fs;
@@ -19,19 +19,19 @@ pub struct Notebook {
 
 #[derive(Error, Debug)]
 pub enum OpeningError {
-    #[error("No notebook named {name:?} was found.")]
+    #[error("No notebook named {name} was found.")]
     NotebookNotFound { name: String },
 }
 
 #[derive(Error, Debug)]
 pub enum CreationError {
-    #[error("Another notebook named {name:?} was found.")]
+    #[error("Another notebook named {name} was found.")]
     NotebookAlreadyExists { name: String },
 }
 
 #[derive(Error, Debug)]
 pub enum SuppressionError {
-    #[error("No notebook named {name:?} was found.")]
+    #[error("No notebook named {name} was found.")]
     NoNotebookExists { name: String },
 }
 
@@ -56,7 +56,7 @@ impl Notebook {
             } else if current_dir_notebook_path.exists() {
                 current_dir_notebook_path
             } else {
-                error!("The notebook \"{name}\" was not found.");
+                pretty_error!("The notebook \"{name}\" was not found.");
                 return Err(OpeningError::NotebookNotFound {
                     name: name.to_owned(),
                 }
@@ -73,7 +73,7 @@ impl Notebook {
             ))
             .await
             .unwrap_or_else(|_| {
-                error!("Unable to open the notebook \"{name}\".");
+                pretty_error!("Unable to open the notebook \"{name}\".");
                 todo!();
             });
 
@@ -88,7 +88,7 @@ impl Notebook {
         let notebook_path = dir.join(format!("{name}.book"));
 
         if notebook_path.try_exists()? {
-            error!("A notebook named \"{name}\" already exists.");
+            pretty_error!("A notebook named \"{name}\" already exists.");
             return Err(CreationError::NotebookAlreadyExists {
                 name: name.to_owned(),
             }
@@ -104,7 +104,7 @@ impl Notebook {
             ))
             .await
             .unwrap_or_else(|_| {
-                error!("Unable to open the notebook \"{name}\".");
+                pretty_error!("Unable to open the notebook \"{name}\".");
                 todo!();
             });
 
@@ -112,7 +112,7 @@ impl Notebook {
         sqlx::migrate!().run(&database).await?;
 
         Ok(Notebook {
-            name: name.to_owned(),
+            name: name.to_string(),
             file: notebook_path,
             db_pool: database,
         })
@@ -122,7 +122,7 @@ impl Notebook {
         let notebook_path = dir.join(format!("{name}.book"));
 
         if !notebook_path.exists() {
-            error!("No notebook named {name} exists.");
+            pretty_error!("No notebook named {name} exists.");
             return Err(SuppressionError::NoNotebookExists {
                 name: name.to_owned(),
             }

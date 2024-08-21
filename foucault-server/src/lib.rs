@@ -5,16 +5,17 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::module_name_repetitions)]
 
-pub mod link_repr;
-pub mod note_api;
-pub mod note_repr;
+mod error;
+mod note_api;
+mod note_queries;
 pub mod notebook;
-pub mod tag_api;
-pub mod tag_repr;
+mod tag_api;
+mod tag_queries;
 
 use std::sync::Arc;
 
 use anyhow::Result;
+use thiserror::Error;
 
 use axum::{
     extract::State,
@@ -22,9 +23,17 @@ use axum::{
     routing::{delete, get, patch, post},
     Router,
 };
-use tokio::net::TcpListener;
+use tokio::{io, net::TcpListener};
 
 use crate::notebook::Notebook;
+
+#[derive(Debug, Error)]
+pub enum ServerError {
+    #[error("Unable to bind listener : {0}")]
+    UnableToBindListener(io::Error),
+    #[error("Internal server error occured : {0}")]
+    InternalServerError(io::Error),
+}
 
 #[derive(Clone)]
 struct AppState {
@@ -59,10 +68,12 @@ pub async fn serve(notebook: Arc<Notebook>, port: u16) -> Result<()> {
     let address = format!("0.0.0.0:{port}");
     let listener = TcpListener::bind(&address)
         .await
-        .expect("Listener should bind successfuly");
+        .map_err(ServerError::UnableToBindListener)?;
     axum::serve(listener, app)
         .await
-        .map_err(anyhow::Error::from)
+        .map_err(ServerError::InternalServerError)?;
+
+    Ok(())
 }
 
 async fn notebook_name(State(state): State<AppState>) -> (StatusCode, String) {

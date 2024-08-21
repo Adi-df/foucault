@@ -1,8 +1,8 @@
 use anyhow::Result;
 
-use foucault_server::tag_repr::{self, TagError};
+use foucault_core::tag_repr::{self, TagError};
 
-use crate::{note::NoteSummary, NotebookAPI};
+use crate::{note::NoteSummary, ApiError, NotebookAPI};
 
 #[derive(Debug, Clone)]
 pub struct Tag {
@@ -22,9 +22,11 @@ impl Tag {
             .post(notebook.build_url("/tag/create"))
             .json(&name)
             .send()
-            .await?
+            .await
+            .map_err(ApiError::UnableToContactRemoteNotebook)?
             .json::<Result<tag_repr::Tag, TagError>>()
-            .await?;
+            .await
+            .map_err(ApiError::UnableToParseResponse)?;
 
         match res {
             Ok(tag) => Ok(Self::from(tag)),
@@ -40,9 +42,11 @@ impl Tag {
             .get(notebook.build_url("/tag/validate/name"))
             .json(name)
             .send()
-            .await?
+            .await
+            .map_err(ApiError::UnableToContactRemoteNotebook)?
             .json::<Option<TagError>>()
-            .await?;
+            .await
+            .map_err(ApiError::UnableToParseResponse)?;
 
         Ok(res.is_none())
     }
@@ -53,9 +57,11 @@ impl Tag {
             .get(notebook.build_url("/tag/load/name"))
             .json(name)
             .send()
-            .await?
+            .await
+            .map_err(ApiError::UnableToContactRemoteNotebook)?
             .json::<Option<tag_repr::Tag>>()
-            .await?;
+            .await
+            .map_err(ApiError::UnableToParseResponse)?;
 
         Ok(res.map(Self::from))
     }
@@ -66,9 +72,11 @@ impl Tag {
             .get(notebook.build_url("/tag/search/name"))
             .json(pattern)
             .send()
-            .await?
+            .await
+            .map_err(ApiError::UnableToContactRemoteNotebook)?
             .json::<Vec<tag_repr::Tag>>()
-            .await?;
+            .await
+            .map_err(ApiError::UnableToParseResponse)?;
 
         Ok(res.into_iter().map(Self::from).collect())
     }
@@ -89,7 +97,8 @@ impl Tag {
             .delete(notebook.build_url("/tag/delete"))
             .json(&self.id())
             .send()
-            .await?;
+            .await
+            .map_err(ApiError::UnableToContactRemoteNotebook)?;
 
         Ok(())
     }
