@@ -42,7 +42,7 @@ pub async fn run_nothing_state(key_event: KeyEvent, notebook: &NotebookAPI) -> R
     })
 }
 
-pub fn draw_nothing_state(frame: &mut Frame, notebook: &NotebookAPI, main_rect: Rect) {
+pub fn draw_nothing_state(notebook: &NotebookAPI, frame: &mut Frame, main_rect: Rect) {
     let title = Paragraph::new(Line::from(vec![Span::raw(notebook.name.capitalize())
         .style(
             Style::new()

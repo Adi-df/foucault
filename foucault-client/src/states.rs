@@ -1,3 +1,4 @@
+mod error;
 mod note_creating;
 mod note_deleting;
 mod note_renaming;
@@ -15,6 +16,7 @@ mod tags_managing;
 use anyhow::Result;
 
 use crossterm::event::KeyEvent;
+use error::{draw_error_state, run_error_state, ErrorStateData};
 use ratatui::{layout::Rect, Frame};
 
 use crate::{
@@ -50,6 +52,7 @@ use crate::{
 pub enum State {
     Nothing,
     Exit,
+    Error(ErrorStateData),
     NotesManaging(NotesManagingStateData),
     NoteViewing(NoteViewingStateData),
     NoteCreating(NoteCreatingStateData),
@@ -73,6 +76,7 @@ impl State {
     ) -> Result<Self> {
         match self {
             State::Nothing => run_nothing_state(key_event, notebook).await,
+            State::Error(data) => run_error_state(data, key_event, notebook).await,
             State::NotesManaging(data) => run_note_managing_state(data, key_event, notebook).await,
             State::NoteCreating(data) => run_note_creating_state(data, key_event, notebook).await,
             State::NoteViewing(data) => {
@@ -101,7 +105,8 @@ impl State {
 
     pub fn draw(&self, notebook: &NotebookAPI, frame: &mut Frame, main_rect: Rect) {
         match self {
-            State::Nothing => draw_nothing_state(frame, notebook, main_rect),
+            State::Nothing => draw_nothing_state(notebook, frame, main_rect),
+            State::Error(data) => draw_error_state(data, frame, main_rect),
             State::NotesManaging(data) => draw_note_managing_state(data, frame, main_rect),
             State::NoteCreating(data) => draw_note_creating_state(data, frame, main_rect),
             State::NoteViewing(data) => draw_note_viewing_state(data, frame, main_rect),
