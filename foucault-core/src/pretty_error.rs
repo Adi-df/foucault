@@ -24,7 +24,7 @@ pub trait PrettyError {
 
 impl<T, E> PrettyError for Result<T, E>
 where
-    E: Display + Send + Sync + 'static,
+    E: Display + Send + 'static,
 {
     type Item = T;
     fn pretty_unwrap(self) -> Self::Item {

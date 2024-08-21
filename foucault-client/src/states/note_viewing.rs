@@ -1,4 +1,8 @@
-use std::{env, io::stdout};
+use std::{
+    env,
+    io::stdout,
+    sync::{Arc, Mutex},
+};
 
 use anyhow::Result;
 use log::info;
@@ -44,7 +48,7 @@ use crate::{
 pub struct NoteViewingStateData {
     pub note: Note,
     pub tags: Vec<Tag>,
-    pub parsed_content: ParsedMarkdown,
+    pub parsed_content: Arc<Mutex<ParsedMarkdown>>,
     pub selected: (usize, usize),
     pub help_display: bool,
 }
@@ -56,7 +60,7 @@ impl NoteViewingStateData {
         Ok(NoteViewingStateData {
             tags: note.tags(notebook).await?,
             note,
-            parsed_content,
+            parsed_content: Arc::new(Mutex::new(parsed_content)),
             selected: (0, 0),
             help_display: false,
         })
@@ -65,17 +69,26 @@ impl NoteViewingStateData {
 
 impl NoteViewingStateData {
     fn re_parse_content(&mut self) {
-        self.parsed_content = parse(self.note.content());
+        self.parsed_content = Arc::new(Mutex::new(parse(self.note.content())));
     }
-    fn get_current(&self) -> Option<&SelectableInlineElements> {
-        self.parsed_content.get_element(self.selected)
+    fn get_current(&self) -> Option<SelectableInlineElements> {
+        self.parsed_content
+            .lock()
+            .unwrap()
+            .get_element(self.selected)
+            .cloned()
     }
     fn select_current(&mut self, selected: bool) {
-        self.parsed_content.select(self.selected, selected);
+        self.parsed_content
+            .lock()
+            .unwrap()
+            .select(self.selected, selected);
     }
 
     fn compute_links(&self) -> Vec<Link> {
         self.parsed_content
+            .lock()
+            .unwrap()
             .list_links()
             .into_iter()
             .map(|to| Link::new(self.note.id(), to.to_string()))
@@ -140,7 +153,7 @@ pub async fn run_note_viewing_state(
         KeyCode::Enter => {
             info!("Try to trigger element action.");
             if let Some(element) = state_data.get_current() {
-                match <&InlineElements>::from(element) {
+                match <&InlineElements>::from(&element) {
                     InlineElements::HyperLink { dest, .. } => {
                         opener::open(dest.as_str())?;
                         State::NoteViewing(state_data)
@@ -164,6 +177,8 @@ pub async fn run_note_viewing_state(
             state_data.selected.0 = state_data.selected.0.min(
                 state_data
                     .parsed_content
+                    .lock()
+                    .unwrap()
                     .block_length(state_data.selected.1)
                     .saturating_sub(1),
             );
@@ -172,13 +187,20 @@ pub async fn run_note_viewing_state(
         }
         KeyCode::Down | KeyCode::Char('j')
             if state_data.selected.1
-                < state_data.parsed_content.block_count().saturating_sub(1) =>
+                < state_data
+                    .parsed_content
+                    .lock()
+                    .unwrap()
+                    .block_count()
+                    .saturating_sub(1) =>
         {
             state_data.select_current(false);
             state_data.selected.1 += 1;
             state_data.selected.0 = state_data.selected.0.min(
                 state_data
                     .parsed_content
+                    .lock()
+                    .unwrap()
                     .block_length(state_data.selected.1)
                     .saturating_sub(1),
             );
@@ -195,6 +217,8 @@ pub async fn run_note_viewing_state(
             if state_data.selected.0
                 < state_data
                     .parsed_content
+                    .lock()
+                    .unwrap()
                     .block_length(state_data.selected.1)
                     .saturating_sub(1) =>
         {
@@ -211,9 +235,16 @@ pub async fn run_note_viewing_state(
         }
         KeyCode::Char('E') => {
             state_data.select_current(false);
-            state_data.selected.1 = state_data.parsed_content.block_count().saturating_sub(1);
+            state_data.selected.1 = state_data
+                .parsed_content
+                .lock()
+                .unwrap()
+                .block_count()
+                .saturating_sub(1);
             state_data.selected.0 = state_data
                 .parsed_content
+                .lock()
+                .unwrap()
                 .block_length(state_data.selected.1)
                 .saturating_sub(1);
             state_data.select_current(true);
@@ -261,6 +292,7 @@ pub fn draw_note_viewing_state(
     frame: &mut Frame,
     main_rect: Rect,
 ) {
+    let parsed_content = parsed_content.lock().unwrap();
     let vertical_layout = Layout::new(
         Direction::Vertical,
         [Constraint::Length(5), Constraint::Min(0)],
