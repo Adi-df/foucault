@@ -21,3 +21,4 @@ unicode-segmentation = "1.11.0"
 log = { version = "0.4.22", features = ["std"] }
 tokio = { version = "1.39.3", features = ["full"] }
 reqwest = { version = "0.12.7", features = ["json"] }
+textwrap = "0.16.1"

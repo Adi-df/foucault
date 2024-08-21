@@ -5,7 +5,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     layout::Rect,
     style::{Color, Style},
-    widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap},
+    widgets::{Block, BorderType, Borders, Clear, Paragraph},
     Frame,
 };
 
@@ -38,16 +38,17 @@ pub fn draw_error_state(
 ) {
     state_data.inner_state.draw(notebook, frame, main_rect);
 
-    let popup_area = create_popup_size((60, 5), main_rect);
-    let err_popup = Paragraph::new(state_data.error_message.as_str())
-        .wrap(Wrap { trim: false })
-        .block(
-            Block::new()
-                .title("Error")
-                .borders(Borders::ALL)
-                .border_type(BorderType::Double)
-                .border_style(Style::new().fg(Color::Red)),
-        );
+    let wrapped_text = textwrap::wrap(state_data.error_message.as_str(), 60);
+    let line_count = wrapped_text.len();
+
+    let popup_area = create_popup_size((60, u16::try_from(line_count + 2).unwrap()), main_rect);
+    let err_popup = Paragraph::new(wrapped_text.join("\n")).block(
+        Block::new()
+            .title("Error")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Double)
+            .border_style(Style::new().fg(Color::Red)),
+    );
 
     frame.render_widget(Clear, popup_area);
     frame.render_widget(err_popup, popup_area);
