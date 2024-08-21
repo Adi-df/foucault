@@ -5,15 +5,15 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::module_name_repetitions)]
 
-use std::{fmt::Display, path::PathBuf, sync::LazyLock};
+use std::{path::PathBuf, sync::LazyLock};
 
 use anyhow::Result;
-use colored::Colorize;
 use log::error;
 use thiserror::Error;
 
 use reqwest::Client;
 
+pub mod error;
 pub mod explore;
 mod helpers;
 mod links;
@@ -30,27 +30,6 @@ pub static APP_DIR_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
         unimplemented!();
     }
 });
-
-pub trait PrettyError {
-    type Item;
-    fn pretty_unwrap(self) -> Self::Item;
-}
-
-impl<T, E> PrettyError for Result<T, E>
-where
-    E: Display,
-{
-    type Item = T;
-    fn pretty_unwrap(self) -> Self::Item {
-        match self {
-            Ok(val) => val,
-            Err(err) => {
-                eprintln!("{} : {err}", "error".red().bold());
-                todo!();
-            }
-        }
-    }
-}
 
 #[derive(Debug, Error)]
 pub enum ApiError {

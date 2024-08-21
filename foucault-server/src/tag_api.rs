@@ -3,11 +3,10 @@ use log::error;
 use axum::{extract::State, http::StatusCode, Json};
 
 use crate::{
+    error::FailibleJsonResult,
     tag_repr::{self, Tag, TagError},
     AppState,
 };
-
-pub type FailibleJsonResult<T> = Result<(StatusCode, Json<T>), StatusCode>;
 
 pub(crate) async fn create(
     State(state): State<AppState>,

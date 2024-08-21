@@ -9,9 +9,9 @@ use serde::{Deserialize, Serialize};
 use serde_error::Error;
 
 use crate::{
+    error::FailibleJsonResult,
     link_repr::Link,
     note_repr::{self, Note, NoteError, NoteSummary},
-    tag_api::FailibleJsonResult,
     tag_repr::{Tag, TagError},
     AppState,
 };

@@ -16,7 +16,7 @@ use tokio::fs;
 use clap::{Parser, Subcommand};
 use question::{Answer, Question};
 
-use foucault_client::{explore::explore, NotebookAPI, PrettyError, APP_DIR_PATH};
+use foucault_client::{error::PrettyError, explore::explore, NotebookAPI, APP_DIR_PATH};
 use foucault_server::notebook::Notebook;
 
 use crate::notebook_selector::open_selector;
