@@ -8,13 +8,13 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use serde_error::Error;
 
-use crate::{
-    error::FailibleJsonResult,
+use foucault_core::{
     link_repr::Link,
-    note_repr::{self, Note, NoteError, NoteSummary},
+    note_repr::{Note, NoteError, NoteSummary},
     tag_repr::{Tag, TagError},
-    AppState,
 };
+
+use crate::{error::FailibleJsonResult, note_repr, AppState};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateParam {

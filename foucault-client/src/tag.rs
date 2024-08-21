@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use foucault_server::tag_repr::{self, TagError};
+use foucault_core::tag_repr::{self, TagError};
 
 use crate::{note::NoteSummary, ApiError, NotebookAPI};
 

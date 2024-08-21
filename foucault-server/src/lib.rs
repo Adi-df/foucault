@@ -6,7 +6,6 @@
 #![allow(clippy::module_name_repetitions)]
 
 mod error;
-mod link_repr;
 mod note_api;
 mod note_repr;
 pub mod notebook;

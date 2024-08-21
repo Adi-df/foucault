@@ -4,6 +4,8 @@ use random_color::RandomColor;
 
 use sqlx::SqlitePool;
 
+use foucault_core::tag_repr::{Tag, TagError};
+
 fn rand_color() -> u32 {
     let [r, g, b] = RandomColor::new().alpha(1.).to_rgb_array();
     (u32::from(r) << 16) + (u32::from(g) << 4) + u32::from(b)

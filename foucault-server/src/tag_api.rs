@@ -2,11 +2,9 @@ use log::error;
 
 use axum::{extract::State, http::StatusCode, Json};
 
-use crate::{
-    error::FailibleJsonResult,
-    tag_repr::{self, Tag, TagError},
-    AppState,
-};
+use foucault_core::tag_repr::{Tag, TagError};
+
+use crate::{error::FailibleJsonResult, tag_repr, AppState};
 
 pub(crate) async fn create(
     State(state): State<AppState>,

@@ -1,16 +1,16 @@
 use anyhow::{Error, Result};
 use log::info;
-use thiserror::Error;
-
-use serde::{Deserialize, Serialize};
 
 use futures::future::join_all;
 use sqlx::SqlitePool;
 
-use crate::{
+use foucault_core::{
     link_repr::Link,
-    tag_repr::{self, Tag, TagError},
+    note_repr::{Note, NoteError, NoteSummary},
+    tag_repr::{Tag, TagError},
 };
+
+use crate::tag_repr;
 
 pub(crate) async fn create(name: &str, content: &str, connection: &SqlitePool) -> Result<i64> {
     info!("Insert note {} in the notebook", name);
