@@ -52,7 +52,7 @@ pub async fn explore(notebook: &NotebookAPI) -> Result<()> {
                                 state = State::Error(ErrorStateData {
                                     inner_state: Box::new(state),
                                     error_message: err.to_string(),
-                                })
+                                });
                             }
                         }
                     }
