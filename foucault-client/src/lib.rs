@@ -8,7 +8,7 @@
 use std::{path::PathBuf, sync::LazyLock};
 
 use anyhow::Result;
-use log::error;
+use foucault_core::pretty_error;
 use thiserror::Error;
 
 use reqwest::Client;
@@ -25,7 +25,7 @@ pub static APP_DIR_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     if let Some(data_dir) = dirs::data_dir() {
         data_dir.join("foucault")
     } else {
-        error!("User data directory is unavailable.");
+        pretty_error!("User data directory is unavailable.");
         unimplemented!();
     }
 });

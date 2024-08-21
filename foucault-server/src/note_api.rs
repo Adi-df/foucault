@@ -1,5 +1,3 @@
-use log::error;
-
 use axum::{
     extract::{Json, State},
     http::StatusCode,
@@ -13,6 +11,7 @@ use foucault_core::{
         UpdateLinksParam, ValidateNewTagParam,
     },
     note_repr::{Note, NoteError, NoteSummary},
+    pretty_error,
     tag_repr::{Tag, TagError},
 };
 
@@ -30,7 +29,7 @@ pub(crate) async fn create(
             if let Some(note_err) = err.downcast_ref::<NoteError>() {
                 Ok((StatusCode::NOT_ACCEPTABLE, Json::from(Err(*note_err))))
             } else {
-                error!("Error encountered during note creation : {err}");
+                pretty_error!("Error encountered during note creation : {}", err);
                 Err(StatusCode::INTERNAL_SERVER_ERROR)
             }
         }
@@ -46,7 +45,7 @@ pub(crate) async fn validate_name(
     match res {
         Ok(res) => Ok((StatusCode::OK, Json::from(res))),
         Err(err) => {
-            error!("Error encountered during name validation : {err}");
+            pretty_error!("Error encountered during name validation : {err}");
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -61,7 +60,7 @@ pub(crate) async fn load_by_id(
     match res {
         Ok(res) => Ok((StatusCode::OK, Json::from(res))),
         Err(err) => {
-            error!("Error encountered during note loading : {err}");
+            pretty_error!("Error encountered during note loading : {err}");
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -76,7 +75,7 @@ pub(crate) async fn load_by_name(
     match res {
         Ok(res) => Ok((StatusCode::OK, Json::from(res))),
         Err(err) => {
-            error!("Error encountered during note loading : {err}");
+            pretty_error!("Error encountered during note loading : {err}");
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -94,7 +93,7 @@ pub(crate) async fn rename(
             if let Some(note_err) = err.downcast_ref::<NoteError>() {
                 Ok((StatusCode::NOT_ACCEPTABLE, Json::from(Some(*note_err))))
             } else {
-                error!("Error encountered during note renaming : {err}");
+                pretty_error!("Error encountered during note renaming : {err}");
                 Err(StatusCode::INTERNAL_SERVER_ERROR)
             }
         }
@@ -107,7 +106,7 @@ pub(crate) async fn delete(State(state): State<AppState>, Json(id): Json<i64>) -
     match res {
         Ok(()) => StatusCode::OK,
         Err(err) => {
-            error!("Error encountered when deleting note : {err}");
+            pretty_error!("Error encountered when deleting note : {err}");
             StatusCode::INTERNAL_SERVER_ERROR
         }
     }
@@ -122,7 +121,7 @@ pub(crate) async fn update_content(
     match res {
         Ok(()) => StatusCode::OK,
         Err(err) => {
-            error!("Error encountered when updating note content : {err}");
+            pretty_error!("Error encountered when updating note content : {err}");
             StatusCode::INTERNAL_SERVER_ERROR
         }
     }
@@ -137,7 +136,7 @@ pub(crate) async fn update_links(
     match res {
         Ok(()) => StatusCode::OK,
         Err(err) => {
-            error!("Error encountered when updating note links : {err}");
+            pretty_error!("Error encountered when updating note links : {err}");
             StatusCode::INTERNAL_SERVER_ERROR
         }
     }
@@ -152,7 +151,7 @@ pub(crate) async fn list_tags(
     match res {
         Ok(res) => Ok((StatusCode::OK, Json::from(res))),
         Err(err) => {
-            error!("Error encountered while listing note's tags : {err}");
+            pretty_error!("Error encountered while listing note's tags : {err}");
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -167,7 +166,7 @@ pub(crate) async fn validate_new_tag(
     match res {
         Ok(res) => Ok((StatusCode::OK, Json::from(res.map(|err| Error::new(&*err))))),
         Err(err) => {
-            error!("Error encountered during tag validation : {err}");
+            pretty_error!("Error encountered during tag validation : {err}");
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -188,7 +187,7 @@ pub(crate) async fn add_tag(
                     Json::from(Some(Error::new(&*err))),
                 ))
             } else {
-                error!("Error encountered while adding tag : {err}");
+                pretty_error!("Error encountered while adding tag : {err}");
                 Err(StatusCode::INTERNAL_SERVER_ERROR)
             }
         }
@@ -204,7 +203,7 @@ pub(crate) async fn remove_tag(
     match res {
         Ok(()) => StatusCode::OK,
         Err(err) => {
-            error!("Error encountered while removing tag : {err}");
+            pretty_error!("Error encountered while removing tag : {err}");
             StatusCode::INTERNAL_SERVER_ERROR
         }
     }
@@ -219,7 +218,7 @@ pub(crate) async fn search_by_name(
     match res {
         Ok(res) => Ok((StatusCode::OK, Json::from(res))),
         Err(err) => {
-            error!("Error encountered when searching notes : {err}");
+            pretty_error!("Error encountered when searching notes : {err}");
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -234,7 +233,7 @@ pub(crate) async fn search_by_tag(
     match res {
         Ok(res) => Ok((StatusCode::OK, Json::from(res))),
         Err(err) => {
-            error!("Error encountered while fetching notes summaries : {err}");
+            pretty_error!("Error encountered while fetching notes summaries : {err}");
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }

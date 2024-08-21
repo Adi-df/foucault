@@ -1,8 +1,9 @@
-use log::error;
-
 use axum::{extract::State, http::StatusCode, Json};
 
-use foucault_core::tag_repr::{Tag, TagError};
+use foucault_core::{
+    pretty_error,
+    tag_repr::{Tag, TagError},
+};
 
 use crate::{error::FailibleJsonResult, tag_queries, AppState};
 
@@ -18,7 +19,7 @@ pub(crate) async fn create(
             if let Some(tag_err) = err.downcast_ref::<TagError>() {
                 Ok((StatusCode::NOT_ACCEPTABLE, Json::from(Err(*tag_err))))
             } else {
-                error!("Error encountered during tag creation : {err}");
+                pretty_error!("Error encountered during tag creation : {err}");
                 Err(StatusCode::INTERNAL_SERVER_ERROR)
             }
         }
@@ -34,7 +35,7 @@ pub(crate) async fn validate_name(
     match res {
         Ok(res) => Ok((StatusCode::OK, Json::from(res))),
         Err(err) => {
-            error!("Error encountered during tag creation : {err}");
+            pretty_error!("Error encountered during tag creation : {err}");
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -49,7 +50,7 @@ pub(crate) async fn load_by_name(
     match res {
         Ok(res) => Ok((StatusCode::OK, Json::from(res))),
         Err(err) => {
-            error!("Error encountered while loading tag by name : {err}");
+            pretty_error!("Error encountered while loading tag by name : {err}");
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -64,7 +65,7 @@ pub(crate) async fn search_by_name(
     match res {
         Ok(res) => Ok((StatusCode::OK, Json::from(res))),
         Err(err) => {
-            error!("Error encountered when searching for tags : {err}");
+            pretty_error!("Error encountered when searching for tags : {err}");
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -76,7 +77,7 @@ pub(crate) async fn delete(State(state): State<AppState>, Json(id): Json<i64>) -
     match res {
         Ok(()) => StatusCode::OK,
         Err(err) => {
-            error!("Error encountered when deleting tag : {err}");
+            pretty_error!("Error encountered when deleting tag : {err}");
             StatusCode::INTERNAL_SERVER_ERROR
         }
     }

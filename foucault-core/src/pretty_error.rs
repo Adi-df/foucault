@@ -1,16 +1,20 @@
-use std::{fmt::Display, sync::LazyLock};
+use std::fmt::Display;
 
-use colored::{ColoredString, Colorize};
+use colored::Colorize;
 
-static ERROR_PREFIX: LazyLock<ColoredString> = LazyLock::new(|| "error".red().bold());
-
+#[macro_export]
 macro_rules! pretty_error {
     () => {
-        eprintln!("{} : An error occured", *ERROR_PREFIX);
+        $crate::pretty_error::pretty_error("An error occured");
     };
     ($($arg:tt)*) => {{
-        eprintln!("{} : {}", *ERROR_PREFIX, format!($($arg)*));
+        $crate::pretty_error::pretty_error(&format!($($arg)*));
     }};
+}
+
+#[doc(hidden)]
+pub fn pretty_error(err: &str) {
+    eprintln!("{} : {err}", "error".red().bold());
 }
 
 pub trait PrettyError {
@@ -27,7 +31,7 @@ where
         match self {
             Ok(val) => val,
             Err(err) => {
-                pretty_error!("{err}");
+                pretty_error(&format!("{err}"));
                 todo!();
             }
         }

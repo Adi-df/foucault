@@ -9,7 +9,7 @@ mod notebook_selector;
 
 use std::{env, sync::Arc};
 
-use log::{error, info};
+use log::info;
 
 use tokio::fs;
 
@@ -17,7 +17,7 @@ use clap::{Parser, Subcommand};
 use question::{Answer, Question};
 
 use foucault_client::{explore::explore, NotebookAPI, APP_DIR_PATH};
-use foucault_core::PrettyError;
+use foucault_core::{pretty_error, PrettyError};
 use foucault_server::notebook::Notebook;
 
 use crate::notebook_selector::open_selector;
@@ -83,11 +83,11 @@ async fn main() {
 
     if !APP_DIR_PATH.exists() {
         if fs::create_dir(&*APP_DIR_PATH).await.is_err() {
-            error!("Unable to create app directory.");
+            pretty_error!("Unable to create app directory.");
             todo!();
         }
     } else if !APP_DIR_PATH.is_dir() {
-        error!("Another file already exists.");
+        pretty_error!("Another file already exists.");
         todo!();
     }
 
