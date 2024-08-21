@@ -8,7 +8,7 @@ use crate::{
     helpers::draw_text_prompt,
     note::Note,
     states::{error::ErrorStateData, note_viewing::NoteViewingStateData, State},
-    NotebookAPI,
+    try_err, NotebookAPI,
 };
 
 pub struct NoteCreatingStateData {
@@ -31,58 +31,56 @@ pub async fn run_note_creating_state(
     notebook: &NotebookAPI,
 ) -> Result<State> {
     Ok(match key_event.code {
-        KeyCode::Enter => match Note::validate_name(state_data.name.as_str(), notebook).await {
-            Ok(true) => {
+        KeyCode::Enter => {
+            if try_err!(
+                Note::validate_name(state_data.name.as_str(), notebook).await,
+                State::NoteCreating(state_data)
+            ) {
                 info!("Create note : {}.", state_data.name.as_str());
 
-                match Note::new(state_data.name.clone(), String::new(), notebook).await {
-                    Ok(new_note) => {
-                        State::NoteViewing(NoteViewingStateData::new(new_note, notebook).await?)
-                    }
-                    Err(err) => State::Error(ErrorStateData {
-                        inner_state: Box::new(State::NoteCreating(state_data)),
-                        error_message: err.to_string(),
-                    }),
-                }
+                let new_note = try_err!(
+                    Note::new(state_data.name.clone(), String::new(), notebook).await,
+                    State::NoteCreating(state_data)
+                );
+
+                let data = try_err!(
+                    NoteViewingStateData::new(new_note, notebook).await,
+                    State::NoteCreating(state_data)
+                );
+
+                State::NoteViewing(data)
+            } else {
+                State::NoteCreating(NoteCreatingStateData {
+                    valid: false,
+                    ..state_data
+                })
             }
-            Ok(false) => State::NoteCreating(NoteCreatingStateData {
-                valid: false,
-                ..state_data
-            }),
-            Err(err) => State::Error(ErrorStateData {
-                inner_state: Box::new(State::NoteCreating(state_data)),
-                error_message: err.to_string(),
-            }),
-        },
+        }
         KeyCode::Esc => {
             info!("Cancel note creation.");
             State::Nothing
         }
         KeyCode::Backspace => {
             state_data.name.pop();
-            match Note::validate_name(state_data.name.as_str(), notebook).await {
-                Ok(valid) => State::NoteCreating(NoteCreatingStateData {
-                    valid,
-                    ..state_data
-                }),
-                Err(err) => State::Error(ErrorStateData {
-                    inner_state: Box::new(State::NoteCreating(state_data)),
-                    error_message: err.to_string(),
-                }),
-            }
+            let valid = try_err!(
+                Note::validate_name(state_data.name.as_str(), notebook).await,
+                State::NoteCreating(state_data)
+            );
+            State::NoteCreating(NoteCreatingStateData {
+                valid,
+                ..state_data
+            })
         }
         KeyCode::Char(c) => {
             state_data.name.push(c);
-            match Note::validate_name(state_data.name.as_str(), notebook).await {
-                Ok(valid) => State::NoteCreating(NoteCreatingStateData {
-                    valid,
-                    ..state_data
-                }),
-                Err(err) => State::Error(ErrorStateData {
-                    inner_state: Box::new(State::NoteCreating(state_data)),
-                    error_message: err.to_string(),
-                }),
-            }
+            let valid = try_err!(
+                Note::validate_name(state_data.name.as_str(), notebook).await,
+                State::NoteCreating(state_data)
+            );
+            State::NoteCreating(NoteCreatingStateData {
+                valid,
+                ..state_data
+            })
         }
         _ => State::NoteCreating(state_data),
     })
