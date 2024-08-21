@@ -5,7 +5,7 @@ use tokio::fs;
 use anyhow::Result;
 use serde_error::Error;
 
-use foucault_server::{
+use foucault_core::{
     note_api,
     note_repr::{self, NoteError},
     tag_repr,

@@ -1,28 +1,8 @@
 use anyhow::Result;
-use thiserror::Error;
-
-use serde::{Deserialize, Serialize};
 
 use random_color::RandomColor;
 
 use sqlx::SqlitePool;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Tag {
-    pub id: i64,
-    pub name: String,
-    pub color: u32,
-}
-
-#[derive(Debug, Clone, Copy, Error, Serialize, Deserialize)]
-pub enum TagError {
-    #[error("A simillarly named tag already exists")]
-    AlreadyExists,
-    #[error("The provided tag name is empty")]
-    EmptyName,
-    #[error("No such tag exists")]
-    DoesNotExists,
-}
 
 fn rand_color() -> u32 {
     let [r, g, b] = RandomColor::new().alpha(1.).to_rgb_array();

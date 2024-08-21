@@ -2,6 +2,8 @@ use thiserror::Error;
 
 use serde::{Deserialize, Serialize};
 
+use crate::tag_repr::Tag;
+
 #[derive(Debug, Clone, Copy, Error, Serialize, Deserialize)]
 pub enum NoteError {
     #[error("No such note exists")]
