@@ -106,7 +106,7 @@ impl State {
     pub fn draw(&self, notebook: &NotebookAPI, frame: &mut Frame, main_rect: Rect) {
         match self {
             State::Nothing => draw_nothing_state(notebook, frame, main_rect),
-            State::Error(data) => draw_error_state(data, frame, main_rect),
+            State::Error(data) => draw_error_state(notebook, data, frame, main_rect),
             State::NotesManaging(data) => draw_note_managing_state(data, frame, main_rect),
             State::NoteCreating(data) => draw_note_creating_state(data, frame, main_rect),
             State::NoteViewing(data) => draw_note_viewing_state(data, frame, main_rect),
