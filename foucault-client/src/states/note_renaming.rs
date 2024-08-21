@@ -2,14 +2,14 @@ use anyhow::Result;
 use log::info;
 
 use crossterm::event::{KeyCode, KeyEvent};
-use ratatui::widgets::Block;
+use ratatui::{layout::Rect, Frame};
 
 use crate::{
-    helpers::{draw_text_prompt, DiscardResult},
+    helpers::draw_text_prompt,
     note::Note,
     states::{
-        note_viewing::{draw_viewed_note, NoteViewingStateData},
-        State, Terminal,
+        note_viewing::{draw_note_viewing_state, NoteViewingStateData},
+        State,
     },
     NotebookAPI,
 };
@@ -87,17 +87,9 @@ pub fn draw_note_renaming_state(
         new_name,
         valid,
     }: &NoteRenamingStateData,
-    terminal: &mut Terminal,
-    main_frame: Block,
-) -> Result<()> {
-    terminal
-        .draw(|frame| {
-            let main_rect = main_frame.inner(frame.size());
-
-            draw_viewed_note(frame, note_viewing_data, main_rect);
-            draw_text_prompt(frame, "Rename note", new_name, *valid, main_rect);
-
-            frame.render_widget(main_frame, frame.size());
-        })
-        .discard_result()
+    frame: &mut Frame,
+    main_rect: Rect,
+) {
+    draw_note_viewing_state(note_viewing_data, frame, main_rect);
+    draw_text_prompt(frame, "Rename note", new_name, *valid, main_rect);
 }

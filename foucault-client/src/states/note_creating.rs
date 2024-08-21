@@ -2,12 +2,12 @@ use anyhow::Result;
 use log::info;
 
 use crossterm::event::{KeyCode, KeyEvent};
-use ratatui::widgets::Block;
+use ratatui::{layout::Rect, Frame};
 
 use crate::{
-    helpers::{draw_text_prompt, DiscardResult},
+    helpers::draw_text_prompt,
     note::Note,
-    states::{note_viewing::NoteViewingStateData, State, Terminal},
+    states::{note_viewing::NoteViewingStateData, State},
     NotebookAPI,
 };
 
@@ -67,16 +67,8 @@ pub async fn run_note_creating_state(
 
 pub fn draw_note_creating_state(
     NoteCreatingStateData { name, valid }: &NoteCreatingStateData,
-    terminal: &mut Terminal,
-    main_frame: Block,
-) -> Result<()> {
-    terminal
-        .draw(|frame| {
-            let main_rect = main_frame.inner(frame.size());
-
-            draw_text_prompt(frame, "Note name", name, *valid, main_rect);
-
-            frame.render_widget(main_frame, frame.size());
-        })
-        .discard_result()
+    frame: &mut Frame,
+    main_rect: Rect,
+) {
+    draw_text_prompt(frame, "Note name", name, *valid, main_rect);
 }

@@ -12,16 +12,13 @@ mod tag_deleting;
 mod tag_notes_listing;
 mod tags_managing;
 
-use std::io::Stdout;
-
 use anyhow::Result;
 
 use crossterm::event::KeyEvent;
 use ratatui::{
-    prelude::CrosstermBackend,
     style::{Color, Style},
     widgets::{Block, BorderType, Borders, Padding},
-    Terminal as UITerminal,
+    Frame,
 };
 
 use crate::{
@@ -53,8 +50,6 @@ use crate::{
     },
     NotebookAPI,
 };
-
-pub type Terminal = UITerminal<CrosstermBackend<Stdout>>;
 
 pub enum State {
     Nothing,
@@ -108,7 +103,7 @@ impl State {
         }
     }
 
-    pub fn draw(&self, notebook: &NotebookAPI, terminal: &mut Terminal) -> Result<()> {
+    pub fn draw(&self, notebook: &NotebookAPI, frame: &mut Frame) {
         let main_frame = Block::new()
             .title(notebook.name.as_str())
             .padding(Padding::uniform(1))
@@ -116,29 +111,27 @@ impl State {
             .border_type(BorderType::Rounded)
             .border_style(Style::new().fg(Color::White));
 
+        let main_rect = main_frame.inner(frame.size());
+
         match self {
-            State::Nothing => draw_nothing_state(terminal, notebook, main_frame),
-            State::NotesManaging(data) => draw_note_managing_state(data, terminal, main_frame),
-            State::NoteCreating(data) => draw_note_creating_state(data, terminal, main_frame),
-            State::NoteViewing(data) => draw_note_viewing_state(data, terminal, main_frame),
-            State::NoteDeleting(data) => draw_note_deleting_state(data, terminal, main_frame),
-            State::NoteRenaming(data) => draw_note_renaming_state(data, terminal, main_frame),
-            State::NoteTagsManaging(data) => {
-                draw_note_tags_managing_state(data, terminal, main_frame)
-            }
-            State::NoteTagAdding(data) => {
-                draw_note_tag_adding_state_data(data, terminal, main_frame)
-            }
+            State::Nothing => draw_nothing_state(frame, notebook, main_rect),
+            State::NotesManaging(data) => draw_note_managing_state(data, frame, main_rect),
+            State::NoteCreating(data) => draw_note_creating_state(data, frame, main_rect),
+            State::NoteViewing(data) => draw_note_viewing_state(data, frame, main_rect),
+            State::NoteDeleting(data) => draw_note_deleting_state(data, frame, main_rect),
+            State::NoteRenaming(data) => draw_note_renaming_state(data, frame, main_rect),
+            State::NoteTagsManaging(data) => draw_note_tags_managing_state(data, frame, main_rect),
+            State::NoteTagAdding(data) => draw_note_tag_adding_state_data(data, frame, main_rect),
             State::NoteTagDeleting(data) => {
-                draw_note_tag_deleting_state_data(data, terminal, main_frame)
+                draw_note_tag_deleting_state_data(data, frame, main_rect)
             }
-            State::TagsManaging(data) => draw_tags_managing_state(data, terminal, main_frame),
-            State::TagCreating(data) => draw_tag_creating_state(data, terminal, main_frame),
-            State::TagDeleting(data) => draw_tag_deleting_state(data, terminal, main_frame),
-            State::TagNotesListing(data) => {
-                draw_tag_notes_listing_state(data, terminal, main_frame)
-            }
+            State::TagsManaging(data) => draw_tags_managing_state(data, frame, main_rect),
+            State::TagCreating(data) => draw_tag_creating_state(data, frame, main_rect),
+            State::TagDeleting(data) => draw_tag_deleting_state(data, frame, main_rect),
+            State::TagNotesListing(data) => draw_tag_notes_listing_state(data, frame, main_rect),
             State::Exit => unreachable!(),
         }
+
+        frame.render_widget(main_frame, frame.size());
     }
 }

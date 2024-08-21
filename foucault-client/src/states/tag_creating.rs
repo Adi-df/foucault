@@ -2,13 +2,13 @@ use anyhow::Result;
 use log::info;
 
 use crossterm::event::{KeyCode, KeyEvent};
-use ratatui::widgets::Block;
+use ratatui::{layout::Rect, Frame};
 
 use crate::{
-    helpers::{draw_text_prompt, DiscardResult},
+    helpers::draw_text_prompt,
     states::{
-        tags_managing::{draw_tags_managing, TagsManagingStateData},
-        State, Terminal,
+        tags_managing::{draw_tags_managing_state, TagsManagingStateData},
+        State,
     },
     tag::Tag,
     NotebookAPI,
@@ -84,17 +84,9 @@ pub fn draw_tag_creating_state(
         name,
         valid,
     }: &TagsCreatingStateData,
-    terminal: &mut Terminal,
-    main_frame: Block,
-) -> Result<()> {
-    terminal
-        .draw(|frame| {
-            let main_rect = main_frame.inner(frame.size());
-
-            draw_tags_managing(frame, tags_managing_data, main_rect);
-            draw_text_prompt(frame, "Tag name", name, *valid, main_rect);
-
-            frame.render_widget(main_frame, frame.size());
-        })
-        .discard_result()
+    frame: &mut Frame,
+    main_rect: Rect,
+) {
+    draw_tags_managing_state(tags_managing_data, frame, main_rect);
+    draw_text_prompt(frame, "Tag name", name, *valid, main_rect);
 }

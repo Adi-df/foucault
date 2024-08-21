@@ -1,5 +1,3 @@
-use anyhow::Result;
-
 use ratatui::{
     prelude::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
@@ -165,18 +163,5 @@ where
         } else {
             String::new()
         }
-    }
-}
-
-pub trait DiscardResult {
-    fn discard_result(self) -> Result<()>;
-}
-
-impl<T, E> DiscardResult for Result<T, E>
-where
-    E: Into<anyhow::Error>,
-{
-    fn discard_result(self) -> Result<()> {
-        self.map_err(Into::<anyhow::Error>::into).map(|_| ())
     }
 }

@@ -3,6 +3,7 @@ use log::info;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
+    layout::Rect,
     prelude::{Constraint, Direction, Layout, Margin},
     style::{Color, Modifier, Style},
     text::{Line, Span},
@@ -10,12 +11,12 @@ use ratatui::{
         Block, BorderType, Borders, List, ListState, Padding, Paragraph, Scrollbar,
         ScrollbarOrientation, ScrollbarState,
     },
+    Frame,
 };
 
 use crate::{
-    helpers::DiscardResult,
     note::{Note, NoteSummary},
-    states::{note_viewing::NoteViewingStateData, State, Terminal},
+    states::{note_viewing::NoteViewingStateData, State},
     NotebookAPI,
 };
 
@@ -92,97 +93,88 @@ pub fn draw_note_managing_state(
         selected,
         notes,
     }: &NotesManagingStateData,
-    terminal: &mut Terminal,
-    main_frame: Block,
-) -> Result<()> {
-    terminal
-        .draw(|frame| {
-            let main_rect = main_frame.inner(frame.size());
+    frame: &mut Frame,
+    main_rect: Rect,
+) {
+    let vertical_layout = Layout::new(
+        Direction::Vertical,
+        [Constraint::Length(5), Constraint::Min(0)],
+    )
+    .split(main_rect);
 
-            let vertical_layout = Layout::new(
-                Direction::Vertical,
-                [Constraint::Length(5), Constraint::Min(0)],
-            )
-            .split(main_rect);
-
-            let search_bar = Paragraph::new(Line::from(vec![
-                Span::raw(pattern).style(Style::new().add_modifier(Modifier::UNDERLINED))
-            ]))
-            .block(
-                Block::new()
-                    .title("Searching")
-                    .borders(Borders::ALL)
-                    .border_type(BorderType::Rounded)
-                    .border_style(Style::new().fg(if notes.is_empty() {
-                        Color::Red
-                    } else {
-                        Color::Green
-                    }))
-                    .padding(Padding::uniform(1)),
-            );
-
-            let list_results = List::new(notes.iter().map(|note| {
-                let pattern_start = note
-                    .name()
-                    .to_lowercase()
-                    .find(&pattern.to_lowercase())
-                    .expect("The search pattern should have matched");
-                let pattern_end = pattern_start + pattern.len();
-
-                let mut note_line = vec![
-                    Span::raw(&note.name()[..pattern_start])
-                        .style(Style::new().add_modifier(Modifier::BOLD)),
-                    Span::raw(&note.name()[pattern_start..pattern_end]).style(
-                        Style::new()
-                            .add_modifier(Modifier::BOLD)
-                            .add_modifier(Modifier::UNDERLINED),
-                    ),
-                    Span::raw(&note.name()[pattern_end..])
-                        .style(Style::new().add_modifier(Modifier::BOLD)),
-                    Span::raw("    "),
-                ];
-
-                for tag in &note.tags() {
-                    note_line.push(
-                        Span::raw(tag.name().to_string())
-                            .style(Style::new().bg(Color::from_u32(tag.color()))),
-                    );
-                    note_line.push(Span::raw(", "));
-                }
-                if !note.tags().is_empty() {
-                    note_line.pop();
-                }
-
-                Line::from(note_line)
+    let search_bar = Paragraph::new(Line::from(vec![
+        Span::raw(pattern).style(Style::new().add_modifier(Modifier::UNDERLINED))
+    ]))
+    .block(
+        Block::new()
+            .title("Searching")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::new().fg(if notes.is_empty() {
+                Color::Red
+            } else {
+                Color::Green
             }))
-            .highlight_symbol(">> ")
-            .highlight_style(Style::new().bg(Color::White).fg(Color::Black))
-            .block(
-                Block::new()
-                    .title("Results")
-                    .borders(Borders::ALL)
-                    .border_type(BorderType::Rounded)
-                    .border_style(Style::new().fg(Color::Yellow))
-                    .padding(Padding::uniform(2)),
-            );
+            .padding(Padding::uniform(1)),
+    );
 
-            let notes_scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
-                .begin_symbol(Some("↑"))
-                .end_symbol(Some("↓"));
+    let list_results = List::new(notes.iter().map(|note| {
+        let pattern_start = note
+            .name()
+            .to_lowercase()
+            .find(&pattern.to_lowercase())
+            .expect("The search pattern should have matched");
+        let pattern_end = pattern_start + pattern.len();
 
-            frame.render_widget(search_bar, vertical_layout[0]);
-            frame.render_stateful_widget(
-                list_results,
-                vertical_layout[1],
-                &mut ListState::with_selected(ListState::default(), Some(*selected)),
-            );
-            frame.render_stateful_widget(
-                notes_scrollbar,
-                vertical_layout[1].inner(&Margin::new(0, 1)),
-                &mut ScrollbarState::new(notes.len()).position(*selected),
-            );
+        let mut note_line = vec![
+            Span::raw(&note.name()[..pattern_start])
+                .style(Style::new().add_modifier(Modifier::BOLD)),
+            Span::raw(&note.name()[pattern_start..pattern_end]).style(
+                Style::new()
+                    .add_modifier(Modifier::BOLD)
+                    .add_modifier(Modifier::UNDERLINED),
+            ),
+            Span::raw(&note.name()[pattern_end..]).style(Style::new().add_modifier(Modifier::BOLD)),
+            Span::raw("    "),
+        ];
 
-            frame.render_widget(main_frame, frame.size());
-        })
-        .discard_result()
+        for tag in &note.tags() {
+            note_line.push(
+                Span::raw(tag.name().to_string())
+                    .style(Style::new().bg(Color::from_u32(tag.color()))),
+            );
+            note_line.push(Span::raw(", "));
+        }
+        if !note.tags().is_empty() {
+            note_line.pop();
+        }
+
+        Line::from(note_line)
+    }))
+    .highlight_symbol(">> ")
+    .highlight_style(Style::new().bg(Color::White).fg(Color::Black))
+    .block(
+        Block::new()
+            .title("Results")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::new().fg(Color::Yellow))
+            .padding(Padding::uniform(2)),
+    );
+
+    let notes_scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+        .begin_symbol(Some("↑"))
+        .end_symbol(Some("↓"));
+
+    frame.render_widget(search_bar, vertical_layout[0]);
+    frame.render_stateful_widget(
+        list_results,
+        vertical_layout[1],
+        &mut ListState::with_selected(ListState::default(), Some(*selected)),
+    );
+    frame.render_stateful_widget(
+        notes_scrollbar,
+        vertical_layout[1].inner(&Margin::new(0, 1)),
+        &mut ScrollbarState::new(notes.len()).position(*selected),
+    );
 }

@@ -48,12 +48,14 @@ pub async fn explore(notebook: &NotebookAPI) -> Result<()> {
         }
 
         {
-            if forced_redraw {
-                terminal.draw(|frame| frame.render_widget(Clear, frame.size()))?;
-            }
-            forced_redraw = false;
+            terminal.draw(|frame| {
+                if forced_redraw {
+                    frame.render_widget(Clear, frame.size());
+                }
+                forced_redraw = false;
 
-            state.draw(notebook, &mut terminal)?;
+                state.draw(notebook, frame);
+            })?;
         }
     }
 

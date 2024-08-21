@@ -14,10 +14,10 @@ use ratatui::{
 };
 
 use crate::{
-    helpers::{create_bottom_line, create_row_help_layout, DiscardResult},
+    helpers::{create_bottom_line, create_row_help_layout},
     states::{
         tag_creating::TagsCreatingStateData, tag_deleting::TagsDeletingStateData,
-        tag_notes_listing::TagNotesListingStateData, State, Terminal,
+        tag_notes_listing::TagNotesListingStateData, State,
     },
     tag::Tag,
     NotebookAPI,
@@ -108,29 +108,13 @@ pub async fn run_tags_managing_state(
 }
 
 pub fn draw_tags_managing_state(
-    tags_managing: &TagsManagingStateData,
-    terminal: &mut Terminal,
-    main_frame: Block,
-) -> Result<()> {
-    terminal
-        .draw(|frame| {
-            let main_rect = main_frame.inner(frame.size());
-
-            draw_tags_managing(frame, tags_managing, main_rect);
-
-            frame.render_widget(main_frame, frame.size());
-        })
-        .discard_result()
-}
-
-pub fn draw_tags_managing(
-    frame: &mut Frame,
     TagsManagingStateData {
         pattern,
         selected,
         tags,
         help_display,
     }: &TagsManagingStateData,
+    frame: &mut Frame,
     main_rect: Rect,
 ) {
     let vertical_layout = Layout::new(
