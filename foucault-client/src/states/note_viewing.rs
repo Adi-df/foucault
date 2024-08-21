@@ -5,6 +5,7 @@ use std::{
 };
 
 use anyhow::Result;
+use foucault_core::PrettyError;
 use log::info;
 use scopeguard::defer;
 
@@ -74,21 +75,21 @@ impl NoteViewingStateData {
     fn get_current(&self) -> Option<SelectableInlineElements> {
         self.parsed_content
             .lock()
-            .unwrap()
+            .pretty_unwrap()
             .get_element(self.selected)
             .cloned()
     }
     fn select_current(&mut self, selected: bool) {
         self.parsed_content
             .lock()
-            .unwrap()
+            .pretty_unwrap()
             .select(self.selected, selected);
     }
 
     fn compute_links(&self) -> Vec<Link> {
         self.parsed_content
             .lock()
-            .unwrap()
+            .pretty_unwrap()
             .list_links()
             .into_iter()
             .map(|to| Link::new(self.note.id(), to.to_string()))
@@ -178,7 +179,7 @@ pub async fn run_note_viewing_state(
                 state_data
                     .parsed_content
                     .lock()
-                    .unwrap()
+                    .pretty_unwrap()
                     .block_length(state_data.selected.1)
                     .saturating_sub(1),
             );
@@ -190,7 +191,7 @@ pub async fn run_note_viewing_state(
                 < state_data
                     .parsed_content
                     .lock()
-                    .unwrap()
+                    .pretty_unwrap()
                     .block_count()
                     .saturating_sub(1) =>
         {
@@ -200,7 +201,7 @@ pub async fn run_note_viewing_state(
                 state_data
                     .parsed_content
                     .lock()
-                    .unwrap()
+                    .pretty_unwrap()
                     .block_length(state_data.selected.1)
                     .saturating_sub(1),
             );
@@ -218,7 +219,7 @@ pub async fn run_note_viewing_state(
                 < state_data
                     .parsed_content
                     .lock()
-                    .unwrap()
+                    .pretty_unwrap()
                     .block_length(state_data.selected.1)
                     .saturating_sub(1) =>
         {
@@ -238,13 +239,13 @@ pub async fn run_note_viewing_state(
             state_data.selected.1 = state_data
                 .parsed_content
                 .lock()
-                .unwrap()
+                .pretty_unwrap()
                 .block_count()
                 .saturating_sub(1);
             state_data.selected.0 = state_data
                 .parsed_content
                 .lock()
-                .unwrap()
+                .pretty_unwrap()
                 .block_length(state_data.selected.1)
                 .saturating_sub(1);
             state_data.select_current(true);
@@ -292,7 +293,7 @@ pub fn draw_note_viewing_state(
     frame: &mut Frame,
     main_rect: Rect,
 ) {
-    let parsed_content = parsed_content.lock().unwrap();
+    let parsed_content = parsed_content.lock().pretty_unwrap();
     let vertical_layout = Layout::new(
         Direction::Vertical,
         [Constraint::Length(5), Constraint::Min(0)],
@@ -348,7 +349,7 @@ pub fn draw_note_viewing_state(
 
     let note_content = combine(&rendered_content)
         .build_paragraph()
-        .scroll((scroll.try_into().unwrap(), 0));
+        .scroll((scroll.try_into().pretty_unwrap(), 0));
 
     let content_scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
         .begin_symbol(Some("↑"))
