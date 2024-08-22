@@ -18,7 +18,7 @@ use question::{Answer, Question};
 
 use foucault_client::{explore::explore, NotebookAPI, APP_DIR_PATH};
 use foucault_core::{pretty_error, PrettyError};
-use foucault_server::notebook::Notebook;
+use foucault_server::{notebook::Notebook, Permissions};
 
 use crate::notebook_selector::open_selector;
 
@@ -62,6 +62,8 @@ enum Commands {
         name: String,
         #[arg(short, long, help = "The port on which the notebook should be exposed")]
         port: Option<u16>,
+        #[arg(long, help = "Only allow read only operations")]
+        read_only: bool,
     },
     #[command(about = "Connect to a remote notebook")]
     Connect {
@@ -121,6 +123,7 @@ async fn main() {
                 let endpoint = format!("http://{LOCAL_ADRESS}:{}", port.unwrap_or(DEFAULT_PORT));
                 tokio::spawn(foucault_server::serve(
                     notebook,
+                    Permissions::ReadWrite,
                     port.unwrap_or(DEFAULT_PORT),
                 ));
                 let notebook_api = NotebookAPI::new(endpoint).await.pretty_unwrap();
@@ -131,7 +134,11 @@ async fn main() {
                 let notebook_api = NotebookAPI::new(endpoint.clone()).await.pretty_unwrap();
                 explore(&notebook_api).await.pretty_unwrap();
             }
-            Commands::Serve { name, port } => {
+            Commands::Serve {
+                name,
+                read_only,
+                port,
+            } => {
                 info!("Open notebook {name}.");
                 let notebook = Arc::new(
                     Notebook::open_notebook(name, &APP_DIR_PATH)
@@ -143,9 +150,17 @@ async fn main() {
                     &notebook.name,
                     port.unwrap_or(DEFAULT_PORT)
                 );
-                foucault_server::serve(notebook, port.unwrap_or(DEFAULT_PORT))
-                    .await
-                    .expect("An error occured when serving the notebook");
+                foucault_server::serve(
+                    notebook,
+                    if *read_only {
+                        Permissions::ReadOnly
+                    } else {
+                        Permissions::ReadWrite
+                    },
+                    port.unwrap_or(DEFAULT_PORT),
+                )
+                .await
+                .expect("An error occured when serving the notebook");
             }
             Commands::Delete { name } => {
                 info!("Delete notebook {name}.");
@@ -178,7 +193,11 @@ async fn main() {
                     .pretty_unwrap(),
             );
             let endpoint = format!("http://{LOCAL_ADRESS}:{DEFAULT_PORT}");
-            tokio::spawn(foucault_server::serve(notebook, DEFAULT_PORT));
+            tokio::spawn(foucault_server::serve(
+                notebook,
+                Permissions::ReadWrite,
+                DEFAULT_PORT,
+            ));
             let notebook_api = NotebookAPI::new(endpoint).await.pretty_unwrap();
             explore(&notebook_api).await.pretty_unwrap();
         }
