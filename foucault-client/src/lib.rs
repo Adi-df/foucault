@@ -5,12 +5,12 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::module_name_repetitions)]
 
-mod error;
 pub mod explore;
 mod helpers;
 mod links;
 mod markdown;
 mod note;
+mod response_error;
 mod states;
 mod tag;
 
@@ -21,9 +21,9 @@ use thiserror::Error;
 
 use reqwest::Client;
 
-use foucault_core::{pretty_error, NotebookApiInfo, Permissions};
+use foucault_core::{permissions::Permissions, pretty_error, NotebookApiInfo};
 
-use crate::error::TryResponseCode;
+use crate::response_error::TryResponseCode;
 
 pub static APP_DIR_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     if let Some(data_dir) = dirs::data_dir() {

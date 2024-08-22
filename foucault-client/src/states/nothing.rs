@@ -11,7 +11,7 @@ use ratatui::{
     Frame,
 };
 
-use foucault_core::Permissions;
+use foucault_core::permissions::Permissions;
 
 use crate::{
     helpers::{create_popup, Capitalize},

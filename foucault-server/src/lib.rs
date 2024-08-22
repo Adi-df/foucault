@@ -25,7 +25,7 @@ use axum::{
 };
 use tokio::{io, net::TcpListener};
 
-use foucault_core::{NotebookApiInfo, Permissions};
+use foucault_core::{permissions::Permissions, NotebookApiInfo};
 
 use crate::notebook::Notebook;
 

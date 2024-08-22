@@ -27,7 +27,7 @@ impl TryResponseCode for Response {
             StatusCode::OK | StatusCode::NOT_ACCEPTABLE => Ok(self),
             StatusCode::UNAUTHORIZED => Err(ResponseCodeError::Unauthorized),
             StatusCode::INTERNAL_SERVER_ERROR => Err(ResponseCodeError::InternalServerError),
-            status @ _ => Err(ResponseCodeError::UnexpectedCode(status)),
+            status => Err(ResponseCodeError::UnexpectedCode(status)),
         }
     }
 }

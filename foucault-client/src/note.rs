@@ -11,7 +11,7 @@ use foucault_core::{
     tag_repr,
 };
 
-use crate::{error::TryResponseCode, links::Link, tag::Tag, ApiError, NotebookAPI};
+use crate::{links::Link, response_error::TryResponseCode, tag::Tag, ApiError, NotebookAPI};
 
 #[derive(Debug, Clone)]
 pub struct Note {

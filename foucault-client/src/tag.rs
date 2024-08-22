@@ -2,7 +2,7 @@ use anyhow::Result;
 
 use foucault_core::tag_repr::{self, TagError};
 
-use crate::{error::TryResponseCode, note::NoteSummary, ApiError, NotebookAPI};
+use crate::{note::NoteSummary, response_error::TryResponseCode, ApiError, NotebookAPI};
 
 #[derive(Debug, Clone)]
 pub struct Tag {
