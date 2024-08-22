@@ -5,14 +5,6 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::module_name_repetitions)]
 
-use std::{path::PathBuf, sync::LazyLock};
-
-use anyhow::Result;
-use foucault_core::pretty_error;
-use thiserror::Error;
-
-use reqwest::Client;
-
 mod error;
 pub mod explore;
 mod helpers;
@@ -21,6 +13,17 @@ mod markdown;
 mod note;
 mod states;
 mod tag;
+
+use std::{path::PathBuf, sync::LazyLock};
+
+use anyhow::Result;
+use thiserror::Error;
+
+use reqwest::Client;
+
+use foucault_core::{pretty_error, NotebookApiInfo, Permissions};
+
+use crate::error::TryResponseCode;
 
 pub static APP_DIR_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     if let Some(data_dir) = dirs::data_dir() {
@@ -45,21 +48,24 @@ pub enum ApiError {
 
 pub struct NotebookAPI {
     pub name: String,
+    pub permissions: Permissions,
     pub endpoint: String,
     pub client: Client,
 }
 
 impl NotebookAPI {
     pub async fn new(endpoint: String) -> Result<Self> {
-        let name = reqwest::get(format!("{endpoint}/name"))
+        let NotebookApiInfo { name, permissions } = reqwest::get(format!("{endpoint}/notebook"))
             .await
             .map_err(ApiError::UnableToConnect)?
-            .text()
+            .try_response_code()?
+            .json::<NotebookApiInfo>()
             .await
             .map_err(ApiError::UnableToPingName)?;
 
         Ok(Self {
             name,
+            permissions,
             endpoint,
             client: Client::new(),
         })
