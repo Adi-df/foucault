@@ -35,13 +35,23 @@ pub enum ServerError {
     InternalServerError(io::Error),
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum Permissions {
+    ReadWrite,
+    ReadOnly,
+}
+
 #[derive(Clone)]
 struct AppState {
     notebook: Arc<Notebook>,
+    permissions: Permissions,
 }
 
-pub async fn serve(notebook: Arc<Notebook>, port: u16) -> Result<()> {
-    let state = AppState { notebook };
+pub async fn serve(notebook: Arc<Notebook>, permissions: Permissions, port: u16) -> Result<()> {
+    let state = AppState {
+        notebook,
+        permissions,
+    };
     let app = Router::new()
         .route("/name", get(notebook_name))
         .route("/note/create", post(note_api::create))
