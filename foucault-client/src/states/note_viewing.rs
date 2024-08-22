@@ -363,7 +363,7 @@ pub fn draw_note_viewing_state(
     frame.render_widget(content_block, vertical_layout[1]);
     frame.render_stateful_widget(
         content_scrollbar,
-        vertical_layout[1].inner(&Margin::new(0, 1)),
+        vertical_layout[1].inner(Margin::new(0, 1)),
         &mut ScrollbarState::default()
             .content_length(parsed_content.block_count().saturating_sub(1))
             .viewport_content_length(1)

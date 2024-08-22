@@ -123,7 +123,7 @@ pub fn draw_tag_notes_listing_state(
     );
     frame.render_stateful_widget(
         notes_scrollbar,
-        vertical_layout[1].inner(&Margin::new(0, 1)),
+        vertical_layout[1].inner(Margin::new(0, 1)),
         &mut ScrollbarState::new(notes.len()).position(*selected),
     );
 }

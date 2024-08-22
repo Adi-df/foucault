@@ -130,13 +130,13 @@ pub fn open_selector(dir: &Path) -> Result<Option<String>> {
 
             frame.render_stateful_widget(
                 list,
-                main_block.inner(frame.size()),
+                main_block.inner(frame.area()),
                 &mut ListState::default().with_selected(Some(selected)),
             );
-            frame.render_widget(main_block, frame.size());
+            frame.render_widget(main_block, frame.area());
             frame.render_stateful_widget(
                 scrollbar,
-                frame.size().inner(&Margin::new(0, 1)),
+                frame.area().inner(Margin::new(0, 1)),
                 &mut ScrollbarState::new(notebooks.len()).position(selected),
             );
         })?;

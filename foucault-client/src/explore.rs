@@ -67,7 +67,7 @@ pub async fn explore(notebook: &NotebookAPI) -> Result<()> {
         {
             if forced_redraw {
                 terminal.draw(|frame| {
-                    frame.render_widget(Clear, frame.size());
+                    frame.render_widget(Clear, frame.area());
                 })?;
                 forced_redraw = false;
             }
@@ -79,10 +79,10 @@ pub async fn explore(notebook: &NotebookAPI) -> Result<()> {
                     .border_type(BorderType::Rounded)
                     .border_style(Style::new().fg(Color::White));
 
-                let main_rect = main_frame.inner(frame.size());
+                let main_rect = main_frame.inner(frame.area());
 
                 state.draw(notebook, frame, main_rect);
-                frame.render_widget(main_frame, frame.size());
+                frame.render_widget(main_frame, frame.area());
             })?;
         }
     }

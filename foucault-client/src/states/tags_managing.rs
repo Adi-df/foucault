@@ -182,7 +182,7 @@ pub fn draw_tags_managing_state(
     );
     frame.render_stateful_widget(
         tags_scrollbar,
-        vertical_layout[1].inner(&Margin::new(0, 1)),
+        vertical_layout[1].inner(Margin::new(0, 1)),
         &mut ScrollbarState::new(tags.len()).position(*selected),
     );
 
