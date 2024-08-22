@@ -11,7 +11,7 @@ use foucault_core::{
     tag_repr,
 };
 
-use crate::{links::Link, tag::Tag, ApiError, NotebookAPI};
+use crate::{error::TryResponseCode, links::Link, tag::Tag, ApiError, NotebookAPI};
 
 #[derive(Debug, Clone)]
 pub struct Note {
@@ -47,6 +47,7 @@ impl Note {
             .send()
             .await
             .map_err(ApiError::UnableToContactRemoteNotebook)?
+            .try_response_code()?
             .json::<Result<i64, NoteError>>()
             .await
             .map_err(ApiError::UnableToParseResponse)?;
@@ -69,6 +70,7 @@ impl Note {
             .send()
             .await
             .map_err(ApiError::UnableToContactRemoteNotebook)?
+            .try_response_code()?
             .json::<Option<NoteError>>()
             .await
             .map_err(ApiError::UnableToParseResponse)?;
@@ -84,6 +86,7 @@ impl Note {
             .send()
             .await
             .map_err(ApiError::UnableToContactRemoteNotebook)?
+            .try_response_code()?
             .json::<Option<note_repr::Note>>()
             .await
             .map_err(ApiError::UnableToParseResponse)?;
@@ -106,6 +109,7 @@ impl Note {
             .send()
             .await
             .map_err(ApiError::UnableToContactRemoteNotebook)?
+            .try_response_code()?
             .json::<Option<note_repr::Note>>()
             .await
             .map_err(ApiError::UnableToParseResponse)?;
@@ -131,6 +135,7 @@ impl Note {
             .send()
             .await
             .map_err(ApiError::UnableToContactRemoteNotebook)?
+            .try_response_code()?
             .json::<Vec<tag_repr::Tag>>()
             .await
             .map_err(ApiError::UnableToParseResponse)?;
@@ -149,6 +154,7 @@ impl Note {
             .send()
             .await
             .map_err(ApiError::UnableToContactRemoteNotebook)?
+            .try_response_code()?
             .json::<Option<NoteError>>()
             .await
             .map_err(ApiError::UnableToParseResponse)?;
@@ -168,7 +174,8 @@ impl Note {
             .json(&self.id())
             .send()
             .await
-            .map_err(ApiError::UnableToContactRemoteNotebook)?;
+            .map_err(ApiError::UnableToContactRemoteNotebook)?
+            .try_response_code()?;
         Ok(())
     }
 
@@ -190,7 +197,8 @@ impl Note {
             })
             .send()
             .await
-            .map_err(ApiError::UnableToContactRemoteNotebook)?;
+            .map_err(ApiError::UnableToContactRemoteNotebook)?
+            .try_response_code()?;
 
         self.inner.content = Arc::from(new_content);
         Ok(())
@@ -209,7 +217,8 @@ impl Note {
             })
             .send()
             .await
-            .map_err(ApiError::UnableToContactRemoteNotebook)?;
+            .map_err(ApiError::UnableToContactRemoteNotebook)?
+            .try_response_code()?;
 
         Ok(())
     }
@@ -225,6 +234,7 @@ impl Note {
             .send()
             .await
             .map_err(ApiError::UnableToContactRemoteNotebook)?
+            .try_response_code()?
             .json::<Option<Error>>()
             .await
             .map_err(ApiError::UnableToParseResponse)?;
@@ -243,6 +253,7 @@ impl Note {
             .send()
             .await
             .map_err(ApiError::UnableToContactRemoteNotebook)?
+            .try_response_code()?
             .json::<Option<Error>>()
             .await
             .map_err(ApiError::UnableToParseResponse)?;
@@ -264,7 +275,8 @@ impl Note {
             })
             .send()
             .await
-            .map_err(ApiError::UnableToContactRemoteNotebook)?;
+            .map_err(ApiError::UnableToContactRemoteNotebook)?
+            .try_response_code()?;
 
         Ok(())
     }
@@ -289,6 +301,7 @@ impl NoteSummary {
             .send()
             .await
             .map_err(ApiError::UnableToContactRemoteNotebook)?
+            .try_response_code()?
             .json::<Vec<note_repr::NoteSummary>>()
             .await
             .map_err(ApiError::UnableToParseResponse)?;
@@ -304,6 +317,7 @@ impl NoteSummary {
             .send()
             .await
             .map_err(ApiError::UnableToContactRemoteNotebook)?
+            .try_response_code()?
             .json::<Vec<note_repr::NoteSummary>>()
             .await
             .map_err(ApiError::UnableToParseResponse)?;

@@ -2,7 +2,7 @@ use anyhow::Result;
 
 use foucault_core::tag_repr::{self, TagError};
 
-use crate::{note::NoteSummary, ApiError, NotebookAPI};
+use crate::{error::TryResponseCode, note::NoteSummary, ApiError, NotebookAPI};
 
 #[derive(Debug, Clone)]
 pub struct Tag {
@@ -24,6 +24,7 @@ impl Tag {
             .send()
             .await
             .map_err(ApiError::UnableToContactRemoteNotebook)?
+            .try_response_code()?
             .json::<Result<tag_repr::Tag, TagError>>()
             .await
             .map_err(ApiError::UnableToParseResponse)?;
@@ -44,6 +45,7 @@ impl Tag {
             .send()
             .await
             .map_err(ApiError::UnableToContactRemoteNotebook)?
+            .try_response_code()?
             .json::<Option<TagError>>()
             .await
             .map_err(ApiError::UnableToParseResponse)?;
@@ -59,6 +61,7 @@ impl Tag {
             .send()
             .await
             .map_err(ApiError::UnableToContactRemoteNotebook)?
+            .try_response_code()?
             .json::<Option<tag_repr::Tag>>()
             .await
             .map_err(ApiError::UnableToParseResponse)?;
@@ -74,6 +77,7 @@ impl Tag {
             .send()
             .await
             .map_err(ApiError::UnableToContactRemoteNotebook)?
+            .try_response_code()?
             .json::<Vec<tag_repr::Tag>>()
             .await
             .map_err(ApiError::UnableToParseResponse)?;
@@ -98,7 +102,8 @@ impl Tag {
             .json(&self.id())
             .send()
             .await
-            .map_err(ApiError::UnableToContactRemoteNotebook)?;
+            .map_err(ApiError::UnableToContactRemoteNotebook)?
+            .try_response_code()?;
 
         Ok(())
     }
