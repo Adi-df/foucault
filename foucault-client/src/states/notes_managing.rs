@@ -120,8 +120,8 @@ pub fn draw_note_managing_state(
     );
 
     let list_results = List::new(notes.iter().map(|note| {
-        let mut note_line = match note.name().to_lowercase().find(&pattern.to_lowercase()) {
-            Some(pattern_start) => {
+        let mut note_line =
+            if let Some(pattern_start) = note.name().to_lowercase().find(&pattern.to_lowercase()) {
                 let pattern_end = pattern_start + pattern.len();
                 vec![
                     Span::raw(&note.name()[..pattern_start])
@@ -134,15 +134,13 @@ pub fn draw_note_managing_state(
                     Span::raw(&note.name()[pattern_end..])
                         .style(Style::new().add_modifier(Modifier::BOLD)),
                 ]
-            }
-            None => {
+            } else {
                 warn!(
                     "The search pattern '{pattern}' did not match on note {}",
                     note.name()
                 );
                 vec![Span::raw(note.name())]
-            }
-        };
+            };
 
         note_line.push(Span::raw("    "));
 
