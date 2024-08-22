@@ -45,13 +45,16 @@ pub async fn run_tag_notes_listing_state(
 ) -> Result<State> {
     Ok(match key_event.code {
         KeyCode::Esc => {
-            info!("Cancel tag {} note listing.", state_data.tag.name());
+            info!(
+                "Quit the listing of notes related to tag {}.",
+                state_data.tag.name()
+            );
             State::Nothing
         }
         KeyCode::Enter if !state_data.notes.is_empty() => {
             let summary = &state_data.notes[state_data.selected];
             if let Some(note) = Note::load_by_id(summary.id(), notebook).await? {
-                info!("Open note {} viewing.", note.name());
+                info!("Open note {}.", note.name());
                 State::NoteViewing(NoteViewingStateData::new(note, notebook).await?)
             } else {
                 State::TagNotesListing(state_data)
@@ -105,7 +108,7 @@ pub fn draw_tag_notes_listing_state(
         .highlight_style(Style::new().fg(Color::Black).bg(Color::White))
         .block(
             Block::new()
-                .title("Tag notes")
+                .title("Related notes")
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
                 .border_style(Style::new().fg(Color::Yellow))

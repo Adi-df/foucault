@@ -39,7 +39,7 @@ pub async fn run_note_renaming_state(
     Ok(match key_event.code {
         KeyCode::Esc => {
             info!(
-                "Cancel renaming note {}",
+                "Cancel the renaming note {}",
                 state_data.note_viewing_data.note.name()
             );
             State::NoteViewing(
@@ -49,7 +49,7 @@ pub async fn run_note_renaming_state(
         KeyCode::Enter => {
             if Note::validate_name(state_data.new_name.as_str(), notebook).await? {
                 info!(
-                    "Renaming note {} to {}.",
+                    "Rename note {} to {}.",
                     state_data.note_viewing_data.note.name(),
                     state_data.new_name
                 );
@@ -93,5 +93,5 @@ pub fn draw_note_renaming_state(
     main_rect: Rect,
 ) {
     draw_note_viewing_state(note_viewing_data, notebook, frame, main_rect);
-    draw_text_prompt(frame, "Rename note", new_name, *valid, main_rect);
+    draw_text_prompt(frame, "New note name", new_name, *valid, main_rect);
 }

@@ -39,7 +39,7 @@ pub async fn run_tag_deleting_state(
     Ok(match key_event.code {
         KeyCode::Esc => {
             info!(
-                "Cancel deleting of tag {}.",
+                "Cancel the deletion of tag {}.",
                 tags_managing_data
                     .get_selected()
                     .expect("A tag should be selected.")
@@ -66,7 +66,7 @@ pub async fn run_tag_deleting_state(
                     .await?;
             } else {
                 info!(
-                    "Cancel deleting of tag {}.",
+                    "Cancel the deletion of tag {}.",
                     tags_managing_data
                         .get_selected()
                         .expect("A tag should be selected.")

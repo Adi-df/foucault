@@ -29,15 +29,15 @@ pub async fn run_nothing_state(key_event: KeyEvent, notebook: &NotebookAPI) -> R
             State::Exit
         }
         KeyCode::Char('c') if notebook.permissions.writable() => {
-            info!("Open new note prompt.");
+            info!("Open the note creation prompt.");
             State::NoteCreating(NoteCreatingStateData::empty())
         }
         KeyCode::Char('s') => {
-            info!("Open notes listing.");
+            info!("Open the notes manager.");
             State::NotesManaging(NotesManagingStateData::empty(notebook).await?)
         }
         KeyCode::Char('t') => {
-            info!("Open tags manager.");
+            info!("Open the tags manager.");
             State::TagsManaging(TagsManagingStateData::empty(notebook).await?)
         }
         _ => State::Nothing,

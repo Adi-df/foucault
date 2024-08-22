@@ -39,7 +39,7 @@ pub async fn run_note_tag_adding_state(
     Ok(match key_event.code {
         KeyCode::Esc => {
             info!(
-                "Cancel tag adding to note {}.",
+                "Cancel the tag addition to note {}.",
                 state_data.note_tags_managing_data.note.name()
             );
 

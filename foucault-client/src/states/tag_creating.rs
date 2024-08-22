@@ -38,7 +38,7 @@ pub async fn run_tag_creating_state(
 ) -> Result<State> {
     Ok(match key_event.code {
         KeyCode::Esc => {
-            info!("Cancel tag creation.");
+            info!("Cancel the tag creation.");
             State::TagsManaging(
                 TagsManagingStateData::from_pattern(
                     state_data.tags_managing_data.pattern,

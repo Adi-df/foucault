@@ -51,18 +51,18 @@ pub async fn run_note_tags_managing_state(
 ) -> Result<State> {
     Ok(match key_event.code {
         KeyCode::Esc => {
-            info!("Cancel note {} tags managing.", state_data.note.name());
+            info!("Quit note {} tags managing.", state_data.note.name());
             State::NoteViewing(NoteViewingStateData::new(state_data.note, notebook).await?)
         }
         KeyCode::Char('h') if key_event.modifiers == KeyModifiers::CONTROL => {
-            info!("Toogle help display.");
+            info!("Toogle the help display.");
             state_data.help_display = !state_data.help_display;
 
             State::NoteTagsManaging(state_data)
         }
         KeyCode::Char('d') if !state_data.tags.is_empty() && notebook.permissions.writable() => {
             info!(
-                "Open note {} tag {} deleting prompt.",
+                "Open note {} tag {} deletion prompt.",
                 state_data.note.name(),
                 state_data
                     .get_selected()
@@ -77,7 +77,7 @@ pub async fn run_note_tags_managing_state(
         }
         KeyCode::Enter if !state_data.tags.is_empty() => {
             info!(
-                "Open tag {} notes listing.",
+                "Open the listing of notes related to tag {}.",
                 state_data
                     .get_selected()
                     .expect("A tag should be selected.")

@@ -106,7 +106,7 @@ pub async fn run_note_viewing_state(
 ) -> Result<State> {
     Ok(match key_event.code {
         KeyCode::Esc => {
-            info!("Stop viewing of note {}.", state_data.note.name());
+            info!("Close note {}.", state_data.note.name());
             State::Nothing
         }
         KeyCode::Char('q') => {
@@ -114,7 +114,7 @@ pub async fn run_note_viewing_state(
             State::Exit
         }
         KeyCode::Char('h') if key_event.modifiers == KeyModifiers::CONTROL => {
-            info!("Toogle help display.");
+            info!("Toogle the help display.");
             state_data.help_display = !state_data.help_display;
 
             State::NoteViewing(state_data)
@@ -135,25 +135,31 @@ pub async fn run_note_viewing_state(
             State::NoteViewing(state_data)
         }
         KeyCode::Char('s') => {
-            info!("Enter notes listing.");
+            info!("Open the notes manager.");
             State::NotesManaging(NotesManagingStateData::empty(notebook).await?)
         }
         KeyCode::Char('d') if notebook.permissions.writable() => {
-            info!("Open deleting prompt for note {}.", state_data.note.name());
+            info!(
+                "Open the deletion prompt for note {}.",
+                state_data.note.name()
+            );
             State::NoteDeleting(NoteDeletingStateData::empty(state_data))
         }
         KeyCode::Char('r') => {
-            info!("Open renaming prompt for note {}.", state_data.note.name());
+            info!(
+                "Open the renaming prompt for note {}.",
+                state_data.note.name()
+            );
             State::NoteRenaming(NoteRenamingStateData::empty(state_data))
         }
         KeyCode::Char('t') => {
-            info!("Open tags manager for note {}", state_data.note.name());
+            info!("Open the tags manager for note {}", state_data.note.name());
             State::NoteTagsManaging(
                 NoteTagsManagingStateData::new(state_data.note, notebook).await?,
             )
         }
         KeyCode::Enter => {
-            info!("Try to trigger element action.");
+            info!("Try to trigger the selected element action.");
             if let Some(element) = state_data.get_current() {
                 match <&InlineElements>::from(&element) {
                     InlineElements::HyperLink { dest, .. } => {
@@ -264,10 +270,10 @@ async fn edit_note(note: &mut Note, notebook: &NotebookAPI) -> Result<()> {
 
     stdout()
         .execute(LeaveAlternateScreen)
-        .expect("Leave foucault screen.");
+        .expect("Leave the foucault screen.");
 
     defer! {
-        stdout().execute(EnterAlternateScreen).expect("Return to foucault.");
+        stdout().execute(EnterAlternateScreen).expect("Return to the foucault screen.");
     }
 
     Command::new(editor)
@@ -379,12 +385,12 @@ pub fn draw_note_viewing_state(
         let (commands, commands_area) = create_help_bar(
             &[
                 ("e", writing_op_color, "Edit"),
-                ("d", writing_op_color, "Delete"),
                 ("r", writing_op_color, "Rename"),
-                ("s", Color::Blue, "List notes"),
-                ("t", Color::Blue, "Tags"),
+                ("d", writing_op_color, "Delete"),
                 ("g", Color::Blue, "Go to note start"),
                 ("E", Color::Blue, "Go to note end"),
+                ("t", Color::Blue, "Related Tags"),
+                ("s", Color::Blue, "Manage notes"),
                 ("⏎", Color::Blue, "Open link"),
             ],
             4,

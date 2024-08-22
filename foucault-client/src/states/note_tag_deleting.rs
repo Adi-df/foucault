@@ -39,7 +39,7 @@ pub async fn run_note_tag_deleting_state(
     Ok(match key_event.code {
         KeyCode::Esc => {
             info!(
-                "Cancel delting tag {} from note {}",
+                "Cancel the removal of tag {} from note {}",
                 note_tags_managing_data
                     .get_selected()
                     .expect("A tag should be selected.")

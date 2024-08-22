@@ -24,7 +24,7 @@ pub async fn run_error_state(state_data: ErrorStateData, key_event: KeyEvent) ->
             State::Exit
         }
         KeyCode::Enter => {
-            info!("Close error popup.");
+            info!("Close the error popup.");
             *state_data.inner_state
         }
         _ => State::Error(state_data),

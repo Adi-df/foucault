@@ -38,7 +38,10 @@ pub async fn run_note_deleting_state(
 ) -> Result<State> {
     Ok(match key_event.code {
         KeyCode::Esc => {
-            info!("Cancel deleting note {}.", note_viewing_data.note.name());
+            info!(
+                "Cancel the deletion of note {}.",
+                note_viewing_data.note.name()
+            );
             State::NoteViewing(NoteViewingStateData::new(note_viewing_data.note, notebook).await?)
         }
         KeyCode::Tab => State::NoteDeleting(NoteDeletingStateData {
@@ -51,7 +54,10 @@ pub async fn run_note_deleting_state(
                 note_viewing_data.note.delete(notebook).await?;
                 State::Nothing
             } else {
-                info!("Cancel deleting note {}.", note_viewing_data.note.name());
+                info!(
+                    "Cancel the deletion of note {}.",
+                    note_viewing_data.note.name()
+                );
                 State::NoteViewing(
                     NoteViewingStateData::new(note_viewing_data.note, notebook).await?,
                 )

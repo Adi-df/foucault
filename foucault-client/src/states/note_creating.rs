@@ -47,7 +47,7 @@ pub async fn run_note_creating_state(
             }
         }
         KeyCode::Esc => {
-            info!("Cancel note creation.");
+            info!("Cancel the note creation.");
             State::Nothing
         }
         KeyCode::Backspace => {

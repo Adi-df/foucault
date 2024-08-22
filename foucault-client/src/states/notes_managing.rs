@@ -48,7 +48,7 @@ pub async fn run_note_managing_state(
 ) -> Result<State> {
     Ok(match key_event.code {
         KeyCode::Esc => {
-            info!("Stop notes managing.");
+            info!("Quit the notes manager.");
             State::Nothing
         }
         KeyCode::Enter if !state_data.notes.is_empty() => {
@@ -108,7 +108,7 @@ pub fn draw_note_managing_state(
     ]))
     .block(
         Block::new()
-            .title("Searching")
+            .title("Filter")
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
             .border_style(Style::new().fg(if notes.is_empty() {
@@ -124,6 +124,7 @@ pub fn draw_note_managing_state(
             .name()
             .to_lowercase()
             .find(&pattern.to_lowercase())
+            // TODO : Handle errors better
             .expect("The search pattern should have matched");
         let pattern_end = pattern_start + pattern.len();
 

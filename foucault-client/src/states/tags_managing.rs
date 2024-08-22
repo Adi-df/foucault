@@ -57,11 +57,11 @@ pub async fn run_tags_managing_state(
 ) -> Result<State> {
     Ok(match key_event.code {
         KeyCode::Esc => {
-            info!("Stop tags managing.");
+            info!("Quit the tag manager.");
             State::Nothing
         }
         KeyCode::Char('h') if key_event.modifiers == KeyModifiers::CONTROL => {
-            info!("Toogle help display.");
+            info!("Toogle the help display.");
             state_data.help_display = !state_data.help_display;
 
             State::TagsManaging(state_data)
@@ -69,7 +69,7 @@ pub async fn run_tags_managing_state(
         KeyCode::Char('c')
             if key_event.modifiers == KeyModifiers::CONTROL && notebook.permissions.writable() =>
         {
-            info!("Open tag creating prompt.");
+            info!("Open the tag creationg prompt.");
             State::TagCreating(TagsCreatingStateData::empty(state_data))
         }
         KeyCode::Char('d')
@@ -77,7 +77,7 @@ pub async fn run_tags_managing_state(
                 && !state_data.tags.is_empty()
                 && notebook.permissions.writable() =>
         {
-            info!("Open tag deleting prompt.");
+            info!("Open the tag deletion prompt.");
             State::TagDeleting(TagsDeletingStateData::empty(state_data))
         }
         KeyCode::Up if state_data.selected > 0 => State::TagsManaging(TagsManagingStateData {
@@ -91,7 +91,7 @@ pub async fn run_tags_managing_state(
             })
         }
         KeyCode::Enter if !state_data.tags.is_empty() => {
-            info!("Open tag notes listing.");
+            info!("Open the listing of the related notes.");
             let tag = state_data.tags.swap_remove(state_data.selected);
 
             State::TagNotesListing(TagNotesListingStateData::new(tag, notebook).await?)
@@ -150,6 +150,7 @@ pub fn draw_tags_managing_state(
             .name()
             .to_lowercase()
             .find(pattern)
+            // TODO : Handle pattern error better.
             .expect("The pattern should match listed tags");
         let pattern_end = pattern_start + pattern.len();
         Line::from(vec![
