@@ -15,12 +15,16 @@ use foucault_core::{
     tag_repr::{Tag, TagError},
 };
 
-use crate::{error::FailibleJsonResult, note_queries, AppState};
+use crate::{error::FailibleJsonResult, note_queries, AppState, Permissions};
 
 pub(crate) async fn create(
     State(state): State<AppState>,
     Json(CreateParam { name, content }): Json<CreateParam>,
 ) -> FailibleJsonResult<Result<i64, NoteError>> {
+    if matches!(state.permissions, Permissions::ReadOnly) {
+        return Err(StatusCode::UNAUTHORIZED);
+    }
+
     let res = note_queries::create(&name, &content, state.notebook.db()).await;
 
     match res {
@@ -85,6 +89,10 @@ pub(crate) async fn rename(
     State(state): State<AppState>,
     Json(RenameParam { id, name }): Json<RenameParam>,
 ) -> FailibleJsonResult<Option<NoteError>> {
+    if matches!(state.permissions, Permissions::ReadOnly) {
+        return Err(StatusCode::UNAUTHORIZED);
+    }
+
     let res = note_queries::rename(id, &name, state.notebook.db()).await;
 
     match res {
@@ -101,6 +109,10 @@ pub(crate) async fn rename(
 }
 
 pub(crate) async fn delete(State(state): State<AppState>, Json(id): Json<i64>) -> StatusCode {
+    if matches!(state.permissions, Permissions::ReadOnly) {
+        return StatusCode::UNAUTHORIZED;
+    }
+
     let res = note_queries::delete(id, state.notebook.db()).await;
 
     match res {
@@ -116,6 +128,10 @@ pub(crate) async fn update_content(
     State(state): State<AppState>,
     Json(UpdateContentParam { id, content }): Json<UpdateContentParam>,
 ) -> StatusCode {
+    if matches!(state.permissions, Permissions::ReadOnly) {
+        return StatusCode::UNAUTHORIZED;
+    }
+
     let res = note_queries::update_content(id, &content, state.notebook.db()).await;
 
     match res {
@@ -131,6 +147,10 @@ pub(crate) async fn update_links(
     State(state): State<AppState>,
     Json(UpdateLinksParam { id, links }): Json<UpdateLinksParam>,
 ) -> StatusCode {
+    if matches!(state.permissions, Permissions::ReadOnly) {
+        return StatusCode::UNAUTHORIZED;
+    }
+
     let res = note_queries::update_links(id, &links, state.notebook.db()).await;
 
     match res {
@@ -176,6 +196,10 @@ pub(crate) async fn add_tag(
     State(state): State<AppState>,
     Json(AddTagParam { id, tag_id }): Json<AddTagParam>,
 ) -> FailibleJsonResult<Option<Error>> {
+    if matches!(state.permissions, Permissions::ReadOnly) {
+        return Err(StatusCode::UNAUTHORIZED);
+    }
+
     let res = note_queries::add_tag(id, tag_id, state.notebook.db()).await;
 
     match res {
@@ -198,6 +222,10 @@ pub(crate) async fn remove_tag(
     State(state): State<AppState>,
     Json(RemoveTagParam { id, tag_id }): Json<RemoveTagParam>,
 ) -> StatusCode {
+    if matches!(state.permissions, Permissions::ReadOnly) {
+        return StatusCode::UNAUTHORIZED;
+    }
+
     let res = note_queries::remove_tag(id, tag_id, state.notebook.db()).await;
 
     match res {
