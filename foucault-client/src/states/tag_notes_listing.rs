@@ -108,7 +108,8 @@ pub fn draw_tag_notes_listing_state(
                 .title("Tag notes")
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
-                .border_style(Style::new().fg(Color::Yellow)),
+                .border_style(Style::new().fg(Color::Yellow))
+                .padding(Padding::uniform(1)),
         );
 
     let notes_scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)

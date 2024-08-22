@@ -144,7 +144,8 @@ pub fn draw_note_tags_managing_state(
                 .title("Note Tags")
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
-                .border_style(Style::new().fg(Color::Yellow)),
+                .border_style(Style::new().fg(Color::Yellow))
+                .padding(Padding::uniform(1)),
         );
 
     frame.render_widget(note_name, vertical_layout[0]);

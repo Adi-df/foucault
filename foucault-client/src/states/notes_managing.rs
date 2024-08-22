@@ -160,7 +160,7 @@ pub fn draw_note_managing_state(
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
             .border_style(Style::new().fg(Color::Yellow))
-            .padding(Padding::uniform(2)),
+            .padding(Padding::uniform(1)),
     );
 
     let notes_scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
