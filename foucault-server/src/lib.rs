@@ -21,9 +21,11 @@ use axum::{
     extract::State,
     http::StatusCode,
     routing::{delete, get, patch, post},
-    Router,
+    Json, Router,
 };
 use tokio::{io, net::TcpListener};
+
+use foucault_core::{NotebookApiInfo, Permissions};
 
 use crate::notebook::Notebook;
 
@@ -33,12 +35,6 @@ pub enum ServerError {
     UnableToBindListener(io::Error),
     #[error("Internal server error occured : {0}")]
     InternalServerError(io::Error),
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum Permissions {
-    ReadWrite,
-    ReadOnly,
 }
 
 #[derive(Clone)]
@@ -53,7 +49,7 @@ pub async fn serve(notebook: Arc<Notebook>, permissions: Permissions, port: u16)
         permissions,
     };
     let app = Router::new()
-        .route("/name", get(notebook_name))
+        .route("/notebook", get(notebook_info))
         .route("/note/create", post(note_api::create))
         .route("/note/delete", delete(note_api::delete))
         .route("/note/validate/name", get(note_api::validate_name))
@@ -86,6 +82,12 @@ pub async fn serve(notebook: Arc<Notebook>, permissions: Permissions, port: u16)
     Ok(())
 }
 
-async fn notebook_name(State(state): State<AppState>) -> (StatusCode, String) {
-    (StatusCode::OK, state.notebook.name.clone())
+async fn notebook_info(State(state): State<AppState>) -> (StatusCode, Json<NotebookApiInfo>) {
+    (
+        StatusCode::OK,
+        Json::from(NotebookApiInfo {
+            name: state.notebook.name.clone(),
+            permissions: state.permissions,
+        }),
+    )
 }

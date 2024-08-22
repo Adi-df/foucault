@@ -17,8 +17,8 @@ use clap::{Parser, Subcommand};
 use question::{Answer, Question};
 
 use foucault_client::{explore::explore, NotebookAPI, APP_DIR_PATH};
-use foucault_core::{pretty_error, PrettyError};
-use foucault_server::{notebook::Notebook, Permissions};
+use foucault_core::{pretty_error, Permissions, PrettyError};
+use foucault_server::notebook::Notebook;
 
 use crate::notebook_selector::open_selector;
 

@@ -13,15 +13,16 @@ use foucault_core::{
     note_repr::{Note, NoteError, NoteSummary},
     pretty_error,
     tag_repr::{Tag, TagError},
+    Permissions,
 };
 
-use crate::{error::FailibleJsonResult, note_queries, AppState, Permissions};
+use crate::{error::FailibleJsonResult, note_queries, AppState};
 
 pub(crate) async fn create(
     State(state): State<AppState>,
     Json(CreateParam { name, content }): Json<CreateParam>,
 ) -> FailibleJsonResult<Result<i64, NoteError>> {
-    if matches!(state.permissions, Permissions::ReadOnly) {
+    if matches!(state.permissions, foucault_core::Permissions::ReadOnly) {
         return Err(StatusCode::UNAUTHORIZED);
     }
 

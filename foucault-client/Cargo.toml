@@ -12,6 +12,7 @@ dirs = "5.0.1"
 opener = "0.6.1"
 anyhow = "1.0.86"
 ratatui = "0.26.3"
+textwrap = "0.16.1"
 thiserror = "1.0.63"
 scopeguard = "1.2.0"
 crossterm = "0.27.0"
@@ -21,4 +22,3 @@ unicode-segmentation = "1.11.0"
 log = { version = "0.4.22", features = ["std"] }
 tokio = { version = "1.39.3", features = ["full"] }
 reqwest = { version = "0.12.7", features = ["json"] }
-textwrap = "0.16.1"
