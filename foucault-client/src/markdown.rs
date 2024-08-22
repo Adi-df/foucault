@@ -54,7 +54,6 @@ const RICH_TEXT_COLOR: [Color; 6] = [
     Color::Yellow,    // Blockquote
 ];
 
-#[derive(Clone)]
 pub struct ParsedMarkdown {
     parsed_content: Vec<BlockElements<SelectableInlineElements>>,
 }

@@ -314,7 +314,6 @@ impl InlineElement for SelectableInlineElements {
     }
 }
 
-#[derive(Clone)]
 pub enum BlockElements<T>
 where
     T: InlineElement,
