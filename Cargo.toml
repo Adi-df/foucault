@@ -3,7 +3,7 @@ members = ["foucault-client", "foucault-core", "foucault-server"]
 
 [package]
 name = "foucault"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 license = "GPL-3.0"
 authors = ["Adrien Degliame--Fecchio <adidf-web@laposte.net>"]
