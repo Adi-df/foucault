@@ -1,5 +1,4 @@
 use anyhow::Result;
-use foucault_core::Permissions;
 use log::info;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
@@ -68,8 +67,7 @@ pub async fn run_tags_managing_state(
             State::TagsManaging(state_data)
         }
         KeyCode::Char('c')
-            if key_event.modifiers == KeyModifiers::CONTROL
-                && matches!(notebook.permissions, Permissions::ReadWrite) =>
+            if key_event.modifiers == KeyModifiers::CONTROL && notebook.permissions.writtable() =>
         {
             info!("Open tag creating prompt.");
             State::TagCreating(TagsCreatingStateData::empty(state_data))
@@ -77,7 +75,7 @@ pub async fn run_tags_managing_state(
         KeyCode::Char('d')
             if key_event.modifiers == KeyModifiers::CONTROL
                 && !state_data.tags.is_empty()
-                && matches!(notebook.permissions, Permissions::ReadWrite) =>
+                && notebook.permissions.writtable() =>
         {
             info!("Open tag deleting prompt.");
             State::TagDeleting(TagsDeletingStateData::empty(state_data))

@@ -10,8 +10,6 @@ use ratatui::{
     Frame,
 };
 
-use foucault_core::Permissions;
-
 use crate::{
     helpers::create_help_bar,
     note::Note,
@@ -62,10 +60,7 @@ pub async fn run_note_tags_managing_state(
 
             State::NoteTagsManaging(state_data)
         }
-        KeyCode::Char('d')
-            if !state_data.tags.is_empty()
-                && matches!(notebook.permissions, Permissions::ReadWrite) =>
-        {
+        KeyCode::Char('d') if !state_data.tags.is_empty() && notebook.permissions.writtable() => {
             info!(
                 "Open note {} tag {} deleting prompt.",
                 state_data.note.name(),
@@ -76,7 +71,7 @@ pub async fn run_note_tags_managing_state(
             );
             State::NoteTagDeleting(NoteTagDeletingStateData::empty(state_data))
         }
-        KeyCode::Char('a') if matches!(notebook.permissions, Permissions::ReadWrite) => {
+        KeyCode::Char('a') if notebook.permissions.writtable() => {
             info!("Open note {} tag adding prompt.", state_data.note.name());
             State::NoteTagAdding(NoteTagAddingStateData::empty(state_data))
         }

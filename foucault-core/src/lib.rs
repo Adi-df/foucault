@@ -14,6 +14,15 @@ pub enum Permissions {
     ReadOnly,
 }
 
+impl Permissions {
+    pub fn writtable(&self) -> bool {
+        match self {
+            Permissions::ReadWrite => true,
+            Permissions::ReadOnly => false,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NotebookApiInfo {
     pub name: String,

@@ -13,7 +13,6 @@ use foucault_core::{
     note_repr::{Note, NoteError, NoteSummary},
     pretty_error,
     tag_repr::{Tag, TagError},
-    Permissions,
 };
 
 use crate::{error::FailibleJsonResult, note_queries, AppState};
@@ -22,7 +21,7 @@ pub(crate) async fn create(
     State(state): State<AppState>,
     Json(CreateParam { name, content }): Json<CreateParam>,
 ) -> FailibleJsonResult<Result<i64, NoteError>> {
-    if matches!(state.permissions, foucault_core::Permissions::ReadOnly) {
+    if !state.permissions.writtable() {
         return Err(StatusCode::UNAUTHORIZED);
     }
 
@@ -90,7 +89,7 @@ pub(crate) async fn rename(
     State(state): State<AppState>,
     Json(RenameParam { id, name }): Json<RenameParam>,
 ) -> FailibleJsonResult<Option<NoteError>> {
-    if matches!(state.permissions, Permissions::ReadOnly) {
+    if !state.permissions.writtable() {
         return Err(StatusCode::UNAUTHORIZED);
     }
 
@@ -110,7 +109,7 @@ pub(crate) async fn rename(
 }
 
 pub(crate) async fn delete(State(state): State<AppState>, Json(id): Json<i64>) -> StatusCode {
-    if matches!(state.permissions, Permissions::ReadOnly) {
+    if !state.permissions.writtable() {
         return StatusCode::UNAUTHORIZED;
     }
 
@@ -129,7 +128,7 @@ pub(crate) async fn update_content(
     State(state): State<AppState>,
     Json(UpdateContentParam { id, content }): Json<UpdateContentParam>,
 ) -> StatusCode {
-    if matches!(state.permissions, Permissions::ReadOnly) {
+    if !state.permissions.writtable() {
         return StatusCode::UNAUTHORIZED;
     }
 
@@ -148,7 +147,7 @@ pub(crate) async fn update_links(
     State(state): State<AppState>,
     Json(UpdateLinksParam { id, links }): Json<UpdateLinksParam>,
 ) -> StatusCode {
-    if matches!(state.permissions, Permissions::ReadOnly) {
+    if !state.permissions.writtable() {
         return StatusCode::UNAUTHORIZED;
     }
 
@@ -197,7 +196,7 @@ pub(crate) async fn add_tag(
     State(state): State<AppState>,
     Json(AddTagParam { id, tag_id }): Json<AddTagParam>,
 ) -> FailibleJsonResult<Option<Error>> {
-    if matches!(state.permissions, Permissions::ReadOnly) {
+    if !state.permissions.writtable() {
         return Err(StatusCode::UNAUTHORIZED);
     }
 
@@ -223,7 +222,7 @@ pub(crate) async fn remove_tag(
     State(state): State<AppState>,
     Json(RemoveTagParam { id, tag_id }): Json<RemoveTagParam>,
 ) -> StatusCode {
-    if matches!(state.permissions, Permissions::ReadOnly) {
+    if !state.permissions.writtable() {
         return StatusCode::UNAUTHORIZED;
     }
 

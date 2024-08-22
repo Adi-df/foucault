@@ -5,13 +5,13 @@ use foucault_core::{
     tag_repr::{Tag, TagError},
 };
 
-use crate::{error::FailibleJsonResult, tag_queries, AppState, Permissions};
+use crate::{error::FailibleJsonResult, tag_queries, AppState};
 
 pub(crate) async fn create(
     State(state): State<AppState>,
     Json(name): Json<String>,
 ) -> FailibleJsonResult<Result<Tag, TagError>> {
-    if matches!(state.permissions, Permissions::ReadOnly) {
+    if !state.permissions.writtable() {
         return Err(StatusCode::UNAUTHORIZED);
     }
 
@@ -76,7 +76,7 @@ pub(crate) async fn search_by_name(
 }
 
 pub(crate) async fn delete(State(state): State<AppState>, Json(id): Json<i64>) -> StatusCode {
-    if matches!(state.permissions, Permissions::ReadOnly) {
+    if !state.permissions.writtable() {
         return StatusCode::UNAUTHORIZED;
     }
 

@@ -28,7 +28,7 @@ pub async fn run_nothing_state(key_event: KeyEvent, notebook: &NotebookAPI) -> R
             info!("Quit foucault.");
             State::Exit
         }
-        KeyCode::Char('c') if matches!(notebook.permissions, Permissions::ReadWrite) => {
+        KeyCode::Char('c') if notebook.permissions.writtable() => {
             info!("Open new note prompt.");
             State::NoteCreating(NoteCreatingStateData::empty())
         }
