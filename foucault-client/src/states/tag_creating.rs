@@ -85,9 +85,10 @@ pub fn draw_tag_creating_state(
         name,
         valid,
     }: &TagsCreatingStateData,
+    notebook: &NotebookAPI,
     frame: &mut Frame,
     main_rect: Rect,
 ) {
-    draw_tags_managing_state(tags_managing_data, frame, main_rect);
+    draw_tags_managing_state(tags_managing_data, notebook, frame, main_rect);
     draw_text_prompt(frame, "Tag name", name, *valid, main_rect);
 }

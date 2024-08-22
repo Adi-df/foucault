@@ -21,7 +21,7 @@ pub(crate) async fn create(
     State(state): State<AppState>,
     Json(CreateParam { name, content }): Json<CreateParam>,
 ) -> FailibleJsonResult<Result<i64, NoteError>> {
-    if !state.permissions.writtable() {
+    if !state.permissions.writable() {
         return Err(StatusCode::UNAUTHORIZED);
     }
 
@@ -89,7 +89,7 @@ pub(crate) async fn rename(
     State(state): State<AppState>,
     Json(RenameParam { id, name }): Json<RenameParam>,
 ) -> FailibleJsonResult<Option<NoteError>> {
-    if !state.permissions.writtable() {
+    if !state.permissions.writable() {
         return Err(StatusCode::UNAUTHORIZED);
     }
 
@@ -109,7 +109,7 @@ pub(crate) async fn rename(
 }
 
 pub(crate) async fn delete(State(state): State<AppState>, Json(id): Json<i64>) -> StatusCode {
-    if !state.permissions.writtable() {
+    if !state.permissions.writable() {
         return StatusCode::UNAUTHORIZED;
     }
 
@@ -128,7 +128,7 @@ pub(crate) async fn update_content(
     State(state): State<AppState>,
     Json(UpdateContentParam { id, content }): Json<UpdateContentParam>,
 ) -> StatusCode {
-    if !state.permissions.writtable() {
+    if !state.permissions.writable() {
         return StatusCode::UNAUTHORIZED;
     }
 
@@ -147,7 +147,7 @@ pub(crate) async fn update_links(
     State(state): State<AppState>,
     Json(UpdateLinksParam { id, links }): Json<UpdateLinksParam>,
 ) -> StatusCode {
-    if !state.permissions.writtable() {
+    if !state.permissions.writable() {
         return StatusCode::UNAUTHORIZED;
     }
 
@@ -196,7 +196,7 @@ pub(crate) async fn add_tag(
     State(state): State<AppState>,
     Json(AddTagParam { id, tag_id }): Json<AddTagParam>,
 ) -> FailibleJsonResult<Option<Error>> {
-    if !state.permissions.writtable() {
+    if !state.permissions.writable() {
         return Err(StatusCode::UNAUTHORIZED);
     }
 
@@ -222,7 +222,7 @@ pub(crate) async fn remove_tag(
     State(state): State<AppState>,
     Json(RemoveTagParam { id, tag_id }): Json<RemoveTagParam>,
 ) -> StatusCode {
-    if !state.permissions.writtable() {
+    if !state.permissions.writable() {
         return StatusCode::UNAUTHORIZED;
     }
 

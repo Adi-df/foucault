@@ -88,9 +88,10 @@ pub fn draw_note_renaming_state(
         new_name,
         valid,
     }: &NoteRenamingStateData,
+    notebook: &NotebookAPI,
     frame: &mut Frame,
     main_rect: Rect,
 ) {
-    draw_note_viewing_state(note_viewing_data, frame, main_rect);
+    draw_note_viewing_state(note_viewing_data, notebook, frame, main_rect);
     draw_text_prompt(frame, "Rename note", new_name, *valid, main_rect);
 }

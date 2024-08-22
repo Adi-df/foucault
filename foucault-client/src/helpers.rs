@@ -45,17 +45,16 @@ pub fn create_popup(proportion: (Constraint, Constraint), rect: Rect) -> Rect {
 }
 
 pub fn create_help_bar<'a>(
-    help: &[(&'a str, &'a str)],
+    help: &[(&'a str, Color, &'a str)],
     max_by_row: usize,
     rect: Rect,
 ) -> (Table<'a>, Rect) {
     let rows: Vec<_> = help
         .chunks(max_by_row)
         .map(|infos| {
-            Row::new(infos.iter().flat_map(|(key, def)| {
+            Row::new(infos.iter().flat_map(|(key, color, def)| {
                 [
-                    Cell::from(*key)
-                        .style(Style::new().bg(Color::Blue).add_modifier(Modifier::BOLD)),
+                    Cell::from(*key).style(Style::new().bg(*color).add_modifier(Modifier::BOLD)),
                     Cell::from(*def).style(Style::new().bg(Color::Black)),
                 ]
             }))

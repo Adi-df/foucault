@@ -69,9 +69,10 @@ pub fn draw_note_deleting_state(
         note_viewing_data,
         delete,
     }: &NoteDeletingStateData,
+    notebook: &NotebookAPI,
     frame: &mut Frame,
     main_rect: Rect,
 ) {
-    draw_note_viewing_state(note_viewing_data, frame, main_rect);
+    draw_note_viewing_state(note_viewing_data, notebook, frame, main_rect);
     draw_yes_no_prompt(frame, *delete, "Delete note ?", main_rect);
 }

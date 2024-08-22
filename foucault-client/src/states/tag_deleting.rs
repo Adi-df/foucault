@@ -93,12 +93,13 @@ pub fn draw_tag_deleting_state(
         tags_managing_data,
         delete,
     }: &TagsDeletingStateData,
+    notebook: &NotebookAPI,
     frame: &mut Frame,
     main_rect: Rect,
 ) {
     let selected_tag = &tags_managing_data.tags[tags_managing_data.selected];
 
-    draw_tags_managing_state(tags_managing_data, frame, main_rect);
+    draw_tags_managing_state(tags_managing_data, notebook, frame, main_rect);
 
     draw_yes_no_prompt(
         frame,

@@ -109,15 +109,21 @@ impl State {
             State::Error(data) => draw_error_state(notebook, data, frame, main_rect),
             State::NotesManaging(data) => draw_note_managing_state(data, frame, main_rect),
             State::NoteCreating(data) => draw_note_creating_state(data, frame, main_rect),
-            State::NoteViewing(data) => draw_note_viewing_state(data, frame, main_rect),
-            State::NoteDeleting(data) => draw_note_deleting_state(data, frame, main_rect),
-            State::NoteRenaming(data) => draw_note_renaming_state(data, frame, main_rect),
-            State::NoteTagsManaging(data) => draw_note_tags_managing_state(data, frame, main_rect),
-            State::NoteTagAdding(data) => draw_note_tag_adding_state(data, frame, main_rect),
-            State::NoteTagDeleting(data) => draw_note_tag_deleting_state(data, frame, main_rect),
-            State::TagsManaging(data) => draw_tags_managing_state(data, frame, main_rect),
-            State::TagCreating(data) => draw_tag_creating_state(data, frame, main_rect),
-            State::TagDeleting(data) => draw_tag_deleting_state(data, frame, main_rect),
+            State::NoteViewing(data) => draw_note_viewing_state(data, notebook, frame, main_rect),
+            State::NoteDeleting(data) => draw_note_deleting_state(data, notebook, frame, main_rect),
+            State::NoteRenaming(data) => draw_note_renaming_state(data, notebook, frame, main_rect),
+            State::NoteTagsManaging(data) => {
+                draw_note_tags_managing_state(data, notebook, frame, main_rect);
+            }
+            State::NoteTagAdding(data) => {
+                draw_note_tag_adding_state(data, notebook, frame, main_rect);
+            }
+            State::NoteTagDeleting(data) => {
+                draw_note_tag_deleting_state(data, notebook, frame, main_rect);
+            }
+            State::TagsManaging(data) => draw_tags_managing_state(data, notebook, frame, main_rect),
+            State::TagCreating(data) => draw_tag_creating_state(data, notebook, frame, main_rect),
+            State::TagDeleting(data) => draw_tag_deleting_state(data, notebook, frame, main_rect),
             State::TagNotesListing(data) => draw_tag_notes_listing_state(data, frame, main_rect),
             State::Exit => unreachable!(),
         }

@@ -92,9 +92,10 @@ pub fn draw_note_tag_deleting_state(
         note_tags_managing_data,
         delete,
     }: &NoteTagDeletingStateData,
+    notebook: &NotebookAPI,
     frame: &mut Frame,
     main_rect: Rect,
 ) {
-    draw_note_tags_managing_state(note_tags_managing_data, frame, main_rect);
+    draw_note_tags_managing_state(note_tags_managing_data, notebook, frame, main_rect);
     draw_yes_no_prompt(frame, *delete, "Remove tag ?", main_rect);
 }

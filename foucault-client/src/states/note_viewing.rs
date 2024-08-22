@@ -119,7 +119,7 @@ pub async fn run_note_viewing_state(
 
             State::NoteViewing(state_data)
         }
-        KeyCode::Char('e') if notebook.permissions.writtable() => {
+        KeyCode::Char('e') if notebook.permissions.writable() => {
             info!("Edit note {}.", state_data.note.name());
             edit_note(&mut state_data.note, notebook).await?;
 
@@ -138,7 +138,7 @@ pub async fn run_note_viewing_state(
             info!("Enter notes listing.");
             State::NotesManaging(NotesManagingStateData::empty(notebook).await?)
         }
-        KeyCode::Char('d') if notebook.permissions.writtable() => {
+        KeyCode::Char('d') if notebook.permissions.writable() => {
             info!("Open deleting prompt for note {}.", state_data.note.name());
             State::NoteDeleting(NoteDeletingStateData::empty(state_data))
         }
@@ -291,6 +291,7 @@ pub fn draw_note_viewing_state(
         selected,
         help_display,
     }: &NoteViewingStateData,
+    notebook: &NotebookAPI,
     frame: &mut Frame,
     main_rect: Rect,
 ) {
@@ -370,16 +371,21 @@ pub fn draw_note_viewing_state(
     );
 
     if *help_display {
+        let writing_op_color = if notebook.permissions.writable() {
+            Color::Blue
+        } else {
+            Color::Red
+        };
         let (commands, commands_area) = create_help_bar(
             &[
-                ("e", "Edit"),
-                ("s", "List notes"),
-                ("d", "Delete"),
-                ("t", "Tags"),
-                ("r", "Rename"),
-                ("g", "Go to note start"),
-                ("E", "Go to note end"),
-                ("⏎", "Open link"),
+                ("e", writing_op_color, "Edit"),
+                ("d", writing_op_color, "Delete"),
+                ("r", writing_op_color, "Rename"),
+                ("s", Color::Blue, "List notes"),
+                ("t", Color::Blue, "Tags"),
+                ("g", Color::Blue, "Go to note start"),
+                ("E", Color::Blue, "Go to note end"),
+                ("⏎", Color::Blue, "Open link"),
             ],
             4,
             main_rect,

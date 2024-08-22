@@ -15,7 +15,7 @@ pub enum Permissions {
 }
 
 impl Permissions {
-    pub fn writtable(&self) -> bool {
+    pub fn writable(&self) -> bool {
         match self {
             Permissions::ReadWrite => true,
             Permissions::ReadOnly => false,

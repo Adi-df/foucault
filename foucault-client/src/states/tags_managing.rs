@@ -67,7 +67,7 @@ pub async fn run_tags_managing_state(
             State::TagsManaging(state_data)
         }
         KeyCode::Char('c')
-            if key_event.modifiers == KeyModifiers::CONTROL && notebook.permissions.writtable() =>
+            if key_event.modifiers == KeyModifiers::CONTROL && notebook.permissions.writable() =>
         {
             info!("Open tag creating prompt.");
             State::TagCreating(TagsCreatingStateData::empty(state_data))
@@ -75,7 +75,7 @@ pub async fn run_tags_managing_state(
         KeyCode::Char('d')
             if key_event.modifiers == KeyModifiers::CONTROL
                 && !state_data.tags.is_empty()
-                && notebook.permissions.writtable() =>
+                && notebook.permissions.writable() =>
         {
             info!("Open tag deleting prompt.");
             State::TagDeleting(TagsDeletingStateData::empty(state_data))
@@ -119,6 +119,7 @@ pub fn draw_tags_managing_state(
         tags,
         help_display,
     }: &TagsManagingStateData,
+    notebook: &NotebookAPI,
     frame: &mut Frame,
     main_rect: Rect,
 ) {
@@ -186,11 +187,16 @@ pub fn draw_tags_managing_state(
     );
 
     if *help_display {
+        let writing_op_color = if notebook.permissions.writable() {
+            Color::Blue
+        } else {
+            Color::Red
+        };
         let (commands, commands_area) = create_help_bar(
             &[
-                ("Ctrl+c", "Create tag"),
-                ("Ctrl+d", "Delete tag"),
-                ("⏎", "List related notes"),
+                ("Ctrl+c", writing_op_color, "Create tag"),
+                ("Ctrl+d", writing_op_color, "Delete tag"),
+                ("⏎", Color::Blue, "List related notes"),
             ],
             3,
             main_rect,

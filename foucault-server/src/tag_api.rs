@@ -11,7 +11,7 @@ pub(crate) async fn create(
     State(state): State<AppState>,
     Json(name): Json<String>,
 ) -> FailibleJsonResult<Result<Tag, TagError>> {
-    if !state.permissions.writtable() {
+    if !state.permissions.writable() {
         return Err(StatusCode::UNAUTHORIZED);
     }
 
@@ -76,7 +76,7 @@ pub(crate) async fn search_by_name(
 }
 
 pub(crate) async fn delete(State(state): State<AppState>, Json(id): Json<i64>) -> StatusCode {
-    if !state.permissions.writtable() {
+    if !state.permissions.writable() {
         return StatusCode::UNAUTHORIZED;
     }
 

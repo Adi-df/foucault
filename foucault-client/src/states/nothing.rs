@@ -28,7 +28,7 @@ pub async fn run_nothing_state(key_event: KeyEvent, notebook: &NotebookAPI) -> R
             info!("Quit foucault.");
             State::Exit
         }
-        KeyCode::Char('c') if notebook.permissions.writtable() => {
+        KeyCode::Char('c') if notebook.permissions.writable() => {
             info!("Open new note prompt.");
             State::NoteCreating(NoteCreatingStateData::empty())
         }
@@ -63,6 +63,11 @@ pub fn draw_nothing_state(notebook: &NotebookAPI, frame: &mut Frame, main_rect: 
 
     let title = Paragraph::new(tile_text).alignment(Alignment::Center);
 
+    let writable_op_color = if notebook.permissions.writable() {
+        Color::Blue
+    } else {
+        Color::Red
+    };
     let commands = Table::new(
         [
             Row::new([
@@ -71,7 +76,7 @@ pub fn draw_nothing_state(notebook: &NotebookAPI, frame: &mut Frame, main_rect: 
                     .set_style(Style::new().fg(Color::White).bg(Color::Black)),
             ]),
             Row::new([
-                Cell::from("c").set_style(Style::new().fg(Color::White).bg(Color::LightBlue)),
+                Cell::from("c").set_style(Style::new().fg(Color::White).bg(writable_op_color)),
                 Cell::from("Create new note")
                     .set_style(Style::new().fg(Color::White).bg(Color::Black)),
             ]),
