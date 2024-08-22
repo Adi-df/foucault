@@ -1,5 +1,5 @@
 use anyhow::Result;
-use log::info;
+use log::{info, warn};
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
@@ -120,25 +120,31 @@ pub fn draw_note_managing_state(
     );
 
     let list_results = List::new(notes.iter().map(|note| {
-        let pattern_start = note
-            .name()
-            .to_lowercase()
-            .find(&pattern.to_lowercase())
-            // TODO : Handle errors better
-            .expect("The search pattern should have matched");
-        let pattern_end = pattern_start + pattern.len();
+        let mut note_line = match note.name().to_lowercase().find(&pattern.to_lowercase()) {
+            Some(pattern_start) => {
+                let pattern_end = pattern_start + pattern.len();
+                vec![
+                    Span::raw(&note.name()[..pattern_start])
+                        .style(Style::new().add_modifier(Modifier::BOLD)),
+                    Span::raw(&note.name()[pattern_start..pattern_end]).style(
+                        Style::new()
+                            .add_modifier(Modifier::BOLD)
+                            .add_modifier(Modifier::UNDERLINED),
+                    ),
+                    Span::raw(&note.name()[pattern_end..])
+                        .style(Style::new().add_modifier(Modifier::BOLD)),
+                ]
+            }
+            None => {
+                warn!(
+                    "The search pattern '{pattern}' did not match on note {}",
+                    note.name()
+                );
+                vec![Span::raw(note.name())]
+            }
+        };
 
-        let mut note_line = vec![
-            Span::raw(&note.name()[..pattern_start])
-                .style(Style::new().add_modifier(Modifier::BOLD)),
-            Span::raw(&note.name()[pattern_start..pattern_end]).style(
-                Style::new()
-                    .add_modifier(Modifier::BOLD)
-                    .add_modifier(Modifier::UNDERLINED),
-            ),
-            Span::raw(&note.name()[pattern_end..]).style(Style::new().add_modifier(Modifier::BOLD)),
-            Span::raw("    "),
-        ];
+        note_line.push(Span::raw("    "));
 
         for tag in &note.tags() {
             note_line.push(

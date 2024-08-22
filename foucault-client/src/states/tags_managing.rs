@@ -1,5 +1,5 @@
 use anyhow::Result;
-use log::info;
+use log::{info, warn};
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
@@ -145,21 +145,26 @@ pub fn draw_tags_managing_state(
             .padding(Padding::uniform(1)),
     );
 
-    let list_results = List::new(tags.iter().map(|tag| {
-        let pattern_start = tag
-            .name()
-            .to_lowercase()
-            .find(pattern)
-            // TODO : Handle pattern error better.
-            .expect("The pattern should match listed tags");
-        let pattern_end = pattern_start + pattern.len();
-        Line::from(vec![
-            Span::raw(&tag.name()[..pattern_start]),
-            Span::raw(&tag.name()[pattern_start..pattern_end])
-                .style(Style::new().add_modifier(Modifier::UNDERLINED)),
-            Span::raw(&tag.name()[pattern_end..]),
-        ])
-    }))
+    let list_results = List::new(tags.iter().map(
+        |tag| match tag.name().to_lowercase().find(pattern) {
+            Some(pattern_start) => {
+                let pattern_end = pattern_start + pattern.len();
+                Line::from(vec![
+                    Span::raw(&tag.name()[..pattern_start]),
+                    Span::raw(&tag.name()[pattern_start..pattern_end])
+                        .style(Style::new().add_modifier(Modifier::UNDERLINED)),
+                    Span::raw(&tag.name()[pattern_end..]),
+                ])
+            }
+            None => {
+                warn!(
+                    "The search pattern '{pattern}' did not match on tag {}",
+                    tag.name()
+                );
+                Line::from(vec![Span::raw(tag.name())])
+            }
+        },
+    ))
     .highlight_symbol(">> ")
     .highlight_style(Style::new().bg(Color::White).fg(Color::Black))
     .block(
