@@ -31,9 +31,9 @@ use crate::notebook::Notebook;
 
 #[derive(Debug, Error)]
 pub enum ServerError {
-    #[error("Unable to bind listener : {0}")]
+    #[error("Unable to bind the listener : {0}")]
     UnableToBindListener(io::Error),
-    #[error("Internal server error occured : {0}")]
+    #[error("An internal server error occured : {0}")]
     InternalServerError(io::Error),
 }
 

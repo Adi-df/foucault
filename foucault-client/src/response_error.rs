@@ -4,11 +4,11 @@ use reqwest::{Response, StatusCode};
 
 #[derive(Debug, Error)]
 pub enum ResponseCodeError {
-    #[error("Such operation isn't allowed")]
+    #[error("Such an operation isn't allowed.")]
     Unauthorized,
-    #[error("The server encountered an internal error")]
+    #[error("The server encountered an internal error.")]
     InternalServerError,
-    #[error("Unexpected response code : {0}")]
+    #[error("Unexpected response code : {0}.")]
     UnexpectedCode(StatusCode),
 }
 

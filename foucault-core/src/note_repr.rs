@@ -8,13 +8,13 @@ use crate::tag_repr::Tag;
 
 #[derive(Debug, Clone, Copy, Error, Serialize, Deserialize)]
 pub enum NoteError {
-    #[error("No such note exists")]
+    #[error("No such note exists.")]
     DoesNotExist,
-    #[error("A similarly named note already exists")]
+    #[error("A similarly named note already exists.")]
     AlreadyExists,
-    #[error("The provided note name is empty")]
+    #[error("The provided note name is empty.")]
     EmptyName,
-    #[error("The note already has the provided tag")]
+    #[error("The note already has the provided tag.")]
     NoteAlreadyTagged,
 }
 

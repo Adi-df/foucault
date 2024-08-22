@@ -12,10 +12,10 @@ pub struct Tag {
 
 #[derive(Debug, Clone, Copy, Error, Serialize, Deserialize)]
 pub enum TagError {
-    #[error("A simillarly named tag already exists")]
+    #[error("A similarly named tag already exists.")]
     AlreadyExists,
-    #[error("The provided tag name is empty")]
+    #[error("The provided tag name is empty.")]
     EmptyName,
-    #[error("No such tag exists")]
+    #[error("No such tag exists.")]
     DoesNotExists,
 }

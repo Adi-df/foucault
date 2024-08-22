@@ -29,7 +29,7 @@ pub static APP_DIR_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     if let Some(data_dir) = dirs::data_dir() {
         data_dir.join("foucault")
     } else {
-        pretty_error!("User data directory is unavailable.");
+        pretty_error!("The user data directory is unavailable.");
         unimplemented!();
     }
 });
@@ -38,8 +38,8 @@ pub static APP_DIR_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
 pub enum ApiError {
     #[error("Unable to connect to the remote endpoint : {0}")]
     UnableToConnect(reqwest::Error),
-    #[error("Unable to ping notebook name : {0}")]
-    UnableToPingName(reqwest::Error),
+    #[error("Unable to ping the notebook informations : {0}")]
+    UnableToPingInfos(reqwest::Error),
     #[error("Unable to contact the remote notebook : {0}")]
     UnableToContactRemoteNotebook(reqwest::Error),
     #[error("Unable to parse the request result : {0}")]
@@ -61,7 +61,7 @@ impl NotebookAPI {
             .try_response_code()?
             .json::<NotebookApiInfo>()
             .await
-            .map_err(ApiError::UnableToPingName)?;
+            .map_err(ApiError::UnableToPingInfos)?;
 
         Ok(Self {
             name,
