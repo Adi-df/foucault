@@ -1,13 +1,15 @@
 # Foucault
-A small terminal UI note taking app.
+A small terminal UI note-taking app.
 
 ![Demo](doc/demo.gif)
+
+Note : Demo made using the [Helix](https://github.com/helix-editor/helix) editor for editing notes and scraped data from Wikipedia to fill the notebook.
 
 # Install Foucault
 
 ## Shell Installer
 
-Thanks to [cargo-dist](https://github.com/axodotdev/cargo-dist), an installer script exists to install foucault through just one command.
+Thanks to [cargo-dist](https://github.com/axodotdev/cargo-dist), an installer script exists to install foucault with just one command.
 
 ```sh
 curl --proto '=https' --tlsv1.2 -LsSf https://github.com/Adi-df/foucault/releases/download/v0.2.4/foucault-installer.sh | sh
@@ -15,7 +17,7 @@ curl --proto '=https' --tlsv1.2 -LsSf https://github.com/Adi-df/foucault/release
 
 ## Binaries
 
-Look through [Releases](https://github.com/Adi-df/foucault/releases) for binaries and MSI installer.
+Look through [Releases](https://github.com/Adi-df/foucault/releases) for binaries and MSI installers.
 
 ## Building from source
 
@@ -37,27 +39,27 @@ just build-dev
 
 Foucault is based on the notion of Notebook which contains notes, tags, etc.
 It exposes a CLI app made with [clap](https://github.com/clap-rs/clap) to manage notebooks.
-To create your first notebook uses `foucault create [NAME]`.
+To create your first notebook, use `foucault create [NAME]`.
 Then open it with `foucault open [NAME]`.
 
 ## Using foucault to take notes
 
-The keymap is detailed when toogling the help bar with `CTRL+H`.
+The keymap is detailed when toggling the help bar with `CTRL+H`.
 
-Editing notes work with an external editor set by the `EDITOR` env variable so that you may use your favorite editor.
-Notes are taken in markdown with (limited) support. It support making cross-references between notes by using `\[\[NOTE_NAME\]\]`.
+Editing notes works with an external editor set by the `EDITOR` env variable, so that you may use your favorite editor.
+Notes are taken in Markdown with (limited) support. It supports making cross-references between notes by using `[[NOTE_NAME]]`.
 
-## Exposing notebook / Connecting to one
+## Exposing a notebook / Connecting to one
 
-Foucault support accessing remote notebooks : Expose the notebook through `foucault serve [NAME]`. And connect to it with `foucault connect http://remotenotebookadress.org`.
+Foucault supports accessing remote notebooks : Expose the notebook through `foucault serve [NAME]`. And connect to it with `foucault connect http://remotenotebookadress.org`.
 
 # Is it any good ?
 
 Probably not.
 
 Foucault is just a side project I made to take notes in philosophy courses.
-There's probably plenty of bug, it's ineficient and missing a lot of features.
-But it still kinda work, so maybe take a look !
+There are probably plenty of bugs, it's inefficient and missing a lot of features.
+But it still kinda works, so maybe take a look !
 
 # Built with
 
