@@ -5,7 +5,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     prelude::Alignment,
-    style::{Color, Modifier, Style},
+    style::{Color, Modifier, Style, Styled},
     text::{Line, Span},
     widgets::{Block, BorderType, Borders, Cell, Padding, Paragraph, Row, Table},
     Frame,
@@ -65,10 +65,25 @@ pub fn draw_nothing_state(notebook: &NotebookAPI, frame: &mut Frame, main_rect: 
 
     let commands = Table::new(
         [
-            Row::new([Cell::from("q"), Cell::from("Quit Foucault")]),
-            Row::new([Cell::from("c"), Cell::from("Create new note")]),
-            Row::new([Cell::from("s"), Cell::from("Search through notes")]),
-            Row::new([Cell::from("t"), Cell::from("Manage tags")]),
+            Row::new([
+                Cell::from("q").set_style(Style::new().fg(Color::White).bg(Color::LightBlue)),
+                Cell::from("Quit Foucault")
+                    .set_style(Style::new().fg(Color::White).bg(Color::Black)),
+            ]),
+            Row::new([
+                Cell::from("c").set_style(Style::new().fg(Color::White).bg(Color::LightBlue)),
+                Cell::from("Create new note")
+                    .set_style(Style::new().fg(Color::White).bg(Color::Black)),
+            ]),
+            Row::new([
+                Cell::from("s").set_style(Style::new().fg(Color::White).bg(Color::LightBlue)),
+                Cell::from("Search through notes")
+                    .set_style(Style::new().fg(Color::White).bg(Color::Black)),
+            ]),
+            Row::new([
+                Cell::from("t").set_style(Style::new().fg(Color::White).bg(Color::LightBlue)),
+                Cell::from("Manage tags").set_style(Style::new().fg(Color::White).bg(Color::Black)),
+            ]),
         ],
         [Constraint::Length(3), Constraint::Fill(1)],
     )
