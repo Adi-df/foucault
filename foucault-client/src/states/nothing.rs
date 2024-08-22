@@ -45,13 +45,23 @@ pub async fn run_nothing_state(key_event: KeyEvent, notebook: &NotebookAPI) -> R
 }
 
 pub fn draw_nothing_state(notebook: &NotebookAPI, frame: &mut Frame, main_rect: Rect) {
-    let title = Paragraph::new(Line::from(vec![Span::raw(notebook.name.capitalize())
+    let mut tile_text = vec![Line::from(vec![Span::raw(notebook.name.capitalize())
         .style(
             Style::new()
                 .fg(Color::Blue)
                 .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
-        )]))
-    .alignment(Alignment::Center);
+        )])];
+
+    if matches!(notebook.permissions, Permissions::ReadOnly) {
+        tile_text.push(Line::from(vec![Span::raw(" READ ONLY ").style(
+            Style::new()
+                .fg(Color::White)
+                .bg(Color::Red)
+                .add_modifier(Modifier::BOLD),
+        )]));
+    }
+
+    let title = Paragraph::new(tile_text).alignment(Alignment::Center);
 
     let commands = Table::new(
         [
@@ -64,7 +74,7 @@ pub fn draw_nothing_state(notebook: &NotebookAPI, frame: &mut Frame, main_rect: 
     )
     .block(
         Block::new()
-            .padding(Padding::uniform(1))
+            .padding(Padding::horizontal(1))
             .borders(Borders::all())
             .border_type(BorderType::Double)
             .border_style(Style::new().fg(Color::White)),
@@ -72,10 +82,10 @@ pub fn draw_nothing_state(notebook: &NotebookAPI, frame: &mut Frame, main_rect: 
 
     let title_layout = Layout::new(
         Direction::Vertical,
-        [Constraint::Length(1), Constraint::Fill(1)],
+        [Constraint::Length(2), Constraint::Fill(1)],
     )
     .split(create_popup(
-        (Constraint::Percentage(40), Constraint::Percentage(30)),
+        (Constraint::Percentage(40), Constraint::Length(8)),
         main_rect,
     ));
 
