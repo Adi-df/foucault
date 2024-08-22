@@ -85,7 +85,7 @@ async fn main() {
 
     if !APP_DIR_PATH.exists() {
         if fs::create_dir(&*APP_DIR_PATH).await.is_err() {
-            pretty_error!("Unable to create app directory.");
+            pretty_error!("Unable to create the app's directory.");
             todo!();
         }
     } else if !APP_DIR_PATH.is_dir() {
@@ -130,7 +130,7 @@ async fn main() {
                 explore(&notebook_api).await.pretty_unwrap();
             }
             Commands::Connect { endpoint } => {
-                info!("Connect to notebook at address {endpoint}.");
+                info!("Connect to a notebook at address {endpoint}.");
                 let notebook_api = NotebookAPI::new(endpoint.clone()).await.pretty_unwrap();
                 explore(&notebook_api).await.pretty_unwrap();
             }
@@ -160,7 +160,7 @@ async fn main() {
                     port.unwrap_or(DEFAULT_PORT),
                 )
                 .await
-                .expect("An error occured when serving the notebook");
+                .pretty_unwrap();
             }
             Commands::Delete { name } => {
                 info!("Delete notebook {name}.");
@@ -183,10 +183,10 @@ async fn main() {
             }
         }
     } else {
-        info!("Open default notebook manager.");
+        info!("Open the default notebook selector.");
 
         if let Some(name) = open_selector(&APP_DIR_PATH).pretty_unwrap() {
-            info!("Open notebook selected : {name}.");
+            info!("Open the notebook selected : {name}.");
             let notebook = Arc::new(
                 Notebook::open_notebook(name.as_str(), &APP_DIR_PATH)
                     .await
