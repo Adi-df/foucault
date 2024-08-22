@@ -11,6 +11,8 @@ use ratatui::{
     Frame,
 };
 
+use foucault_core::Permissions;
+
 use crate::{
     helpers::{create_popup, Capitalize},
     states::{
@@ -26,7 +28,7 @@ pub async fn run_nothing_state(key_event: KeyEvent, notebook: &NotebookAPI) -> R
             info!("Quit foucault.");
             State::Exit
         }
-        KeyCode::Char('c') => {
+        KeyCode::Char('c') if matches!(notebook.permissions, Permissions::ReadWrite) => {
             info!("Open new note prompt.");
             State::NoteCreating(NoteCreatingStateData::empty())
         }

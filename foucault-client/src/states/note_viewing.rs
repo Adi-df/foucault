@@ -5,7 +5,6 @@ use std::{
 };
 
 use anyhow::Result;
-use foucault_core::PrettyError;
 use log::info;
 use scopeguard::defer;
 
@@ -26,6 +25,8 @@ use ratatui::{
     },
     Frame,
 };
+
+use foucault_core::{Permissions, PrettyError};
 
 use crate::{
     helpers::create_help_bar,
@@ -118,7 +119,7 @@ pub async fn run_note_viewing_state(
 
             State::NoteViewing(state_data)
         }
-        KeyCode::Char('e') => {
+        KeyCode::Char('e') if matches!(notebook.permissions, Permissions::ReadWrite) => {
             info!("Edit note {}.", state_data.note.name());
             edit_note(&mut state_data.note, notebook).await?;
 
@@ -137,7 +138,7 @@ pub async fn run_note_viewing_state(
             info!("Enter notes listing.");
             State::NotesManaging(NotesManagingStateData::empty(notebook).await?)
         }
-        KeyCode::Char('d') => {
+        KeyCode::Char('d') if matches!(notebook.permissions, Permissions::ReadWrite) => {
             info!("Open deleting prompt for note {}.", state_data.note.name());
             State::NoteDeleting(NoteDeletingStateData::empty(state_data))
         }
@@ -145,7 +146,7 @@ pub async fn run_note_viewing_state(
             info!("Open renaming prompt for note {}.", state_data.note.name());
             State::NoteRenaming(NoteRenamingStateData::empty(state_data))
         }
-        KeyCode::Char('t') => {
+        KeyCode::Char('t') if matches!(notebook.permissions, Permissions::ReadWrite) => {
             info!("Open tags manager for note {}", state_data.note.name());
             State::NoteTagsManaging(
                 NoteTagsManagingStateData::new(state_data.note, notebook).await?,
