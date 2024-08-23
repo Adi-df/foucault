@@ -7,11 +7,14 @@ use ratatui::{layout::Rect, Frame};
 use crate::{
     helpers::draw_text_prompt,
     note::Note,
-    states::{note_viewing::NoteViewingStateData, notes_managing::NotesManagingStateData, State},
+    states::{
+        note_viewing::NoteViewingStateData,
+        notes_managing::{draw_note_managing_state, NotesManagingStateData},
+        nothing::draw_nothing_state,
+        State,
+    },
     NotebookAPI,
 };
-
-use super::{notes_managing::draw_note_managing_state, nothing::draw_nothing_state};
 
 #[derive(Clone)]
 enum PrecidingState {
@@ -22,8 +25,8 @@ enum PrecidingState {
 #[derive(Clone)]
 pub struct NoteCreatingStateData {
     preciding_state: PrecidingState,
-    pub name: String,
-    pub valid: bool,
+    name: String,
+    valid: bool,
 }
 
 impl NoteCreatingStateData {

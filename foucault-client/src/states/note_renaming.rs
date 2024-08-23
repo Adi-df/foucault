@@ -16,9 +16,9 @@ use crate::{
 
 #[derive(Clone)]
 pub struct NoteRenamingStateData {
-    pub note_viewing_data: NoteViewingStateData,
-    pub new_name: String,
-    pub valid: bool,
+    note_viewing_data: NoteViewingStateData,
+    new_name: String,
+    valid: bool,
 }
 
 impl NoteRenamingStateData {

@@ -49,10 +49,7 @@ pub async fn explore(notebook: &NotebookAPI) -> Result<()> {
                         match run_state.run(key, notebook, &mut forced_redraw).await {
                             Ok(new_state) => state = new_state,
                             Err(err) => {
-                                state = State::Error(ErrorStateData {
-                                    inner_state: Box::new(state),
-                                    error_message: err.to_string(),
-                                });
+                                state = State::Error(ErrorStateData::new(state, err.to_string()));
                             }
                         }
                     }

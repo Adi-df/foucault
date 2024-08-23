@@ -16,9 +16,9 @@ use crate::{
 
 #[derive(Clone)]
 pub struct TagsCreatingStateData {
-    pub tags_managing_data: TagsManagingStateData,
-    pub name: String,
-    pub valid: bool,
+    tags_managing_data: TagsManagingStateData,
+    name: String,
+    valid: bool,
 }
 
 impl TagsCreatingStateData {

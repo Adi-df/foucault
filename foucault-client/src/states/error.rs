@@ -13,8 +13,17 @@ use crate::{helpers::create_popup, states::State, NotebookAPI};
 
 #[derive(Clone)]
 pub struct ErrorStateData {
-    pub inner_state: Box<State>,
-    pub error_message: String,
+    inner_state: Box<State>,
+    error_message: String,
+}
+
+impl ErrorStateData {
+    pub fn new(state: State, error_message: String) -> Self {
+        Self {
+            inner_state: Box::new(state),
+            error_message,
+        }
+    }
 }
 
 pub async fn run_error_state(state_data: ErrorStateData, key_event: KeyEvent) -> Result<State> {

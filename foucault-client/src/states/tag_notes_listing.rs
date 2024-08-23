@@ -25,9 +25,9 @@ use crate::{
 
 #[derive(Clone)]
 pub struct TagNotesListingStateData {
-    pub tag: Tag,
-    pub notes: Arc<[NoteSummary]>,
-    pub selected: usize,
+    tag: Tag,
+    notes: Arc<[NoteSummary]>,
+    selected: usize,
 }
 
 impl TagNotesListingStateData {

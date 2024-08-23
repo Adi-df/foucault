@@ -28,9 +28,9 @@ use crate::{
 #[derive(Clone)]
 pub struct TagsManagingStateData {
     pub pattern: String,
-    pub selected: usize,
-    pub tags: Arc<[Tag]>,
-    pub help_display: bool,
+    selected: usize,
+    tags: Arc<[Tag]>,
+    help_display: bool,
 }
 
 impl TagsManagingStateData {

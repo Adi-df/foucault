@@ -10,13 +10,14 @@ use crate::{
         tags_managing::{draw_tags_managing_state, TagsManagingStateData},
         State,
     },
+    tag::Tag,
     NotebookAPI,
 };
 
 #[derive(Clone)]
 pub struct TagsDeletingStateData {
-    pub tags_managing_data: TagsManagingStateData,
-    pub delete: bool,
+    tags_managing_data: TagsManagingStateData,
+    delete: bool,
 }
 
 impl TagsDeletingStateData {
@@ -59,10 +60,14 @@ pub async fn run_tag_deleting_state(
                         .name()
                 );
 
-                tags_managing_data.tags[tags_managing_data.selected]
-                    .clone()
-                    .delete(notebook)
-                    .await?;
+                Tag::delete(
+                    tags_managing_data
+                        .get_selected()
+                        .expect("A tag to be selected")
+                        .id(),
+                    notebook,
+                )
+                .await?;
             } else {
                 info!(
                     "Cancel the deletion of tag {}.",
@@ -96,7 +101,9 @@ pub fn draw_tag_deleting_state(
     frame: &mut Frame,
     main_rect: Rect,
 ) {
-    let selected_tag = &tags_managing_data.tags[tags_managing_data.selected];
+    let selected_tag = tags_managing_data
+        .get_selected()
+        .expect("A tag to be selected");
 
     draw_tags_managing_state(tags_managing_data, notebook, frame, main_rect);
 

@@ -15,8 +15,8 @@ use crate::{
 
 #[derive(Clone)]
 pub struct NoteTagDeletingStateData {
-    pub note_tags_managing_data: NoteTagsManagingStateData,
-    pub delete: bool,
+    note_tags_managing_data: NoteTagsManagingStateData,
+    delete: bool,
 }
 
 impl NoteTagDeletingStateData {
@@ -52,7 +52,9 @@ pub async fn run_note_tag_deleting_state(
         }
         KeyCode::Enter => {
             if delete {
-                let tag = &note_tags_managing_data.tags[note_tags_managing_data.selected];
+                let tag = note_tags_managing_data
+                    .get_selected()
+                    .expect("A tag to be selected");
 
                 info!(
                     "Remove tag {} from note {}.",

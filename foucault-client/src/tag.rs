@@ -95,11 +95,11 @@ impl Tag {
         self.inner.color
     }
 
-    pub async fn delete(self, notebook: &NotebookAPI) -> Result<()> {
+    pub async fn delete(id: i64, notebook: &NotebookAPI) -> Result<()> {
         notebook
             .client
             .delete(notebook.build_url("/tag/delete"))
-            .json(&self.id())
+            .json(&id)
             .send()
             .await
             .map_err(ApiError::UnableToContactRemoteNotebook)?

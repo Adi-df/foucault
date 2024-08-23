@@ -18,17 +18,17 @@ use crate::{
 use foucault_core::note_repr::NoteError;
 
 #[derive(Clone)]
-pub enum PrecidingState {
+enum PrecidingState {
     NoteViewingState(NoteViewingStateData),
     NotesManagingState(NotesManagingStateData),
 }
 
 #[derive(Clone)]
 pub struct NoteDeletingStateData {
-    pub preciding_state: PrecidingState,
-    pub note_name: String,
-    pub note_id: i64,
-    pub delete: bool,
+    preciding_state: PrecidingState,
+    note_name: String,
+    note_id: i64,
+    delete: bool,
 }
 
 impl NoteDeletingStateData {

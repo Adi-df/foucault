@@ -31,9 +31,9 @@ use foucault_core::note_repr::NoteError;
 #[derive(Clone)]
 pub struct NotesManagingStateData {
     pub pattern: String,
-    pub selected: usize,
-    pub notes: Arc<[NoteSummary]>,
-    pub help_display: bool,
+    selected: usize,
+    notes: Arc<[NoteSummary]>,
+    help_display: bool,
 }
 
 impl NotesManagingStateData {

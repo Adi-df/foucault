@@ -16,11 +16,11 @@ mod tags_managing;
 use anyhow::Result;
 
 use crossterm::event::KeyEvent;
-use error::{draw_error_state, run_error_state, ErrorStateData};
 use ratatui::{layout::Rect, Frame};
 
 use crate::{
     states::{
+        error::{draw_error_state, run_error_state, ErrorStateData},
         note_creating::{draw_note_creating_state, run_note_creating_state, NoteCreatingStateData},
         note_deleting::{draw_note_deleting_state, run_note_deleting_state, NoteDeletingStateData},
         note_renaming::{draw_note_renaming_state, run_note_renaming_state, NoteRenamingStateData},

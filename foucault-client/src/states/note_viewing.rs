@@ -49,10 +49,10 @@ use crate::{
 #[derive(Clone)]
 pub struct NoteViewingStateData {
     pub note: Note,
-    pub tags: Arc<[Tag]>,
-    pub parsed_content: Arc<Mutex<ParsedMarkdown>>,
-    pub selected: (usize, usize),
-    pub help_display: bool,
+    tags: Arc<[Tag]>,
+    parsed_content: Arc<Mutex<ParsedMarkdown>>,
+    selected: (usize, usize),
+    help_display: bool,
 }
 
 impl NoteViewingStateData {
