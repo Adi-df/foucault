@@ -239,6 +239,7 @@ pub fn draw_note_managing_state(
         let (commands, commands_area) = create_help_bar(
             &[
                 ("Ctrl+c", writing_op_color, "Create note"),
+                ("Ctrl+d", writing_op_color, "Delete note"),
                 ("⏎", Color::Blue, "Open note"),
             ],
             3,
