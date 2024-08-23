@@ -110,7 +110,7 @@ impl State {
             State::NotesManaging(data) => {
                 draw_note_managing_state(data, notebook, frame, main_rect);
             }
-            State::NoteCreating(data) => draw_note_creating_state(data, frame, main_rect),
+            State::NoteCreating(data) => draw_note_creating_state(data, notebook, frame, main_rect),
             State::NoteViewing(data) => draw_note_viewing_state(data, notebook, frame, main_rect),
             State::NoteDeleting(data) => draw_note_deleting_state(data, notebook, frame, main_rect),
             State::NoteRenaming(data) => draw_note_renaming_state(data, notebook, frame, main_rect),

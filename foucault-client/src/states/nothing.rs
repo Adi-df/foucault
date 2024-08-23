@@ -30,7 +30,7 @@ pub async fn run_nothing_state(key_event: KeyEvent, notebook: &NotebookAPI) -> R
         }
         KeyCode::Char('c') if notebook.permissions.writable() => {
             info!("Open the note creation prompt.");
-            State::NoteCreating(NoteCreatingStateData::empty())
+            State::NoteCreating(NoteCreatingStateData::from_nothing())
         }
         KeyCode::Char('s') => {
             info!("Open the notes manager.");

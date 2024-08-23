@@ -7,19 +7,37 @@ use ratatui::{layout::Rect, Frame};
 use crate::{
     helpers::draw_text_prompt,
     note::Note,
-    states::{note_viewing::NoteViewingStateData, State},
+    states::{note_viewing::NoteViewingStateData, notes_managing::NotesManagingStateData, State},
     NotebookAPI,
 };
 
+use super::{notes_managing::draw_note_managing_state, nothing::draw_nothing_state};
+
+#[derive(Clone)]
+enum PrecidingState {
+    Nothing,
+    NotesManaging(NotesManagingStateData),
+}
+
 #[derive(Clone)]
 pub struct NoteCreatingStateData {
+    preciding_state: PrecidingState,
     pub name: String,
     pub valid: bool,
 }
 
 impl NoteCreatingStateData {
-    pub fn empty() -> Self {
+    pub fn from_nothing() -> Self {
         NoteCreatingStateData {
+            preciding_state: PrecidingState::Nothing,
+            name: String::new(),
+            valid: false,
+        }
+    }
+
+    pub fn from_notes_managing(state_data: NotesManagingStateData) -> Self {
+        NoteCreatingStateData {
+            preciding_state: PrecidingState::NotesManaging(state_data),
             name: String::new(),
             valid: false,
         }
@@ -32,6 +50,15 @@ pub async fn run_note_creating_state(
     notebook: &NotebookAPI,
 ) -> Result<State> {
     Ok(match key_event.code {
+        KeyCode::Esc => {
+            info!("Cancel the note creation.");
+            match state_data.preciding_state {
+                PrecidingState::Nothing => State::Nothing,
+                PrecidingState::NotesManaging(state) => State::NotesManaging(
+                    NotesManagingStateData::from_pattern(state.pattern, notebook).await?,
+                ),
+            }
+        }
         KeyCode::Enter => {
             if Note::validate_name(state_data.name.as_str(), notebook).await? {
                 info!("Create note : {}.", state_data.name.as_str());
@@ -45,10 +72,6 @@ pub async fn run_note_creating_state(
                     ..state_data
                 })
             }
-        }
-        KeyCode::Esc => {
-            info!("Cancel the note creation.");
-            State::Nothing
         }
         KeyCode::Backspace => {
             state_data.name.pop();
@@ -71,9 +94,21 @@ pub async fn run_note_creating_state(
 }
 
 pub fn draw_note_creating_state(
-    NoteCreatingStateData { name, valid }: &NoteCreatingStateData,
+    NoteCreatingStateData {
+        preciding_state,
+        name,
+        valid,
+    }: &NoteCreatingStateData,
+    notebook: &NotebookAPI,
     frame: &mut Frame,
     main_rect: Rect,
 ) {
+    match preciding_state {
+        PrecidingState::Nothing => draw_nothing_state(notebook, frame, main_rect),
+        PrecidingState::NotesManaging(state) => {
+            draw_note_managing_state(state, notebook, frame, main_rect)
+        }
+    }
+
     draw_text_prompt(frame, "Note name", name, *valid, main_rect);
 }

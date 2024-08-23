@@ -78,7 +78,7 @@ pub async fn run_note_managing_state(
         }
         KeyCode::Char('c') if key_event.modifiers == KeyModifiers::CONTROL => {
             info!("Open the note creation prompt.");
-            State::NoteCreating(NoteCreatingStateData::empty())
+            State::NoteCreating(NoteCreatingStateData::from_notes_managing(state_data))
         }
         KeyCode::Char('d')
             if key_event.modifiers == KeyModifiers::CONTROL && !state_data.notes.is_empty() =>
