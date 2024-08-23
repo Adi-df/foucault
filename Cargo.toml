@@ -33,10 +33,14 @@ eula = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[profile.release]
+lto = "fat"
+strip = true
+codegen-units = 1
+
 # The profile that 'cargo dist' will build with
 [profile.dist]
 inherits = "release"
-lto = "thin"
 
 # Config for 'cargo dist'
 [workspace.metadata.dist]
