@@ -97,7 +97,10 @@ impl ParsedMarkdown {
     }
 
     pub fn block_length(&self, block: usize) -> usize {
-        self.parsed_content[block].len()
+        self.parsed_content
+            .get(block)
+            .map(BlockElement::len)
+            .unwrap_or(0)
     }
 }
 
