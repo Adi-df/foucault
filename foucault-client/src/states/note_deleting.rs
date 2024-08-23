@@ -6,79 +6,130 @@ use ratatui::{layout::Rect, Frame};
 
 use crate::{
     helpers::draw_yes_no_prompt,
+    note::Note,
     states::{
         note_viewing::{draw_note_viewing_state, NoteViewingStateData},
+        notes_managing::{draw_note_managing_state, NotesManagingStateData},
         State,
     },
     NotebookAPI,
 };
 
+use foucault_core::note_repr::NoteError;
+
+#[derive(Clone)]
+pub enum PrecidingState {
+    NoteViewingState(NoteViewingStateData),
+    NotesManagingState(NotesManagingStateData),
+}
+
 #[derive(Clone)]
 pub struct NoteDeletingStateData {
-    pub note_viewing_data: NoteViewingStateData,
+    pub preciding_state: PrecidingState,
+    pub note_name: String,
+    pub note_id: i64,
     pub delete: bool,
 }
 
 impl NoteDeletingStateData {
-    pub fn empty(note_viewing_data: NoteViewingStateData) -> Self {
+    pub fn from_note_viewing(state: NoteViewingStateData) -> Self {
         NoteDeletingStateData {
-            note_viewing_data,
+            note_name: state.note.name().to_string(),
+            note_id: state.note.id(),
             delete: false,
+            preciding_state: PrecidingState::NoteViewingState(state),
+        }
+    }
+    pub fn from_notes_managing(
+        note_name: String,
+        note_id: i64,
+        state: NotesManagingStateData,
+    ) -> Self {
+        NoteDeletingStateData {
+            note_name,
+            note_id,
+            delete: false,
+            preciding_state: PrecidingState::NotesManagingState(state),
         }
     }
 }
 
 pub async fn run_note_deleting_state(
-    NoteDeletingStateData {
-        note_viewing_data,
-        delete,
-    }: NoteDeletingStateData,
+    state_data: NoteDeletingStateData,
     key_event: KeyEvent,
     notebook: &NotebookAPI,
 ) -> Result<State> {
     Ok(match key_event.code {
         KeyCode::Esc => {
-            info!(
-                "Cancel the deletion of note {}.",
-                note_viewing_data.note.name()
-            );
-            State::NoteViewing(NoteViewingStateData::new(note_viewing_data.note, notebook).await?)
-        }
-        KeyCode::Tab => State::NoteDeleting(NoteDeletingStateData {
-            note_viewing_data,
-            delete: !delete,
-        }),
-        KeyCode::Enter => {
-            if delete {
-                info!("Delete note {}.", note_viewing_data.note.name());
-                note_viewing_data.note.delete(notebook).await?;
-                State::Nothing
-            } else {
-                info!(
-                    "Cancel the deletion of note {}.",
-                    note_viewing_data.note.name()
-                );
-                State::NoteViewing(
-                    NoteViewingStateData::new(note_viewing_data.note, notebook).await?,
-                )
+            info!("Cancel the deletion of note {}.", &state_data.note_name);
+            match state_data.preciding_state {
+                PrecidingState::NoteViewingState(_) => State::NoteViewing(
+                    NoteViewingStateData::new(
+                        Note::load_by_id(state_data.note_id, notebook)
+                            .await?
+                            .ok_or(NoteError::DoesNotExist)?,
+                        notebook,
+                    )
+                    .await?,
+                ),
+                PrecidingState::NotesManagingState(state) => State::NotesManaging(
+                    NotesManagingStateData::from_pattern(state.pattern, notebook).await?,
+                ),
             }
         }
-        _ => State::NoteDeleting(NoteDeletingStateData {
-            note_viewing_data,
-            delete,
+        KeyCode::Tab => State::NoteDeleting(NoteDeletingStateData {
+            delete: !state_data.delete,
+            ..state_data
         }),
+        KeyCode::Enter => {
+            if state_data.delete {
+                info!("Delete note {}.", &state_data.note_name);
+                Note::delete(state_data.note_id, notebook).await?;
+                match state_data.preciding_state {
+                    PrecidingState::NoteViewingState(_) => State::Nothing,
+                    PrecidingState::NotesManagingState(state) => State::NotesManaging(
+                        NotesManagingStateData::from_pattern(state.pattern, notebook).await?,
+                    ),
+                }
+            } else {
+                info!("Cancel the deletion of note {}.", &state_data.note_name);
+                match state_data.preciding_state {
+                    PrecidingState::NoteViewingState(_) => State::NoteViewing(
+                        NoteViewingStateData::new(
+                            Note::load_by_id(state_data.note_id, notebook)
+                                .await?
+                                .ok_or(NoteError::DoesNotExist)?,
+                            notebook,
+                        )
+                        .await?,
+                    ),
+                    PrecidingState::NotesManagingState(state) => State::NotesManaging(
+                        NotesManagingStateData::from_pattern(state.pattern, notebook).await?,
+                    ),
+                }
+            }
+        }
+        _ => State::NoteDeleting(state_data),
     })
 }
 
 pub fn draw_note_deleting_state(
     NoteDeletingStateData {
-        note_viewing_data,
+        preciding_state,
         delete,
+        ..
     }: &NoteDeletingStateData,
     notebook: &NotebookAPI,
     frame: &mut Frame,
     main_rect: Rect,
 ) {
-    draw_note_viewing_state(note_viewing_data, notebook, frame, main_rect);
+    match preciding_state {
+        PrecidingState::NoteViewingState(state) => {
+            draw_note_viewing_state(state, notebook, frame, main_rect);
+        }
+        PrecidingState::NotesManagingState(state) => {
+            draw_note_managing_state(state, notebook, frame, main_rect);
+        }
+    }
     draw_yes_no_prompt(frame, *delete, "Delete note ?", main_rect);
 }

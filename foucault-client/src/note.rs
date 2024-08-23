@@ -94,13 +94,6 @@ impl Note {
         Ok(res.map(Self::from))
     }
 
-    pub async fn load_from_summary(summary: &NoteSummary, notebook: &NotebookAPI) -> Result<Self> {
-        match Note::load_by_id(summary.inner.id, notebook).await? {
-            Some(note) => Ok(note),
-            None => Err(NoteError::DoesNotExist.into()),
-        }
-    }
-
     pub async fn load_by_name(name: &str, notebook: &NotebookAPI) -> Result<Option<Self>> {
         let res = notebook
             .client
@@ -167,11 +160,11 @@ impl Note {
         Ok(())
     }
 
-    pub async fn delete(self, notebook: &NotebookAPI) -> Result<()> {
+    pub async fn delete(id: i64, notebook: &NotebookAPI) -> Result<()> {
         notebook
             .client
             .delete(notebook.build_url("/note/delete"))
-            .json(&self.id())
+            .json(&id)
             .send()
             .await
             .map_err(ApiError::UnableToContactRemoteNotebook)?

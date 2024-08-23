@@ -143,7 +143,7 @@ pub async fn run_note_viewing_state(
                 "Open the deletion prompt for note {}.",
                 state_data.note.name()
             );
-            State::NoteDeleting(NoteDeletingStateData::empty(state_data))
+            State::NoteDeleting(NoteDeletingStateData::from_note_viewing(state_data))
         }
         KeyCode::Char('r') => {
             info!(

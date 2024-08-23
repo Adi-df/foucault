@@ -19,9 +19,14 @@ use ratatui::{
 use crate::{
     helpers::create_help_bar,
     note::{Note, NoteSummary},
-    states::{note_creating::NoteCreatingStateData, note_viewing::NoteViewingStateData, State},
+    states::{
+        note_creating::NoteCreatingStateData, note_deleting::NoteDeletingStateData,
+        note_viewing::NoteViewingStateData, State,
+    },
     NotebookAPI,
 };
+
+use foucault_core::note_repr::NoteError;
 
 #[derive(Clone)]
 pub struct NotesManagingStateData {
@@ -45,6 +50,10 @@ impl NotesManagingStateData {
 
     pub async fn empty(notebook: &NotebookAPI) -> Result<Self> {
         Self::from_pattern(String::new(), notebook).await
+    }
+
+    fn selected(&self) -> &NoteSummary {
+        &self.notes[self.selected]
     }
 }
 
@@ -71,11 +80,24 @@ pub async fn run_note_managing_state(
             info!("Open the note creation prompt.");
             State::NoteCreating(NoteCreatingStateData::empty())
         }
+        KeyCode::Char('d')
+            if key_event.modifiers == KeyModifiers::CONTROL && !state_data.notes.is_empty() =>
+        {
+            info!("Open the note deletion prompt.");
+            let selected_note = state_data.selected();
+            State::NoteDeleting(NoteDeletingStateData::from_notes_managing(
+                selected_note.name().to_string(),
+                selected_note.id(),
+                state_data,
+            ))
+        }
         KeyCode::Enter if !state_data.notes.is_empty() => {
-            let note_summary = &state_data.notes[state_data.selected];
+            let note_summary = state_data.selected();
             info!("Open note {}.", note_summary.name());
 
-            let note = Note::load_from_summary(note_summary, notebook).await?;
+            let note = Note::load_by_id(note_summary.id(), notebook)
+                .await?
+                .ok_or(NoteError::DoesNotExist)?;
             State::NoteViewing(NoteViewingStateData::new(note, notebook).await?)
         }
         KeyCode::Backspace if key_event.modifiers == KeyModifiers::NONE => {
