@@ -7,7 +7,7 @@ use serde_error::Error;
 
 use foucault_core::{
     api::note::{
-        AddTagParam, CreateParam, RemoveTagParam, RenameParam, UpdateContentParam,
+        AddTagParam, CreateParam, RemoveTagParam, RenameParam, SearchWithTag, UpdateContentParam,
         UpdateLinksParam, ValidateNewTagParam,
     },
     note_repr::{Note, NoteError, NoteSummary},
@@ -252,11 +252,11 @@ pub(crate) async fn search_by_name(
     }
 }
 
-pub(crate) async fn search_by_tag(
+pub(crate) async fn search_with_tag(
     State(state): State<AppState>,
-    Json(tag_id): Json<i64>,
+    Json(SearchWithTag { tag_id, pattern }): Json<SearchWithTag>,
 ) -> FailibleJsonResult<Vec<NoteSummary>> {
-    let res = note_queries::search_by_tag(tag_id, state.notebook.db()).await;
+    let res = note_queries::search_with_tag(tag_id, &pattern, state.notebook.db()).await;
 
     match res {
         Ok(res) => Ok((StatusCode::OK, Json::from(res))),

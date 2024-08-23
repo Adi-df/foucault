@@ -44,4 +44,10 @@ pub mod note {
         pub id: i64,
         pub tag_id: i64,
     }
+
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    pub struct SearchWithTag {
+        pub tag_id: i64,
+        pub pattern: String,
+    }
 }

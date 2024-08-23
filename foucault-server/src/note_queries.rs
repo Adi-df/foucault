@@ -263,14 +263,17 @@ pub(crate) async fn search_by_name(
     .collect()
 }
 
-pub(crate) async fn search_by_tag(
+pub(crate) async fn search_with_tag(
     tag_id: i64,
+    pattern: &str,
     connection: &SqlitePool,
 ) -> Result<Vec<NoteSummary>> {
+    let sql_pattern = format!("%{pattern}%");
     join_all(
             sqlx::query!(
-                "SELECT notes_table.id, notes_table.name FROM tags_join_table INNER JOIN notes_table ON tags_join_table.note_id = notes_table.id WHERE tag_id=$1 ORDER BY notes_table.name ASC",
-                tag_id
+                "SELECT notes_table.id, notes_table.name FROM tags_join_table INNER JOIN notes_table ON tags_join_table.note_id = notes_table.id WHERE tag_id=$1 AND notes_table.name LIKE $2 ORDER BY notes_table.name ASC",
+                tag_id,
+                sql_pattern
             )
             .fetch_all(connection)
             .await?.
