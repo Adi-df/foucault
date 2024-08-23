@@ -80,7 +80,7 @@ pub(crate) async fn load_by_name(name: String, connection: &SqlitePool) -> Resul
 pub(crate) async fn search_by_name(pattern: &str, connection: &SqlitePool) -> Result<Vec<Tag>> {
     let sql_pattern = format!("%{pattern}%");
     sqlx::query!(
-        "SELECT id,name,color FROM tags_table WHERE name LIKE $1 ORDER BY id DESC",
+        "SELECT id,name,color FROM tags_table WHERE name LIKE $1 ORDER BY name ASC",
         sql_pattern
     )
     .fetch_all(connection)
@@ -88,7 +88,7 @@ pub(crate) async fn search_by_name(pattern: &str, connection: &SqlitePool) -> Re
     .into_iter()
     .map(|row| {
         Ok(Tag {
-            id: row.id,
+            id: row.id.expect("There should be a tag id"),
             name: Arc::from(row.name),
             color: u32::try_from(row.color)?,
         })

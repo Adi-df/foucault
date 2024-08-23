@@ -84,22 +84,25 @@ pub(crate) async fn load_by_name(name: String, connection: &SqlitePool) -> Resul
 }
 
 pub(crate) async fn list_links(id: i64, connection: &SqlitePool) -> Result<Vec<Link>> {
-    sqlx::query!("SELECT to_name FROM links_table WHERE from_id=$1", id)
-        .fetch_all(connection)
-        .await?
-        .into_iter()
-        .map(|row| {
-            Ok(Link {
-                from: id,
-                to: row.to_name,
-            })
+    sqlx::query!(
+        "SELECT to_name FROM links_table WHERE from_id=$1 ORDER BY to_name ASC",
+        id
+    )
+    .fetch_all(connection)
+    .await?
+    .into_iter()
+    .map(|row| {
+        Ok(Link {
+            from: id,
+            to: row.to_name,
         })
-        .collect()
+    })
+    .collect()
 }
 
 pub async fn list_tags(id: i64, connection: &SqlitePool) -> Result<Vec<Tag>> {
     sqlx::query!(
-        "SELECT tags_table.id,tags_table.name,tags_table.color FROM tags_join_table INNER JOIN tags_table ON tags_join_table.tag_id = tags_table.id WHERE tags_join_table.note_id=$1",
+        "SELECT tags_table.id,tags_table.name,tags_table.color FROM tags_join_table INNER JOIN tags_table ON tags_join_table.tag_id = tags_table.id WHERE tags_join_table.note_id=$1 ORDER BY tags_table.name ASC",
         id
     )
     .fetch_all(connection)
@@ -266,7 +269,7 @@ pub(crate) async fn search_by_tag(
 ) -> Result<Vec<NoteSummary>> {
     join_all(
             sqlx::query!(
-                "SELECT notes_table.id, notes_table.name FROM tags_join_table INNER JOIN notes_table ON tags_join_table.note_id = notes_table.id WHERE tag_id=$1",
+                "SELECT notes_table.id, notes_table.name FROM tags_join_table INNER JOIN notes_table ON tags_join_table.note_id = notes_table.id WHERE tag_id=$1 ORDER BY notes_table.name ASC",
                 tag_id
             )
             .fetch_all(connection)
