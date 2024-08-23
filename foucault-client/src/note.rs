@@ -302,11 +302,18 @@ impl NoteSummary {
         Ok(res.into_iter().map(Self::from).collect())
     }
 
-    pub async fn fetch_by_tag(tag_id: i64, notebook: &NotebookAPI) -> Result<Vec<Self>> {
+    pub async fn search_with_tag(
+        tag_id: i64,
+        pattern: &str,
+        notebook: &NotebookAPI,
+    ) -> Result<Vec<Self>> {
         let res = notebook
             .client
             .get(notebook.build_url("/note/search/tag"))
-            .json(&tag_id)
+            .json(&api::note::SearchWithTag {
+                tag_id,
+                pattern: pattern.to_string(),
+            })
             .send()
             .await
             .map_err(ApiError::UnableToContactRemoteNotebook)?

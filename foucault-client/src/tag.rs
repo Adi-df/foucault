@@ -2,7 +2,7 @@ use anyhow::Result;
 
 use foucault_core::tag_repr::{self, TagError};
 
-use crate::{note::NoteSummary, response_error::TryResponseCode, ApiError, NotebookAPI};
+use crate::{response_error::TryResponseCode, ApiError, NotebookAPI};
 
 #[derive(Debug, Clone)]
 pub struct Tag {
@@ -106,9 +106,5 @@ impl Tag {
             .try_response_code()?;
 
         Ok(())
-    }
-
-    pub async fn get_related_notes(&self, notebook: &NotebookAPI) -> Result<Vec<NoteSummary>> {
-        NoteSummary::fetch_by_tag(self.id(), notebook).await
     }
 }

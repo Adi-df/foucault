@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use log::info;
 
-use crossterm::event::{KeyCode, KeyEvent};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     layout::Rect,
     prelude::{Constraint, Direction, Layout, Margin},
@@ -26,14 +26,18 @@ use crate::{
 #[derive(Clone)]
 pub struct TagNotesListingStateData {
     tag: Tag,
-    notes: Arc<[NoteSummary]>,
+    pattern: String,
     selected: usize,
+    notes: Arc<[NoteSummary]>,
 }
 
 impl TagNotesListingStateData {
     pub async fn new(tag: Tag, notebook: &NotebookAPI) -> Result<Self> {
         Ok(TagNotesListingStateData {
-            notes: tag.get_related_notes(notebook).await?.into(),
+            notes: NoteSummary::search_with_tag(tag.id(), "", notebook)
+                .await?
+                .into(),
+            pattern: String::new(),
             selected: 0,
             tag,
         })
@@ -41,7 +45,7 @@ impl TagNotesListingStateData {
 }
 
 pub async fn run_tag_notes_listing_state(
-    state_data: TagNotesListingStateData,
+    mut state_data: TagNotesListingStateData,
     key_event: KeyEvent,
     notebook: &NotebookAPI,
 ) -> Result<State> {
@@ -62,6 +66,32 @@ pub async fn run_tag_notes_listing_state(
                 State::TagNotesListing(state_data)
             }
         }
+        KeyCode::Backspace if key_event.modifiers == KeyModifiers::NONE => {
+            state_data.pattern.pop();
+            state_data.notes = NoteSummary::search_with_tag(
+                state_data.tag.id(),
+                state_data.pattern.as_str(),
+                notebook,
+            )
+            .await?
+            .into();
+            state_data.selected = 0;
+
+            State::TagNotesListing(state_data)
+        }
+        KeyCode::Char(c) if key_event.modifiers == KeyModifiers::NONE => {
+            state_data.pattern.push(c);
+            state_data.notes = NoteSummary::search_with_tag(
+                state_data.tag.id(),
+                state_data.pattern.as_str(),
+                notebook,
+            )
+            .await?
+            .into();
+            state_data.selected = 0;
+
+            State::TagNotesListing(state_data)
+        }
         KeyCode::Up if state_data.selected > 0 => {
             State::TagNotesListing(TagNotesListingStateData {
                 selected: state_data.selected - 1,
@@ -81,6 +111,7 @@ pub async fn run_tag_notes_listing_state(
 pub fn draw_tag_notes_listing_state(
     TagNotesListingStateData {
         tag,
+        pattern,
         notes,
         selected,
     }: &TagNotesListingStateData,
@@ -92,6 +123,12 @@ pub fn draw_tag_notes_listing_state(
         [Constraint::Length(5), Constraint::Min(0)],
     )
     .split(main_rect);
+
+    let horizontal_layout = Layout::new(
+        Direction::Horizontal,
+        [Constraint::Percentage(20), Constraint::Min(0)],
+    )
+    .split(vertical_layout[0]);
 
     let tag_name = Paragraph::new(Line::from(vec![Span::raw(tag.name()).style(
         Style::new()
@@ -105,6 +142,22 @@ pub fn draw_tag_notes_listing_state(
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
             .border_style(Style::new().fg(Color::Blue))
+            .padding(Padding::uniform(1)),
+    );
+
+    let search_bar = Paragraph::new(Line::from(vec![
+        Span::raw(pattern).style(Style::new().add_modifier(Modifier::UNDERLINED))
+    ]))
+    .block(
+        Block::new()
+            .title("Filter")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::new().fg(if notes.is_empty() {
+                Color::Red
+            } else {
+                Color::Green
+            }))
             .padding(Padding::uniform(1)),
     );
 
@@ -124,7 +177,8 @@ pub fn draw_tag_notes_listing_state(
         .begin_symbol(Some("↑"))
         .end_symbol(Some("↓"));
 
-    frame.render_widget(tag_name, vertical_layout[0]);
+    frame.render_widget(tag_name, horizontal_layout[0]);
+    frame.render_widget(search_bar, horizontal_layout[1]);
     frame.render_stateful_widget(
         tag_notes,
         vertical_layout[1],
