@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use log::info;
+use log::{info, warn};
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
@@ -161,17 +161,40 @@ pub fn draw_tag_notes_listing_state(
             .padding(Padding::uniform(1)),
     );
 
-    let tag_notes = List::new(notes.iter().map(|tag| Span::raw(tag.name())))
-        .highlight_symbol(">> ")
-        .highlight_style(Style::new().fg(Color::Black).bg(Color::White))
-        .block(
-            Block::new()
-                .title("Related notes")
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
-                .border_style(Style::new().fg(Color::Yellow))
-                .padding(Padding::uniform(1)),
-        );
+    let tag_notes = List::new(notes.iter().map(|note| {
+        Line::from(
+            if let Some(pattern_start) = note.name().to_lowercase().find(&pattern.to_lowercase()) {
+                let pattern_end = pattern_start + pattern.len();
+                vec![
+                    Span::raw(&note.name()[..pattern_start])
+                        .style(Style::new().add_modifier(Modifier::BOLD)),
+                    Span::raw(&note.name()[pattern_start..pattern_end]).style(
+                        Style::new()
+                            .add_modifier(Modifier::BOLD)
+                            .add_modifier(Modifier::UNDERLINED),
+                    ),
+                    Span::raw(&note.name()[pattern_end..])
+                        .style(Style::new().add_modifier(Modifier::BOLD)),
+                ]
+            } else {
+                warn!(
+                    "The search pattern '{pattern}' did not match on note {}",
+                    note.name()
+                );
+                vec![Span::raw(note.name())]
+            },
+        )
+    }))
+    .highlight_symbol(">> ")
+    .highlight_style(Style::new().fg(Color::Black).bg(Color::White))
+    .block(
+        Block::new()
+            .title("Related notes")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::new().fg(Color::Yellow))
+            .padding(Padding::uniform(1)),
+    );
 
     let notes_scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
         .begin_symbol(Some("↑"))
