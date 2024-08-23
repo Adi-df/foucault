@@ -2,15 +2,17 @@ use std::sync::Arc;
 
 use anyhow::Result;
 
-use random_color::RandomColor;
+use random_color::{Luminosity, RandomColor};
 
 use sqlx::SqlitePool;
 
 use foucault_core::tag_repr::{Tag, TagError};
 
 fn rand_color() -> u32 {
-    let [r, g, b] = RandomColor::new().alpha(1.).to_rgb_array();
-    (u32::from(r) << 16) + (u32::from(g) << 4) + u32::from(b)
+    let [r, g, b] = RandomColor::new()
+        .luminosity(Luminosity::Bright)
+        .to_rgb_array();
+    (u32::from(r) << 16) + (u32::from(g) << 8) + u32::from(b)
 }
 
 pub(crate) async fn create(name: String, connection: &SqlitePool) -> Result<Tag> {
