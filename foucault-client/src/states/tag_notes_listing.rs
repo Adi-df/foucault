@@ -5,7 +5,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     layout::Rect,
     prelude::{Constraint, Direction, Layout, Margin},
-    style::{Color, Style},
+    style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{
         Block, BorderType, Borders, List, ListState, Padding, Paragraph, Scrollbar,
@@ -91,9 +91,12 @@ pub fn draw_tag_notes_listing_state(
     )
     .split(main_rect);
 
-    let tag_name = Paragraph::new(Line::from(vec![
-        Span::raw(tag.name()).style(Style::new().fg(Color::Green))
-    ]))
+    let tag_name = Paragraph::new(Line::from(vec![Span::raw(tag.name()).style(
+        Style::new()
+            .bg(Color::from_u32(tag.color()))
+            .fg(Color::White)
+            .add_modifier(Modifier::BOLD),
+    )]))
     .block(
         Block::new()
             .title("Tag name")
