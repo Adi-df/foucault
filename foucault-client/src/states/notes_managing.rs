@@ -8,13 +8,14 @@ use ratatui::{
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{
-        Block, BorderType, Borders, List, ListState, Padding, Paragraph, Scrollbar,
+        Block, BorderType, Borders, Clear, List, ListState, Padding, Paragraph, Scrollbar,
         ScrollbarOrientation, ScrollbarState,
     },
     Frame,
 };
 
 use crate::{
+    helpers::create_help_bar,
     note::{Note, NoteSummary},
     states::{note_creating::NoteCreatingStateData, note_viewing::NoteViewingStateData, State},
     NotebookAPI,
@@ -25,14 +26,16 @@ pub struct NotesManagingStateData {
     pub pattern: String,
     pub selected: usize,
     pub notes: Vec<NoteSummary>,
+    pub help_display: bool,
 }
 
 impl NotesManagingStateData {
     pub async fn from_pattern(pattern: String, notebook: &NotebookAPI) -> Result<Self> {
         Ok(NotesManagingStateData {
             notes: NoteSummary::search_by_name(pattern.as_str(), notebook).await?,
-            selected: 0,
             pattern,
+            selected: 0,
+            help_display: false,
         })
     }
 
@@ -54,6 +57,11 @@ pub async fn run_note_managing_state(
         KeyCode::Char('q') if key_event.modifiers == KeyModifiers::CONTROL => {
             info!("Quit foucault.");
             State::Exit
+        }
+        KeyCode::Char('h') if key_event.modifiers == KeyModifiers::CONTROL => {
+            info!("Toogle the help bar.");
+            state_data.help_display = !state_data.help_display;
+            State::NotesManaging(state_data)
         }
         KeyCode::Char('c') if key_event.modifiers == KeyModifiers::CONTROL => {
             info!("Open the note creation prompt.");
@@ -101,7 +109,9 @@ pub fn draw_note_managing_state(
         pattern,
         selected,
         notes,
+        help_display,
     }: &NotesManagingStateData,
+    notebook: &NotebookAPI,
     frame: &mut Frame,
     main_rect: Rect,
 ) {
@@ -191,4 +201,23 @@ pub fn draw_note_managing_state(
         vertical_layout[1].inner(Margin::new(0, 1)),
         &mut ScrollbarState::new(notes.len()).position(*selected),
     );
+
+    if *help_display {
+        let writing_op_color = if notebook.permissions.writable() {
+            Color::Blue
+        } else {
+            Color::Red
+        };
+        let (commands, commands_area) = create_help_bar(
+            &[
+                ("Ctrl+c", writing_op_color, "Create note"),
+                ("⏎", Color::Blue, "Open note"),
+            ],
+            3,
+            main_rect,
+        );
+
+        frame.render_widget(Clear, commands_area);
+        frame.render_widget(commands, commands_area);
+    }
 }
