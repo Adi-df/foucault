@@ -16,7 +16,7 @@ use ratatui::{
 
 use crate::{
     note::{Note, NoteSummary},
-    states::{note_viewing::NoteViewingStateData, State},
+    states::{note_creating::NoteCreatingStateData, note_viewing::NoteViewingStateData, State},
     NotebookAPI,
 };
 
@@ -50,6 +50,14 @@ pub async fn run_note_managing_state(
         KeyCode::Esc => {
             info!("Quit the notes manager.");
             State::Nothing
+        }
+        KeyCode::Char('q') if key_event.modifiers == KeyModifiers::CONTROL => {
+            info!("Quit foucault.");
+            State::Exit
+        }
+        KeyCode::Char('c') if key_event.modifiers == KeyModifiers::CONTROL => {
+            info!("Open the note creation prompt.");
+            State::NoteCreating(NoteCreatingStateData::empty())
         }
         KeyCode::Enter if !state_data.notes.is_empty() => {
             let note_summary = &state_data.notes[state_data.selected];
