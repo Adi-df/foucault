@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 use log::{info, warn};
 
@@ -27,14 +29,16 @@ use crate::{
 pub struct TagsManagingStateData {
     pub pattern: String,
     pub selected: usize,
-    pub tags: Vec<Tag>,
+    pub tags: Arc<[Tag]>,
     pub help_display: bool,
 }
 
 impl TagsManagingStateData {
     pub async fn from_pattern(pattern: String, notebook: &NotebookAPI) -> Result<Self> {
         Ok(TagsManagingStateData {
-            tags: Tag::search_by_name(pattern.as_str(), notebook).await?,
+            tags: Tag::search_by_name(pattern.as_str(), notebook)
+                .await?
+                .into(),
             selected: 0,
             pattern,
             help_display: false,
@@ -92,19 +96,23 @@ pub async fn run_tags_managing_state(
         }
         KeyCode::Enter if !state_data.tags.is_empty() => {
             info!("Open the listing of the related notes.");
-            let tag = state_data.tags.swap_remove(state_data.selected);
+            let tag = state_data.tags[state_data.selected].clone();
 
             State::TagNotesListing(TagNotesListingStateData::new(tag, notebook).await?)
         }
         KeyCode::Backspace if key_event.modifiers == KeyModifiers::NONE => {
             state_data.pattern.pop();
-            state_data.tags = Tag::search_by_name(state_data.pattern.as_str(), notebook).await?;
+            state_data.tags = Tag::search_by_name(state_data.pattern.as_str(), notebook)
+                .await?
+                .into();
             state_data.selected = 0;
             State::TagsManaging(state_data)
         }
         KeyCode::Char(c) if key_event.modifiers == KeyModifiers::NONE && !c.is_whitespace() => {
             state_data.pattern.push(c);
-            state_data.tags = Tag::search_by_name(state_data.pattern.as_str(), notebook).await?;
+            state_data.tags = Tag::search_by_name(state_data.pattern.as_str(), notebook)
+                .await?
+                .into();
             state_data.selected = 0;
             State::TagsManaging(state_data)
         }

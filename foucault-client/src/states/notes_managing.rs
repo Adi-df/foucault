@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 use log::{info, warn};
 
@@ -25,14 +27,16 @@ use crate::{
 pub struct NotesManagingStateData {
     pub pattern: String,
     pub selected: usize,
-    pub notes: Vec<NoteSummary>,
+    pub notes: Arc<[NoteSummary]>,
     pub help_display: bool,
 }
 
 impl NotesManagingStateData {
     pub async fn from_pattern(pattern: String, notebook: &NotebookAPI) -> Result<Self> {
         Ok(NotesManagingStateData {
-            notes: NoteSummary::search_by_name(pattern.as_str(), notebook).await?,
+            notes: NoteSummary::search_by_name(pattern.as_str(), notebook)
+                .await?
+                .into(),
             pattern,
             selected: 0,
             help_display: false,
@@ -76,16 +80,18 @@ pub async fn run_note_managing_state(
         }
         KeyCode::Backspace if key_event.modifiers == KeyModifiers::NONE => {
             state_data.pattern.pop();
-            state_data.notes =
-                NoteSummary::search_by_name(state_data.pattern.as_str(), notebook).await?;
+            state_data.notes = NoteSummary::search_by_name(state_data.pattern.as_str(), notebook)
+                .await?
+                .into();
             state_data.selected = 0;
 
             State::NotesManaging(state_data)
         }
         KeyCode::Char(c) if key_event.modifiers == KeyModifiers::NONE => {
             state_data.pattern.push(c);
-            state_data.notes =
-                NoteSummary::search_by_name(state_data.pattern.as_str(), notebook).await?;
+            state_data.notes = NoteSummary::search_by_name(state_data.pattern.as_str(), notebook)
+                .await?
+                .into();
             state_data.selected = 0;
 
             State::NotesManaging(state_data)

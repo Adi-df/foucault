@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 use log::info;
 
@@ -24,14 +26,14 @@ use crate::{
 #[derive(Clone)]
 pub struct TagNotesListingStateData {
     pub tag: Tag,
-    pub notes: Vec<NoteSummary>,
+    pub notes: Arc<[NoteSummary]>,
     pub selected: usize,
 }
 
 impl TagNotesListingStateData {
     pub async fn new(tag: Tag, notebook: &NotebookAPI) -> Result<Self> {
         Ok(TagNotesListingStateData {
-            notes: tag.get_related_notes(notebook).await?,
+            notes: tag.get_related_notes(notebook).await?.into(),
             selected: 0,
             tag,
         })

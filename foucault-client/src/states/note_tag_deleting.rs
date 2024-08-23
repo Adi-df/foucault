@@ -52,9 +52,7 @@ pub async fn run_note_tag_deleting_state(
         }
         KeyCode::Enter => {
             if delete {
-                let tag = note_tags_managing_data
-                    .tags
-                    .swap_remove(note_tags_managing_data.selected);
+                let tag = &note_tags_managing_data.tags[note_tags_managing_data.selected];
 
                 info!(
                     "Remove tag {} from note {}.",

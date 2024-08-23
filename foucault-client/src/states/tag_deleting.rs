@@ -30,7 +30,7 @@ impl TagsDeletingStateData {
 
 pub async fn run_tag_deleting_state(
     TagsDeletingStateData {
-        mut tags_managing_data,
+        tags_managing_data,
         delete,
     }: TagsDeletingStateData,
     key_event: KeyEvent,
@@ -59,9 +59,8 @@ pub async fn run_tag_deleting_state(
                         .name()
                 );
 
-                tags_managing_data
-                    .tags
-                    .swap_remove(tags_managing_data.selected)
+                tags_managing_data.tags[tags_managing_data.selected]
+                    .clone()
                     .delete(notebook)
                     .await?;
             } else {

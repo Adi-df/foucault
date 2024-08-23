@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 use log::info;
 
@@ -24,7 +26,7 @@ use crate::{
 #[derive(Clone)]
 pub struct NoteTagsManagingStateData {
     pub note: Note,
-    pub tags: Vec<Tag>,
+    pub tags: Arc<[Tag]>,
     pub selected: usize,
     pub help_display: bool,
 }
@@ -32,7 +34,7 @@ pub struct NoteTagsManagingStateData {
 impl NoteTagsManagingStateData {
     pub async fn new(note: Note, notebook: &NotebookAPI) -> Result<Self> {
         Ok(NoteTagsManagingStateData {
-            tags: note.tags(notebook).await?,
+            tags: note.tags(notebook).await?.into(),
             note,
             selected: 0,
             help_display: false,
@@ -85,7 +87,7 @@ pub async fn run_note_tags_managing_state(
             );
             State::TagNotesListing(
                 TagNotesListingStateData::new(
-                    state_data.tags.swap_remove(state_data.selected),
+                    state_data.tags[state_data.selected].clone(),
                     notebook,
                 )
                 .await?,

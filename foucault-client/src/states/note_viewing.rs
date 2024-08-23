@@ -49,7 +49,7 @@ use crate::{
 #[derive(Clone)]
 pub struct NoteViewingStateData {
     pub note: Note,
-    pub tags: Vec<Tag>,
+    pub tags: Arc<[Tag]>,
     pub parsed_content: Arc<Mutex<ParsedMarkdown>>,
     pub selected: (usize, usize),
     pub help_display: bool,
@@ -60,7 +60,7 @@ impl NoteViewingStateData {
         let mut parsed_content = parse(note.content());
         parsed_content.select((0, 0), true);
         Ok(NoteViewingStateData {
-            tags: note.tags(notebook).await?,
+            tags: note.tags(notebook).await?.into(),
             note,
             parsed_content: Arc::new(Mutex::new(parsed_content)),
             selected: (0, 0),
