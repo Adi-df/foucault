@@ -1,7 +1,5 @@
-use serde::{Deserialize, Serialize};
-
 pub mod note {
-    use super::*;
+    use serde::{Deserialize, Serialize};
 
     use crate::link_repr::Link;
 
@@ -55,7 +53,7 @@ pub mod note {
 }
 
 pub mod tag {
-    use super::*;
+    use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Clone, Serialize, Deserialize)]
     pub struct RenameParam {
