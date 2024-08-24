@@ -199,6 +199,12 @@ impl EdittableText {
         }
     }
 
+    pub fn del_char(&mut self) {
+        if self.cursor < self.text.len() {
+            self.text.remove(self.cursor);
+        }
+    }
+
     pub fn build_paragraph(&self) -> Paragraph {
         let before_cursor = Span::raw(&self.text[..self.cursor])
             .style(Style::new().add_modifier(Modifier::UNDERLINED));

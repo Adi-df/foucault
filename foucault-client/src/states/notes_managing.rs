@@ -109,6 +109,15 @@ pub async fn run_note_managing_state(
 
             State::NotesManaging(state_data)
         }
+        KeyCode::Delete if key_event.modifiers == KeyModifiers::NONE => {
+            state_data.pattern.del_char();
+            state_data.notes = NoteSummary::search_by_name(state_data.pattern.get_text(), notebook)
+                .await?
+                .into();
+            state_data.selected = 0;
+
+            State::NotesManaging(state_data)
+        }
         KeyCode::Char(c) if key_event.modifiers == KeyModifiers::NONE => {
             state_data.pattern.insert_char(c);
             state_data.notes = NoteSummary::search_by_name(state_data.pattern.get_text(), notebook)
