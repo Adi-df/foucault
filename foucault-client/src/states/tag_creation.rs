@@ -15,15 +15,15 @@ use crate::{
 };
 
 #[derive(Clone)]
-pub struct TagsCreatingStateData {
+pub struct TagsCreationStateData {
     tags_managing_data: TagsManagingStateData,
     name: String,
     valid: bool,
 }
 
-impl TagsCreatingStateData {
+impl TagsCreationStateData {
     pub fn empty(tags_managing_data: TagsManagingStateData) -> Self {
-        TagsCreatingStateData {
+        TagsCreationStateData {
             tags_managing_data,
             name: String::new(),
             valid: false,
@@ -31,8 +31,8 @@ impl TagsCreatingStateData {
     }
 }
 
-pub async fn run_tag_creating_state(
-    mut state_data: TagsCreatingStateData,
+pub async fn run_tag_creation_state(
+    mut state_data: TagsCreationStateData,
     key_event: KeyEvent,
     notebook: &NotebookAPI,
 ) -> Result<State> {
@@ -59,7 +59,7 @@ pub async fn run_tag_creating_state(
                     .await?,
                 )
             } else {
-                State::TagCreating(TagsCreatingStateData {
+                State::TagCreation(TagsCreationStateData {
                     valid: false,
                     ..state_data
                 })
@@ -68,23 +68,23 @@ pub async fn run_tag_creating_state(
         KeyCode::Backspace => {
             state_data.name.pop();
             state_data.valid = Tag::validate_name(state_data.name.as_str(), notebook).await?;
-            State::TagCreating(state_data)
+            State::TagCreation(state_data)
         }
         KeyCode::Char(c) if !c.is_whitespace() => {
             state_data.name.push(c);
             state_data.valid = Tag::validate_name(state_data.name.as_str(), notebook).await?;
-            State::TagCreating(state_data)
+            State::TagCreation(state_data)
         }
-        _ => State::TagCreating(state_data),
+        _ => State::TagCreation(state_data),
     })
 }
 
-pub fn draw_tag_creating_state(
-    TagsCreatingStateData {
+pub fn draw_tag_creation_state(
+    TagsCreationStateData {
         tags_managing_data,
         name,
         valid,
-    }: &TagsCreatingStateData,
+    }: &TagsCreationStateData,
     notebook: &NotebookAPI,
     frame: &mut Frame,
     main_rect: Rect,

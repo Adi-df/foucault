@@ -16,7 +16,7 @@ use foucault_core::permissions::Permissions;
 use crate::{
     helpers::{create_popup, Capitalize},
     states::{
-        note_creating::NoteCreatingStateData, notes_managing::NotesManagingStateData,
+        note_creation::NoteCreationStateData, notes_managing::NotesManagingStateData,
         tags_managing::TagsManagingStateData, State,
     },
     NotebookAPI,
@@ -30,7 +30,7 @@ pub async fn run_nothing_state(key_event: KeyEvent, notebook: &NotebookAPI) -> R
         }
         KeyCode::Char('c') if notebook.permissions.writable() => {
             info!("Open the note creation prompt.");
-            State::NoteCreating(NoteCreatingStateData::from_nothing())
+            State::NoteCreation(NoteCreationStateData::from_nothing())
         }
         KeyCode::Char('s') => {
             info!("Open the notes manager.");

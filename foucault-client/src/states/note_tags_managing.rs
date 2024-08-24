@@ -16,7 +16,7 @@ use crate::{
     helpers::create_help_bar,
     note::Note,
     states::{
-        note_tag_adding::NoteTagAddingStateData, note_tag_deleting::NoteTagDeletingStateData,
+        note_tag_addition::NoteTagAdditionStateData, note_tag_deletion::NoteTagDeletionStateData,
         note_viewing::NoteViewingStateData, tag_notes_listing::TagNotesListingStateData, State,
     },
     tag::Tag,
@@ -71,11 +71,11 @@ pub async fn run_note_tags_managing_state(
                     .expect("A tag should be selected.")
                     .name()
             );
-            State::NoteTagDeleting(NoteTagDeletingStateData::empty(state_data))
+            State::NoteTagDeletion(NoteTagDeletionStateData::empty(state_data))
         }
         KeyCode::Char('a') if notebook.permissions.writable() => {
             info!("Open note {} tag adding prompt.", state_data.note.name());
-            State::NoteTagAdding(NoteTagAddingStateData::empty(state_data))
+            State::NoteTagAddition(NoteTagAdditionStateData::empty(state_data))
         }
         KeyCode::Enter if !state_data.tags.is_empty() => {
             info!(

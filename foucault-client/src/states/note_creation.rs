@@ -9,7 +9,7 @@ use crate::{
     note::Note,
     states::{
         note_viewing::NoteViewingStateData,
-        notes_managing::{draw_note_managing_state, NotesManagingStateData},
+        notes_managing::{draw_notes_managing_state, NotesManagingStateData},
         nothing::draw_nothing_state,
         State,
     },
@@ -23,15 +23,15 @@ enum PrecidingState {
 }
 
 #[derive(Clone)]
-pub struct NoteCreatingStateData {
+pub struct NoteCreationStateData {
     preciding_state: PrecidingState,
     name: String,
     valid: bool,
 }
 
-impl NoteCreatingStateData {
+impl NoteCreationStateData {
     pub fn from_nothing() -> Self {
-        NoteCreatingStateData {
+        NoteCreationStateData {
             preciding_state: PrecidingState::Nothing,
             name: String::new(),
             valid: false,
@@ -39,7 +39,7 @@ impl NoteCreatingStateData {
     }
 
     pub fn from_notes_managing(state_data: NotesManagingStateData) -> Self {
-        NoteCreatingStateData {
+        NoteCreationStateData {
             preciding_state: PrecidingState::NotesManaging(state_data),
             name: String::new(),
             valid: false,
@@ -47,8 +47,8 @@ impl NoteCreatingStateData {
     }
 }
 
-pub async fn run_note_creating_state(
-    mut state_data: NoteCreatingStateData,
+pub async fn run_note_creation_state(
+    mut state_data: NoteCreationStateData,
     key_event: KeyEvent,
     notebook: &NotebookAPI,
 ) -> Result<State> {
@@ -70,7 +70,7 @@ pub async fn run_note_creating_state(
 
                 State::NoteViewing(NoteViewingStateData::new(new_note, notebook).await?)
             } else {
-                State::NoteCreating(NoteCreatingStateData {
+                State::NoteCreation(NoteCreationStateData {
                     valid: false,
                     ..state_data
                 })
@@ -79,7 +79,7 @@ pub async fn run_note_creating_state(
         KeyCode::Backspace => {
             state_data.name.pop();
             let valid = Note::validate_name(state_data.name.as_str(), notebook).await?;
-            State::NoteCreating(NoteCreatingStateData {
+            State::NoteCreation(NoteCreationStateData {
                 valid,
                 ..state_data
             })
@@ -87,21 +87,21 @@ pub async fn run_note_creating_state(
         KeyCode::Char(c) => {
             state_data.name.push(c);
             let valid = Note::validate_name(state_data.name.as_str(), notebook).await?;
-            State::NoteCreating(NoteCreatingStateData {
+            State::NoteCreation(NoteCreationStateData {
                 valid,
                 ..state_data
             })
         }
-        _ => State::NoteCreating(state_data),
+        _ => State::NoteCreation(state_data),
     })
 }
 
-pub fn draw_note_creating_state(
-    NoteCreatingStateData {
+pub fn draw_note_creation_state(
+    NoteCreationStateData {
         preciding_state,
         name,
         valid,
-    }: &NoteCreatingStateData,
+    }: &NoteCreationStateData,
     notebook: &NotebookAPI,
     frame: &mut Frame,
     main_rect: Rect,
@@ -109,7 +109,7 @@ pub fn draw_note_creating_state(
     match preciding_state {
         PrecidingState::Nothing => draw_nothing_state(notebook, frame, main_rect),
         PrecidingState::NotesManaging(state) => {
-            draw_note_managing_state(state, notebook, frame, main_rect)
+            draw_notes_managing_state(state, notebook, frame, main_rect)
         }
     }
 

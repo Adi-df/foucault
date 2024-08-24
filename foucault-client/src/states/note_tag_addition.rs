@@ -15,15 +15,15 @@ use crate::{
 };
 
 #[derive(Clone)]
-pub struct NoteTagAddingStateData {
+pub struct NoteTagAdditionStateData {
     note_tags_managing_data: NoteTagsManagingStateData,
     tag_name: String,
     valid: bool,
 }
 
-impl NoteTagAddingStateData {
+impl NoteTagAdditionStateData {
     pub fn empty(note_tags_managing_data: NoteTagsManagingStateData) -> Self {
-        NoteTagAddingStateData {
+        NoteTagAdditionStateData {
             note_tags_managing_data,
             tag_name: String::new(),
             valid: false,
@@ -31,8 +31,8 @@ impl NoteTagAddingStateData {
     }
 }
 
-pub async fn run_note_tag_adding_state(
-    mut state_data: NoteTagAddingStateData,
+pub async fn run_note_tag_addition_state(
+    mut state_data: NoteTagAdditionStateData,
     key_event: KeyEvent,
     notebook: &NotebookAPI,
 ) -> Result<State> {
@@ -63,7 +63,7 @@ pub async fn run_note_tag_adding_state(
                 }
             };
 
-            State::NoteTagAdding(state_data)
+            State::NoteTagAddition(state_data)
         }
         KeyCode::Backspace => {
             state_data.tag_name.pop();
@@ -79,7 +79,7 @@ pub async fn run_note_tag_adding_state(
                 false
             };
 
-            State::NoteTagAdding(state_data)
+            State::NoteTagAddition(state_data)
         }
         KeyCode::Enter => match Tag::load_by_name(state_data.tag_name.as_str(), notebook).await? {
             Some(tag)
@@ -111,19 +111,19 @@ pub async fn run_note_tag_adding_state(
             _ => {
                 state_data.valid = false;
 
-                State::NoteTagAdding(state_data)
+                State::NoteTagAddition(state_data)
             }
         },
-        _ => State::NoteTagAdding(state_data),
+        _ => State::NoteTagAddition(state_data),
     })
 }
 
-pub fn draw_note_tag_adding_state(
-    NoteTagAddingStateData {
+pub fn draw_note_tag_addition_state(
+    NoteTagAdditionStateData {
         note_tags_managing_data,
         tag_name,
         valid,
-    }: &NoteTagAddingStateData,
+    }: &NoteTagAdditionStateData,
     notebook: &NotebookAPI,
     frame: &mut Frame,
     main_rect: Rect,

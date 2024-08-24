@@ -14,25 +14,25 @@ use crate::{
 };
 
 #[derive(Clone)]
-pub struct NoteTagDeletingStateData {
+pub struct NoteTagDeletionStateData {
     note_tags_managing_data: NoteTagsManagingStateData,
     delete: bool,
 }
 
-impl NoteTagDeletingStateData {
+impl NoteTagDeletionStateData {
     pub fn empty(note_tags_managing_data: NoteTagsManagingStateData) -> Self {
-        NoteTagDeletingStateData {
+        NoteTagDeletionStateData {
             note_tags_managing_data,
             delete: false,
         }
     }
 }
 
-pub async fn run_note_tag_deleting_state(
-    NoteTagDeletingStateData {
+pub async fn run_note_tag_deletion_state(
+    NoteTagDeletionStateData {
         mut note_tags_managing_data,
         delete,
-    }: NoteTagDeletingStateData,
+    }: NoteTagDeletionStateData,
     key_event: KeyEvent,
     notebook: &NotebookAPI,
 ) -> Result<State> {
@@ -76,22 +76,22 @@ pub async fn run_note_tag_deleting_state(
                 )
             }
         }
-        KeyCode::Tab => State::NoteTagDeleting(NoteTagDeletingStateData {
+        KeyCode::Tab => State::NoteTagDeletion(NoteTagDeletionStateData {
             note_tags_managing_data,
             delete: !delete,
         }),
-        _ => State::NoteTagDeleting(NoteTagDeletingStateData {
+        _ => State::NoteTagDeletion(NoteTagDeletionStateData {
             note_tags_managing_data,
             delete,
         }),
     })
 }
 
-pub fn draw_note_tag_deleting_state(
-    NoteTagDeletingStateData {
+pub fn draw_note_tag_deletion_state(
+    NoteTagDeletionStateData {
         note_tags_managing_data,
         delete,
-    }: &NoteTagDeletingStateData,
+    }: &NoteTagDeletionStateData,
     notebook: &NotebookAPI,
     frame: &mut Frame,
     main_rect: Rect,

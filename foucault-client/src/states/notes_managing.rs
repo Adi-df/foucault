@@ -20,7 +20,7 @@ use crate::{
     helpers::create_help_bar,
     note::{Note, NoteSummary},
     states::{
-        note_creating::NoteCreatingStateData, note_deleting::NoteDeletingStateData,
+        note_creation::NoteCreationStateData, note_deletion::NoteDeletionStateData,
         note_viewing::NoteViewingStateData, State,
     },
     NotebookAPI,
@@ -78,14 +78,14 @@ pub async fn run_note_managing_state(
         }
         KeyCode::Char('c') if key_event.modifiers == KeyModifiers::CONTROL => {
             info!("Open the note creation prompt.");
-            State::NoteCreating(NoteCreatingStateData::from_notes_managing(state_data))
+            State::NoteCreation(NoteCreationStateData::from_notes_managing(state_data))
         }
         KeyCode::Char('d')
             if key_event.modifiers == KeyModifiers::CONTROL && !state_data.notes.is_empty() =>
         {
             info!("Open the note deletion prompt.");
             let selected_note = state_data.selected();
-            State::NoteDeleting(NoteDeletingStateData::from_notes_managing(
+            State::NoteDeletion(NoteDeletionStateData::from_notes_managing(
                 selected_note.name().to_string(),
                 selected_note.id(),
                 state_data,
@@ -132,7 +132,7 @@ pub async fn run_note_managing_state(
     })
 }
 
-pub fn draw_note_managing_state(
+pub fn draw_notes_managing_state(
     NotesManagingStateData {
         pattern,
         selected,

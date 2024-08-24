@@ -38,7 +38,7 @@ use crate::{
     },
     note::Note,
     states::{
-        note_deleting::NoteDeletingStateData, note_renaming::NoteRenamingStateData,
+        note_deletion::NoteDeletionStateData, note_renaming::NoteRenamingStateData,
         note_tags_managing::NoteTagsManagingStateData, notes_managing::NotesManagingStateData,
         State,
     },
@@ -143,7 +143,7 @@ pub async fn run_note_viewing_state(
                 "Open the deletion prompt for note {}.",
                 state_data.note.name()
             );
-            State::NoteDeleting(NoteDeletingStateData::from_note_viewing(state_data))
+            State::NoteDeletion(NoteDeletionStateData::from_note_viewing(state_data))
         }
         KeyCode::Char('r') => {
             info!(

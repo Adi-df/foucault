@@ -18,7 +18,7 @@ use ratatui::{
 use crate::{
     helpers::create_help_bar,
     states::{
-        tag_creating::TagsCreatingStateData, tag_deleting::TagsDeletingStateData,
+        tag_creation::TagsCreationStateData, tag_deletion::TagsDeletionStateData,
         tag_notes_listing::TagNotesListingStateData, State,
     },
     tag::Tag,
@@ -74,7 +74,7 @@ pub async fn run_tags_managing_state(
             if key_event.modifiers == KeyModifiers::CONTROL && notebook.permissions.writable() =>
         {
             info!("Open the tag creationg prompt.");
-            State::TagCreating(TagsCreatingStateData::empty(state_data))
+            State::TagCreation(TagsCreationStateData::empty(state_data))
         }
         KeyCode::Char('d')
             if key_event.modifiers == KeyModifiers::CONTROL
@@ -82,7 +82,7 @@ pub async fn run_tags_managing_state(
                 && notebook.permissions.writable() =>
         {
             info!("Open the tag deletion prompt.");
-            State::TagDeleting(TagsDeletingStateData::empty(state_data))
+            State::TagDeletion(TagsDeletionStateData::empty(state_data))
         }
         KeyCode::Up if state_data.selected > 0 => State::TagsManaging(TagsManagingStateData {
             selected: state_data.selected - 1,

@@ -9,7 +9,7 @@ use crate::{
     note::Note,
     states::{
         note_viewing::{draw_note_viewing_state, NoteViewingStateData},
-        notes_managing::{draw_note_managing_state, NotesManagingStateData},
+        notes_managing::{draw_notes_managing_state, NotesManagingStateData},
         State,
     },
     NotebookAPI,
@@ -24,16 +24,16 @@ enum PrecidingState {
 }
 
 #[derive(Clone)]
-pub struct NoteDeletingStateData {
+pub struct NoteDeletionStateData {
     preciding_state: PrecidingState,
     note_name: String,
     note_id: i64,
     delete: bool,
 }
 
-impl NoteDeletingStateData {
+impl NoteDeletionStateData {
     pub fn from_note_viewing(state: NoteViewingStateData) -> Self {
-        NoteDeletingStateData {
+        NoteDeletionStateData {
             note_name: state.note.name().to_string(),
             note_id: state.note.id(),
             delete: false,
@@ -45,7 +45,7 @@ impl NoteDeletingStateData {
         note_id: i64,
         state: NotesManagingStateData,
     ) -> Self {
-        NoteDeletingStateData {
+        NoteDeletionStateData {
             note_name,
             note_id,
             delete: false,
@@ -54,8 +54,8 @@ impl NoteDeletingStateData {
     }
 }
 
-pub async fn run_note_deleting_state(
-    state_data: NoteDeletingStateData,
+pub async fn run_note_deletion_state(
+    state_data: NoteDeletionStateData,
     key_event: KeyEvent,
     notebook: &NotebookAPI,
 ) -> Result<State> {
@@ -77,7 +77,7 @@ pub async fn run_note_deleting_state(
                 ),
             }
         }
-        KeyCode::Tab => State::NoteDeleting(NoteDeletingStateData {
+        KeyCode::Tab => State::NoteDeletion(NoteDeletionStateData {
             delete: !state_data.delete,
             ..state_data
         }),
@@ -109,16 +109,16 @@ pub async fn run_note_deleting_state(
                 }
             }
         }
-        _ => State::NoteDeleting(state_data),
+        _ => State::NoteDeletion(state_data),
     })
 }
 
-pub fn draw_note_deleting_state(
-    NoteDeletingStateData {
+pub fn draw_note_deletion_state(
+    NoteDeletionStateData {
         preciding_state,
         delete,
         ..
-    }: &NoteDeletingStateData,
+    }: &NoteDeletionStateData,
     notebook: &NotebookAPI,
     frame: &mut Frame,
     main_rect: Rect,
@@ -128,7 +128,7 @@ pub fn draw_note_deleting_state(
             draw_note_viewing_state(state, notebook, frame, main_rect);
         }
         PrecidingState::NotesManagingState(state) => {
-            draw_note_managing_state(state, notebook, frame, main_rect);
+            draw_notes_managing_state(state, notebook, frame, main_rect);
         }
     }
     draw_yes_no_prompt(frame, *delete, "Delete note ?", main_rect);

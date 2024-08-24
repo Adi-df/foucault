@@ -15,25 +15,25 @@ use crate::{
 };
 
 #[derive(Clone)]
-pub struct TagsDeletingStateData {
+pub struct TagsDeletionStateData {
     tags_managing_data: TagsManagingStateData,
     delete: bool,
 }
 
-impl TagsDeletingStateData {
+impl TagsDeletionStateData {
     pub fn empty(tags_managing_data: TagsManagingStateData) -> Self {
-        TagsDeletingStateData {
+        TagsDeletionStateData {
             tags_managing_data,
             delete: false,
         }
     }
 }
 
-pub async fn run_tag_deleting_state(
-    TagsDeletingStateData {
+pub async fn run_tag_deletion_state(
+    TagsDeletionStateData {
         tags_managing_data,
         delete,
-    }: TagsDeletingStateData,
+    }: TagsDeletionStateData,
     key_event: KeyEvent,
     notebook: &NotebookAPI,
 ) -> Result<State> {
@@ -81,22 +81,22 @@ pub async fn run_tag_deleting_state(
                 TagsManagingStateData::from_pattern(tags_managing_data.pattern, notebook).await?,
             )
         }
-        KeyCode::Tab => State::TagDeleting(TagsDeletingStateData {
+        KeyCode::Tab => State::TagDeletion(TagsDeletionStateData {
             tags_managing_data,
             delete: !delete,
         }),
-        _ => State::TagDeleting(TagsDeletingStateData {
+        _ => State::TagDeletion(TagsDeletionStateData {
             tags_managing_data,
             delete,
         }),
     })
 }
 
-pub fn draw_tag_deleting_state(
-    TagsDeletingStateData {
+pub fn draw_tag_deletion_state(
+    TagsDeletionStateData {
         tags_managing_data,
         delete,
-    }: &TagsDeletingStateData,
+    }: &TagsDeletionStateData,
     notebook: &NotebookAPI,
     frame: &mut Frame,
     main_rect: Rect,
