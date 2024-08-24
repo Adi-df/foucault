@@ -1,6 +1,11 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 
-use foucault_core::tag_repr::{self, TagError};
+use foucault_core::{
+    api,
+    tag_repr::{self, TagError},
+};
 
 use crate::{response_error::TryResponseCode, ApiError, NotebookAPI};
 
@@ -93,6 +98,30 @@ impl Tag {
     }
     pub fn color(&self) -> u32 {
         self.inner.color
+    }
+
+    pub async fn rename(&mut self, name: String, notebook: &NotebookAPI) -> Result<()> {
+        let res = notebook
+            .client
+            .patch(notebook.build_url("/tag/update/name"))
+            .json(&api::tag::RenameParam {
+                id: self.id(),
+                name: name.clone(),
+            })
+            .send()
+            .await
+            .map_err(ApiError::UnableToContactRemoteNotebook)?
+            .try_response_code()?
+            .json::<Option<TagError>>()
+            .await
+            .map_err(ApiError::UnableToParseResponse)?;
+
+        if let Some(err) = res {
+            panic!("The tag name is invalid : {err}");
+        }
+
+        self.inner.name = Arc::from(name);
+        Ok(())
     }
 
     pub async fn delete(id: i64, notebook: &NotebookAPI) -> Result<()> {
