@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use anyhow::Result;
 
 use foucault_core::{
@@ -100,12 +98,12 @@ impl Tag {
         self.inner.color
     }
 
-    pub async fn rename(&mut self, name: String, notebook: &NotebookAPI) -> Result<()> {
+    pub async fn rename(id: i64, name: String, notebook: &NotebookAPI) -> Result<()> {
         let res = notebook
             .client
             .patch(notebook.build_url("/tag/update/name"))
             .json(&api::tag::RenameParam {
-                id: self.id(),
+                id,
                 name: name.clone(),
             })
             .send()
@@ -120,7 +118,6 @@ impl Tag {
             panic!("The tag name is invalid : {err}");
         }
 
-        self.inner.name = Arc::from(name);
         Ok(())
     }
 
