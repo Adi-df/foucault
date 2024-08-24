@@ -19,7 +19,7 @@ use crate::{
     helpers::{create_help_bar, EditableText},
     states::{
         tag_creation::TagsCreationStateData, tag_deletion::TagsDeletionStateData,
-        tag_notes_listing::TagNotesListingStateData, State,
+        tag_notes_listing::TagNotesListingStateData, tag_renaming::TagRenamingStateData, State,
     },
     tag::Tag,
     NotebookAPI,
@@ -81,6 +81,14 @@ pub async fn run_tags_managing_state(
         {
             info!("Open the tag deletion prompt.");
             State::TagDeletion(TagsDeletionStateData::empty(state_data))
+        }
+        KeyCode::Char('r')
+            if key_event.modifiers == KeyModifiers::CONTROL
+                && !state_data.tags.is_empty()
+                && notebook.permissions.writable() =>
+        {
+            info!("Open the tag renaming prompt.");
+            State::TagRenaming(TagRenamingStateData::empty(state_data))
         }
         KeyCode::Up if state_data.selected > 0 => State::TagsManaging(TagsManagingStateData {
             selected: state_data.selected - 1,
@@ -203,9 +211,10 @@ pub fn draw_tags_managing_state(
             &[
                 ("Ctrl+c", writing_op_color, "Create tag"),
                 ("Ctrl+d", writing_op_color, "Delete tag"),
+                ("Ctrl+r", writing_op_color, "Rename tag"),
                 ("⏎", Color::Blue, "List related notes"),
             ],
-            3,
+            2,
             main_rect,
         );
 

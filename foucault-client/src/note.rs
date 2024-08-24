@@ -52,14 +52,16 @@ impl Note {
             .await
             .map_err(ApiError::UnableToParseResponse)?;
 
-        res.map(|id| Self {
-            inner: note_repr::Note {
-                id,
-                name: Arc::from(name),
-                content: Arc::from(content),
-            },
-        })
-        .map_err(anyhow::Error::from)
+        match res {
+            Ok(id) => Ok(Self {
+                inner: note_repr::Note {
+                    id,
+                    name: Arc::from(name),
+                    content: Arc::from(content),
+                },
+            }),
+            Err(err) => panic!("The note name was invalid : {err}"),
+        }
     }
 
     pub async fn validate_name(name: &str, notebook: &NotebookAPI) -> Result<bool> {
@@ -310,7 +312,7 @@ impl NoteSummary {
         let res = notebook
             .client
             .get(notebook.build_url("/note/search/tag"))
-            .json(&api::note::SearchWithTag {
+            .json(&api::note::SearchWithTagParam {
                 tag_id,
                 pattern: pattern.to_string(),
             })

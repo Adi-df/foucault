@@ -11,12 +11,14 @@ mod nothing;
 mod tag_creation;
 mod tag_deletion;
 mod tag_notes_listing;
+mod tag_renaming;
 mod tags_managing;
 
 use anyhow::Result;
 
 use crossterm::event::KeyEvent;
 use ratatui::{layout::Rect, Frame};
+use tag_renaming::{draw_tag_renaming_state, run_tag_renaming_state, TagRenamingStateData};
 
 use crate::{
     states::{
@@ -64,6 +66,7 @@ pub enum State {
     TagsManaging(TagsManagingStateData),
     TagCreation(TagsCreationStateData),
     TagDeletion(TagsDeletionStateData),
+    TagRenaming(TagRenamingStateData),
     TagNotesListing(TagNotesListingStateData),
 }
 
@@ -96,6 +99,7 @@ impl State {
             State::TagsManaging(data) => run_tags_managing_state(data, key_event, notebook).await,
             State::TagCreation(data) => run_tag_creation_state(data, key_event, notebook).await,
             State::TagDeletion(data) => run_tag_deletion_state(data, key_event, notebook).await,
+            State::TagRenaming(data) => run_tag_renaming_state(data, key_event, notebook).await,
             State::TagNotesListing(data) => {
                 run_tag_notes_listing_state(data, key_event, notebook).await
             }
@@ -126,6 +130,7 @@ impl State {
             State::TagsManaging(data) => draw_tags_managing_state(data, notebook, frame, main_rect),
             State::TagCreation(data) => draw_tag_creation_state(data, notebook, frame, main_rect),
             State::TagDeletion(data) => draw_tag_deletion_state(data, notebook, frame, main_rect),
+            State::TagRenaming(data) => draw_tag_renaming_state(data, notebook, frame, main_rect),
             State::TagNotesListing(data) => draw_tag_notes_listing_state(data, frame, main_rect),
             State::Exit => unreachable!(),
         }

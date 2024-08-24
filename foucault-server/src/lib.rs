@@ -69,6 +69,7 @@ pub async fn serve(notebook: Arc<Notebook>, permissions: Permissions, port: u16)
         .route("/tag/validate/name", get(tag_api::validate_name))
         .route("/tag/load/name", get(tag_api::load_by_name))
         .route("/tag/search/name", get(tag_api::search_by_name))
+        .route("/tag/update/name", patch(tag_api::rename))
         .with_state(state);
 
     let address = format!("0.0.0.0:{port}");

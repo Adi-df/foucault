@@ -1,6 +1,7 @@
 use axum::{extract::State, http::StatusCode, Json};
 
 use foucault_core::{
+    api::tag::RenameParam,
     pretty_error,
     tag_repr::{Tag, TagError},
 };
@@ -71,6 +72,29 @@ pub(crate) async fn search_by_name(
         Err(err) => {
             pretty_error!("Error encountered when searching for tags : {err}");
             Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+pub(crate) async fn rename(
+    State(state): State<AppState>,
+    Json(RenameParam { id, name }): Json<RenameParam>,
+) -> FailibleJsonResult<Option<TagError>> {
+    if !state.permissions.writable() {
+        return Err(StatusCode::UNAUTHORIZED);
+    }
+
+    let res = tag_queries::rename(id, &name, state.notebook.db()).await;
+
+    match res {
+        Ok(()) => Ok((StatusCode::OK, Json::from(None))),
+        Err(err) => {
+            if let Some(tag_err) = err.downcast_ref::<TagError>() {
+                Ok((StatusCode::NOT_ACCEPTABLE, Json::from(Some(*tag_err))))
+            } else {
+                pretty_error!("Error encountered during tag renaming : {err}");
+                Err(StatusCode::INTERNAL_SERVER_ERROR)
+            }
         }
     }
 }
