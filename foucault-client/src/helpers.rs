@@ -159,6 +159,45 @@ pub fn draw_text_prompt(
     frame.render_widget(new_note_entry, popup_area);
 }
 
+#[derive(Clone)]
+pub struct EdittableText {
+    text: String,
+    cursor: usize,
+}
+
+impl EdittableText {
+    pub fn new(text: String) -> Self {
+        Self {
+            cursor: text.len(),
+            text,
+        }
+    }
+
+    pub fn get_text(&self) -> &str {
+        &self.text
+    }
+
+    pub fn move_left(&mut self) {
+        self.cursor = self.cursor.saturating_sub(1);
+    }
+
+    pub fn move_right(&mut self) {
+        self.cursor += 1;
+    }
+
+    pub fn insert_char(&mut self, c: char) {
+        self.text.insert(self.cursor, c);
+        self.move_right();
+    }
+
+    pub fn remove_char(&mut self) {
+        if !self.text.is_empty() {
+            self.text.remove(self.cursor.saturating_sub(1));
+            self.move_left();
+        }
+    }
+}
+
 pub trait Capitalize<'a> {
     fn capitalize(&'a self) -> String;
 }
