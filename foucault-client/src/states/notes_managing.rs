@@ -10,7 +10,7 @@ use ratatui::{
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{
-        Block, BorderType, Borders, Clear, List, ListState, Padding, Paragraph, Scrollbar,
+        Block, BorderType, Borders, Clear, List, ListState, Padding, Scrollbar,
         ScrollbarOrientation, ScrollbarState,
     },
     Frame,
@@ -159,10 +159,7 @@ pub fn draw_notes_managing_state(
     )
     .split(main_rect);
 
-    let search_bar = Paragraph::new(Line::from(vec![
-        Span::raw(pattern.get_text()).style(Style::new().add_modifier(Modifier::UNDERLINED))
-    ]))
-    .block(
+    let search_bar = pattern.build_paragraph().block(
         Block::new()
             .title("Filter")
             .borders(Borders::ALL)

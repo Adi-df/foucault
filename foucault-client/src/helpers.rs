@@ -182,7 +182,9 @@ impl EdittableText {
     }
 
     pub fn move_right(&mut self) {
-        self.cursor += 1;
+        if self.cursor < self.text.len() {
+            self.cursor += 1;
+        }
     }
 
     pub fn insert_char(&mut self, c: char) {
@@ -195,6 +197,27 @@ impl EdittableText {
             self.text.remove(self.cursor.saturating_sub(1));
             self.move_left();
         }
+    }
+
+    pub fn build_paragraph(&self) -> Paragraph {
+        let before_cursor = Span::raw(&self.text[..self.cursor])
+            .style(Style::new().add_modifier(Modifier::UNDERLINED));
+        let cursor = if self.cursor == self.text.len() {
+            Span::raw(" ").style(Style::new().bg(Color::Black))
+        } else {
+            Span::raw(&self.text[self.cursor..=self.cursor]).style(
+                Style::new()
+                    .bg(Color::Black)
+                    .add_modifier(Modifier::UNDERLINED),
+            )
+        };
+        let after_cursor = if self.cursor == self.text.len() {
+            Span::raw("")
+        } else {
+            Span::raw(&self.text[(self.cursor + 1)..])
+                .style(Style::new().add_modifier(Modifier::UNDERLINED))
+        };
+        Paragraph::new(Line::from(vec![before_cursor, cursor, after_cursor]))
     }
 }
 
