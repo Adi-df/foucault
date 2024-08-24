@@ -211,9 +211,10 @@ pub fn draw_tags_managing_state(
             &[
                 ("Ctrl+c", writing_op_color, "Create tag"),
                 ("Ctrl+d", writing_op_color, "Delete tag"),
+                ("Ctrl+r", writing_op_color, "Rename tag"),
                 ("⏎", Color::Blue, "List related notes"),
             ],
-            3,
+            2,
             main_rect,
         );
 
