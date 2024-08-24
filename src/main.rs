@@ -13,7 +13,7 @@ use log::info;
 
 use tokio::fs;
 
-use clap::{Parser, Subcommand};
+use clap::{crate_version, Parser, Subcommand};
 use question::{Answer, Question};
 
 use foucault_client::{explore::explore, NotebookAPI, APP_DIR_PATH};
@@ -28,7 +28,7 @@ pub const DEFAULT_PORT: u16 = 8078;
 #[derive(Parser)]
 #[command(
     author = "Adrien Degliame <adidf-web@laposte.net>",
-    version = "0.3.0",
+    version = crate_version!(),
     about = "The Foucault notebook CLI"
 )]
 struct Cli {
