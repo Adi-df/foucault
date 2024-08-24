@@ -5,7 +5,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{layout::Rect, Frame};
 
 use crate::{
-    helpers::draw_text_prompt,
+    helpers::{draw_text_prompt, EdittableText},
     note::Note,
     states::{
         note_viewing::{draw_note_viewing_state, NoteViewingStateData},
@@ -17,7 +17,7 @@ use crate::{
 #[derive(Clone)]
 pub struct NoteRenamingStateData {
     note_viewing_data: NoteViewingStateData,
-    new_name: String,
+    new_name: EdittableText,
     valid: bool,
 }
 
@@ -25,7 +25,7 @@ impl NoteRenamingStateData {
     pub fn empty(note_viewing_data: NoteViewingStateData) -> Self {
         NoteRenamingStateData {
             note_viewing_data,
-            new_name: String::new(),
+            new_name: EdittableText::new(String::new()),
             valid: false,
         }
     }
@@ -47,16 +47,16 @@ pub async fn run_note_renaming_state(
             )
         }
         KeyCode::Enter => {
-            if Note::validate_name(state_data.new_name.as_str(), notebook).await? {
+            if Note::validate_name(state_data.new_name.get_text(), notebook).await? {
                 info!(
                     "Rename note {} to {}.",
                     state_data.note_viewing_data.note.name(),
-                    state_data.new_name
+                    state_data.new_name.get_text()
                 );
                 state_data
                     .note_viewing_data
                     .note
-                    .rename(state_data.new_name, notebook)
+                    .rename(state_data.new_name.consume(), notebook)
                     .await?;
                 State::NoteViewing(
                     NoteViewingStateData::new(state_data.note_viewing_data.note, notebook).await?,
@@ -69,13 +69,29 @@ pub async fn run_note_renaming_state(
             }
         }
         KeyCode::Backspace => {
-            state_data.new_name.pop();
-            state_data.valid = Note::validate_name(state_data.new_name.as_str(), notebook).await?;
+            state_data.new_name.remove_char();
+            state_data.valid =
+                Note::validate_name(state_data.new_name.get_text(), notebook).await?;
+            State::NoteRenaming(state_data)
+        }
+        KeyCode::Delete => {
+            state_data.new_name.del_char();
+            state_data.valid =
+                Note::validate_name(state_data.new_name.get_text(), notebook).await?;
+            State::NoteRenaming(state_data)
+        }
+        KeyCode::Left => {
+            state_data.new_name.move_left();
+            State::NoteRenaming(state_data)
+        }
+        KeyCode::Right => {
+            state_data.new_name.move_right();
             State::NoteRenaming(state_data)
         }
         KeyCode::Char(c) => {
-            state_data.new_name.push(c);
-            state_data.valid = Note::validate_name(state_data.new_name.as_str(), notebook).await?;
+            state_data.new_name.insert_char(c);
+            state_data.valid =
+                Note::validate_name(state_data.new_name.get_text(), notebook).await?;
             State::NoteRenaming(state_data)
         }
         _ => State::NoteRenaming(state_data),

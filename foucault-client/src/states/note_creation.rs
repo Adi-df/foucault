@@ -5,7 +5,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{layout::Rect, Frame};
 
 use crate::{
-    helpers::draw_text_prompt,
+    helpers::{draw_text_prompt, EdittableText},
     note::Note,
     states::{
         note_viewing::NoteViewingStateData,
@@ -25,7 +25,7 @@ enum PrecidingState {
 #[derive(Clone)]
 pub struct NoteCreationStateData {
     preciding_state: PrecidingState,
-    name: String,
+    name: EdittableText,
     valid: bool,
 }
 
@@ -33,7 +33,7 @@ impl NoteCreationStateData {
     pub fn from_nothing() -> Self {
         NoteCreationStateData {
             preciding_state: PrecidingState::Nothing,
-            name: String::new(),
+            name: EdittableText::new(String::new()),
             valid: false,
         }
     }
@@ -41,7 +41,7 @@ impl NoteCreationStateData {
     pub fn from_notes_managing(state_data: NotesManagingStateData) -> Self {
         NoteCreationStateData {
             preciding_state: PrecidingState::NotesManaging(state_data),
-            name: String::new(),
+            name: EdittableText::new(String::new()),
             valid: false,
         }
     }
@@ -63,10 +63,11 @@ pub async fn run_note_creation_state(
             }
         }
         KeyCode::Enter => {
-            if Note::validate_name(state_data.name.as_str(), notebook).await? {
-                info!("Create note : {}.", state_data.name.as_str());
+            if Note::validate_name(state_data.name.get_text(), notebook).await? {
+                info!("Create note : {}.", state_data.name.get_text());
 
-                let new_note = Note::new(state_data.name, String::new(), notebook).await?;
+                let new_note =
+                    Note::new(state_data.name.consume(), String::new(), notebook).await?;
 
                 State::NoteViewing(NoteViewingStateData::new(new_note, notebook).await?)
             } else {
@@ -77,20 +78,27 @@ pub async fn run_note_creation_state(
             }
         }
         KeyCode::Backspace => {
-            state_data.name.pop();
-            let valid = Note::validate_name(state_data.name.as_str(), notebook).await?;
-            State::NoteCreation(NoteCreationStateData {
-                valid,
-                ..state_data
-            })
+            state_data.name.remove_char();
+            state_data.valid = Note::validate_name(state_data.name.get_text(), notebook).await?;
+            State::NoteCreation(state_data)
+        }
+        KeyCode::Delete => {
+            state_data.name.del_char();
+            state_data.valid = Note::validate_name(state_data.name.get_text(), notebook).await?;
+            State::NoteCreation(state_data)
+        }
+        KeyCode::Left => {
+            state_data.name.move_left();
+            State::NoteCreation(state_data)
+        }
+        KeyCode::Right => {
+            state_data.name.move_right();
+            State::NoteCreation(state_data)
         }
         KeyCode::Char(c) => {
-            state_data.name.push(c);
-            let valid = Note::validate_name(state_data.name.as_str(), notebook).await?;
-            State::NoteCreation(NoteCreationStateData {
-                valid,
-                ..state_data
-            })
+            state_data.name.insert_char(c);
+            state_data.valid = Note::validate_name(state_data.name.get_text(), notebook).await?;
+            State::NoteCreation(state_data)
         }
         _ => State::NoteCreation(state_data),
     })

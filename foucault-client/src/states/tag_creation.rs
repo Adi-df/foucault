@@ -5,7 +5,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{layout::Rect, Frame};
 
 use crate::{
-    helpers::draw_text_prompt,
+    helpers::{draw_text_prompt, EdittableText},
     states::{
         tags_managing::{draw_tags_managing_state, TagsManagingStateData},
         State,
@@ -17,7 +17,7 @@ use crate::{
 #[derive(Clone)]
 pub struct TagsCreationStateData {
     tags_managing_data: TagsManagingStateData,
-    name: String,
+    name: EdittableText,
     valid: bool,
 }
 
@@ -25,7 +25,7 @@ impl TagsCreationStateData {
     pub fn empty(tags_managing_data: TagsManagingStateData) -> Self {
         TagsCreationStateData {
             tags_managing_data,
-            name: String::new(),
+            name: EdittableText::new(String::new()),
             valid: false,
         }
     }
@@ -48,9 +48,9 @@ pub async fn run_tag_creation_state(
             )
         }
         KeyCode::Enter => {
-            if Tag::validate_name(state_data.name.as_str(), notebook).await? {
-                info!("Create tag {}.", state_data.name);
-                Tag::new(state_data.name.as_str(), notebook).await?;
+            if Tag::validate_name(state_data.name.get_text(), notebook).await? {
+                info!("Create tag {}.", state_data.name.get_text());
+                Tag::new(state_data.name.consume(), notebook).await?;
                 State::TagsManaging(
                     TagsManagingStateData::from_pattern(
                         state_data.tags_managing_data.pattern,
@@ -66,13 +66,26 @@ pub async fn run_tag_creation_state(
             }
         }
         KeyCode::Backspace => {
-            state_data.name.pop();
-            state_data.valid = Tag::validate_name(state_data.name.as_str(), notebook).await?;
+            state_data.name.remove_char();
+            state_data.valid = Tag::validate_name(state_data.name.get_text(), notebook).await?;
+            State::TagCreation(state_data)
+        }
+        KeyCode::Delete => {
+            state_data.name.del_char();
+            state_data.valid = Tag::validate_name(state_data.name.get_text(), notebook).await?;
+            State::TagCreation(state_data)
+        }
+        KeyCode::Left => {
+            state_data.name.move_left();
+            State::TagCreation(state_data)
+        }
+        KeyCode::Right => {
+            state_data.name.move_right();
             State::TagCreation(state_data)
         }
         KeyCode::Char(c) if !c.is_whitespace() => {
-            state_data.name.push(c);
-            state_data.valid = Tag::validate_name(state_data.name.as_str(), notebook).await?;
+            state_data.name.insert_char(c);
+            state_data.valid = Tag::validate_name(state_data.name.get_text(), notebook).await?;
             State::TagCreation(state_data)
         }
         _ => State::TagCreation(state_data),

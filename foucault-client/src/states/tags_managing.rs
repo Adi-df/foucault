@@ -9,14 +9,14 @@ use ratatui::{
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{
-        Block, BorderType, Borders, Clear, List, ListState, Padding, Paragraph, Scrollbar,
+        Block, BorderType, Borders, Clear, List, ListState, Padding, Scrollbar,
         ScrollbarOrientation, ScrollbarState,
     },
     Frame,
 };
 
 use crate::{
-    helpers::create_help_bar,
+    helpers::{create_help_bar, EdittableText},
     states::{
         tag_creation::TagsCreationStateData, tag_deletion::TagsDeletionStateData,
         tag_notes_listing::TagNotesListingStateData, State,
@@ -27,16 +27,16 @@ use crate::{
 
 #[derive(Clone)]
 pub struct TagsManagingStateData {
-    pub pattern: String,
+    pub pattern: EdittableText,
     selected: usize,
     tags: Arc<[Tag]>,
     help_display: bool,
 }
 
 impl TagsManagingStateData {
-    pub async fn from_pattern(pattern: String, notebook: &NotebookAPI) -> Result<Self> {
+    pub async fn from_pattern(pattern: EdittableText, notebook: &NotebookAPI) -> Result<Self> {
         Ok(TagsManagingStateData {
-            tags: Tag::search_by_name(pattern.as_str(), notebook)
+            tags: Tag::search_by_name(pattern.get_text(), notebook)
                 .await?
                 .into(),
             selected: 0,
@@ -46,7 +46,7 @@ impl TagsManagingStateData {
     }
 
     pub async fn empty(notebook: &NotebookAPI) -> Result<Self> {
-        Self::from_pattern(String::new(), notebook).await
+        Self::from_pattern(EdittableText::new(String::new()), notebook).await
     }
 
     pub fn get_selected(&self) -> Option<&Tag> {
@@ -101,16 +101,16 @@ pub async fn run_tags_managing_state(
             State::TagNotesListing(TagNotesListingStateData::new(tag, notebook).await?)
         }
         KeyCode::Backspace if key_event.modifiers == KeyModifiers::NONE => {
-            state_data.pattern.pop();
-            state_data.tags = Tag::search_by_name(state_data.pattern.as_str(), notebook)
+            state_data.pattern.remove_char();
+            state_data.tags = Tag::search_by_name(state_data.pattern.get_text(), notebook)
                 .await?
                 .into();
             state_data.selected = 0;
             State::TagsManaging(state_data)
         }
         KeyCode::Char(c) if key_event.modifiers == KeyModifiers::NONE && !c.is_whitespace() => {
-            state_data.pattern.push(c);
-            state_data.tags = Tag::search_by_name(state_data.pattern.as_str(), notebook)
+            state_data.pattern.insert_char(c);
+            state_data.tags = Tag::search_by_name(state_data.pattern.get_text(), notebook)
                 .await?
                 .into();
             state_data.selected = 0;
@@ -137,10 +137,7 @@ pub fn draw_tags_managing_state(
     )
     .split(main_rect);
 
-    let filter_bar = Paragraph::new(Line::from(vec![
-        Span::raw(pattern).style(Style::new().add_modifier(Modifier::UNDERLINED))
-    ]))
-    .block(
+    let filter_bar = pattern.build_paragraph().block(
         Block::new()
             .title("Filter")
             .borders(Borders::ALL)
@@ -154,8 +151,8 @@ pub fn draw_tags_managing_state(
     );
 
     let list_results = List::new(tags.iter().map(|tag| {
-        if let Some(pattern_start) = tag.name().to_lowercase().find(pattern) {
-            let pattern_end = pattern_start + pattern.len();
+        if let Some(pattern_start) = tag.name().to_lowercase().find(pattern.get_text()) {
+            let pattern_end = pattern_start + pattern.get_text().len();
             Line::from(vec![
                 Span::raw(&tag.name()[..pattern_start]),
                 Span::raw(&tag.name()[pattern_start..pattern_end])
@@ -164,7 +161,8 @@ pub fn draw_tags_managing_state(
             ])
         } else {
             warn!(
-                "The search pattern '{pattern}' did not match on tag {}",
+                "The search pattern '{}' did not match on tag {}",
+                pattern.get_text(),
                 tag.name()
             );
             Line::from(vec![Span::raw(tag.name())])

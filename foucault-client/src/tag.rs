@@ -16,7 +16,7 @@ impl From<tag_repr::Tag> for Tag {
 }
 
 impl Tag {
-    pub async fn new(name: &str, notebook: &NotebookAPI) -> Result<Self> {
+    pub async fn new(name: String, notebook: &NotebookAPI) -> Result<Self> {
         let res = notebook
             .client
             .post(notebook.build_url("/tag/create"))

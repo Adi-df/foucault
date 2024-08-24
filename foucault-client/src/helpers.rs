@@ -137,16 +137,13 @@ pub fn draw_yes_no_prompt(frame: &mut Frame, choice: bool, title: &str, main_rec
 pub fn draw_text_prompt(
     frame: &mut ratatui::Frame<'_>,
     title: &str,
-    text: &str,
+    text: &EdittableText,
     valid: bool,
     main_rect: ratatui::prelude::Rect,
 ) {
     let popup_area = create_popup((Constraint::Length(30), Constraint::Length(5)), main_rect);
 
-    let new_note_entry = Paragraph::new(Line::from(vec![
-        Span::raw(text).style(Style::new().add_modifier(Modifier::UNDERLINED))
-    ]))
-    .block(
+    let new_note_entry = text.build_paragraph().block(
         Block::new()
             .title(title)
             .borders(Borders::ALL)
@@ -175,6 +172,10 @@ impl EdittableText {
 
     pub fn get_text(&self) -> &str {
         &self.text
+    }
+
+    pub fn consume(self) -> String {
+        self.text
     }
 
     pub fn move_left(&mut self) {

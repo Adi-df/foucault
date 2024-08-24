@@ -5,7 +5,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{layout::Rect, Frame};
 
 use crate::{
-    helpers::draw_text_prompt,
+    helpers::{draw_text_prompt, EdittableText},
     states::{
         note_tags_managing::{draw_note_tags_managing_state, NoteTagsManagingStateData},
         State,
@@ -17,7 +17,7 @@ use crate::{
 #[derive(Clone)]
 pub struct NoteTagAdditionStateData {
     note_tags_managing_data: NoteTagsManagingStateData,
-    tag_name: String,
+    tag_name: EdittableText,
     valid: bool,
 }
 
@@ -25,9 +25,23 @@ impl NoteTagAdditionStateData {
     pub fn empty(note_tags_managing_data: NoteTagsManagingStateData) -> Self {
         NoteTagAdditionStateData {
             note_tags_managing_data,
-            tag_name: String::new(),
+            tag_name: EdittableText::new(String::new()),
             valid: false,
         }
+    }
+
+    async fn validate(&mut self, notebook: &NotebookAPI) -> Result<()> {
+        // TODO : Better error handling possible here
+        self.valid =
+            if let Some(tag) = Tag::load_by_name(self.tag_name.get_text(), notebook).await? {
+                self.note_tags_managing_data
+                    .note
+                    .validate_tag(tag.id(), notebook)
+                    .await?
+            } else {
+                false
+            };
+        Ok(())
     }
 }
 
@@ -48,72 +62,69 @@ pub async fn run_note_tag_addition_state(
                     .await?,
             )
         }
-        KeyCode::Char(c) if !c.is_whitespace() => {
-            state_data.tag_name.push(c);
-            state_data.valid = {
-                if let Some(tag) = Tag::load_by_name(state_data.tag_name.as_str(), notebook).await?
-                {
-                    state_data
+        KeyCode::Enter => {
+            match Tag::load_by_name(state_data.tag_name.get_text(), notebook).await? {
+                Some(tag)
+                    if state_data
                         .note_tags_managing_data
                         .note
                         .validate_tag(tag.id(), notebook)
-                        .await?
-                } else {
-                    false
-                }
-            };
+                        .await? =>
+                {
+                    info!(
+                        "Add tag {} to note {}.",
+                        tag.name(),
+                        state_data.note_tags_managing_data.note.name()
+                    );
+                    state_data
+                        .note_tags_managing_data
+                        .note
+                        .add_tag(tag.id(), notebook)
+                        .await?;
 
-            State::NoteTagAddition(state_data)
+                    State::NoteTagsManaging(
+                        NoteTagsManagingStateData::new(
+                            state_data.note_tags_managing_data.note,
+                            notebook,
+                        )
+                        .await?,
+                    )
+                }
+                _ => {
+                    state_data.valid = false;
+
+                    State::NoteTagAddition(state_data)
+                }
+            }
         }
         KeyCode::Backspace => {
-            state_data.tag_name.pop();
-            state_data.valid = if let Some(tag) =
-                Tag::load_by_name(state_data.tag_name.as_str(), notebook).await?
-            {
-                state_data
-                    .note_tags_managing_data
-                    .note
-                    .validate_tag(tag.id(), notebook)
-                    .await?
-            } else {
-                false
-            };
+            state_data.tag_name.remove_char();
+            state_data.validate(notebook).await?;
 
             State::NoteTagAddition(state_data)
         }
-        KeyCode::Enter => match Tag::load_by_name(state_data.tag_name.as_str(), notebook).await? {
-            Some(tag)
-                if state_data
-                    .note_tags_managing_data
-                    .note
-                    .validate_tag(tag.id(), notebook)
-                    .await? =>
-            {
-                info!(
-                    "Add tag {} to note {}.",
-                    tag.name(),
-                    state_data.note_tags_managing_data.note.name()
-                );
-                state_data
-                    .note_tags_managing_data
-                    .note
-                    .add_tag(tag.id(), notebook)
-                    .await?;
+        KeyCode::Delete => {
+            state_data.tag_name.del_char();
+            state_data.validate(notebook).await?;
 
-                State::NoteTagsManaging(
-                    NoteTagsManagingStateData::new(
-                        state_data.note_tags_managing_data.note,
-                        notebook,
-                    )
-                    .await?,
-                )
-            }
-            _ => {
-                state_data.valid = false;
+            State::NoteTagAddition(state_data)
+        }
+        KeyCode::Left => {
+            state_data.tag_name.move_left();
 
-                State::NoteTagAddition(state_data)
-            }
-        },
+            State::NoteTagAddition(state_data)
+        }
+        KeyCode::Right => {
+            state_data.tag_name.move_right();
+
+            State::NoteTagAddition(state_data)
+        }
+        KeyCode::Char(c) if !c.is_whitespace() => {
+            state_data.tag_name.insert_char(c);
+            state_data.validate(notebook).await?;
+
+            State::NoteTagAddition(state_data)
+        }
         _ => State::NoteTagAddition(state_data),
     })
 }
@@ -129,5 +140,5 @@ pub fn draw_note_tag_addition_state(
     main_rect: Rect,
 ) {
     draw_note_tags_managing_state(note_tags_managing_data, notebook, frame, main_rect);
-    draw_text_prompt(frame, "Tag name", tag_name.as_str(), *valid, main_rect);
+    draw_text_prompt(frame, "Tag name", tag_name, *valid, main_rect);
 }

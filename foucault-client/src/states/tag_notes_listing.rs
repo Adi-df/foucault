@@ -17,6 +17,7 @@ use ratatui::{
 };
 
 use crate::{
+    helpers::EdittableText,
     note::{Note, NoteSummary},
     states::{note_viewing::NoteViewingStateData, State},
     tag::Tag,
@@ -26,7 +27,7 @@ use crate::{
 #[derive(Clone)]
 pub struct TagNotesListingStateData {
     tag: Tag,
-    pattern: String,
+    pattern: EdittableText,
     selected: usize,
     notes: Arc<[NoteSummary]>,
 }
@@ -37,7 +38,7 @@ impl TagNotesListingStateData {
             notes: NoteSummary::search_with_tag(tag.id(), "", notebook)
                 .await?
                 .into(),
-            pattern: String::new(),
+            pattern: EdittableText::new(String::new()),
             selected: 0,
             tag,
         })
@@ -67,10 +68,10 @@ pub async fn run_tag_notes_listing_state(
             }
         }
         KeyCode::Backspace if key_event.modifiers == KeyModifiers::NONE => {
-            state_data.pattern.pop();
+            state_data.pattern.remove_char();
             state_data.notes = NoteSummary::search_with_tag(
                 state_data.tag.id(),
-                state_data.pattern.as_str(),
+                state_data.pattern.get_text(),
                 notebook,
             )
             .await?
@@ -80,10 +81,10 @@ pub async fn run_tag_notes_listing_state(
             State::TagNotesListing(state_data)
         }
         KeyCode::Char(c) if key_event.modifiers == KeyModifiers::NONE => {
-            state_data.pattern.push(c);
+            state_data.pattern.insert_char(c);
             state_data.notes = NoteSummary::search_with_tag(
                 state_data.tag.id(),
-                state_data.pattern.as_str(),
+                state_data.pattern.get_text(),
                 notebook,
             )
             .await?
@@ -93,16 +94,12 @@ pub async fn run_tag_notes_listing_state(
             State::TagNotesListing(state_data)
         }
         KeyCode::Up if state_data.selected > 0 => {
-            State::TagNotesListing(TagNotesListingStateData {
-                selected: state_data.selected - 1,
-                ..state_data
-            })
+            state_data.selected -= 1;
+            State::TagNotesListing(state_data)
         }
         KeyCode::Down if state_data.selected < state_data.notes.len().saturating_sub(1) => {
-            State::TagNotesListing(TagNotesListingStateData {
-                selected: state_data.selected + 1,
-                ..state_data
-            })
+            state_data.selected += 1;
+            State::TagNotesListing(state_data)
         }
         _ => State::TagNotesListing(state_data),
     })
@@ -145,10 +142,7 @@ pub fn draw_tag_notes_listing_state(
             .padding(Padding::uniform(1)),
     );
 
-    let search_bar = Paragraph::new(Line::from(vec![
-        Span::raw(pattern).style(Style::new().add_modifier(Modifier::UNDERLINED))
-    ]))
-    .block(
+    let search_bar = pattern.build_paragraph().block(
         Block::new()
             .title("Filter")
             .borders(Borders::ALL)
@@ -163,8 +157,12 @@ pub fn draw_tag_notes_listing_state(
 
     let tag_notes = List::new(notes.iter().map(|note| {
         Line::from(
-            if let Some(pattern_start) = note.name().to_lowercase().find(&pattern.to_lowercase()) {
-                let pattern_end = pattern_start + pattern.len();
+            if let Some(pattern_start) = note
+                .name()
+                .to_lowercase()
+                .find(&pattern.get_text().to_lowercase())
+            {
+                let pattern_end = pattern_start + pattern.get_text().len();
                 vec![
                     Span::raw(&note.name()[..pattern_start])
                         .style(Style::new().add_modifier(Modifier::BOLD)),
@@ -178,7 +176,8 @@ pub fn draw_tag_notes_listing_state(
                 ]
             } else {
                 warn!(
-                    "The search pattern '{pattern}' did not match on note {}",
+                    "The search pattern '{}' did not match on note {}",
+                    pattern.get_text(),
                     note.name()
                 );
                 vec![Span::raw(note.name())]
