@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use anyhow::Result;
 use log::info;
 
@@ -53,7 +51,7 @@ pub async fn run_note_renaming_state(
                 info!(
                     "Rename note {} to {}.",
                     state_data.note_viewing_data.note.name(),
-                    state_data.new_name.deref()
+                    &*state_data.new_name
                 );
                 state_data
                     .note_viewing_data

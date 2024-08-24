@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use anyhow::Result;
 use log::info;
 
@@ -51,7 +49,7 @@ pub async fn run_tag_creation_state(
         }
         KeyCode::Enter => {
             if Tag::validate_name(&state_data.name, notebook).await? {
-                info!("Create tag {}.", state_data.name.deref());
+                info!("Create tag {}.", &*state_data.name);
                 Tag::new(state_data.name.consume(), notebook).await?;
                 State::TagsManaging(
                     TagsManagingStateData::from_pattern(

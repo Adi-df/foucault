@@ -1,4 +1,4 @@
-use std::{ops::Deref, sync::Arc};
+use std::sync::Arc;
 
 use anyhow::Result;
 use log::{info, warn};
@@ -152,7 +152,7 @@ pub fn draw_tag_notes_listing_state(
     let tag_notes = List::new(notes.iter().map(|note| {
         Line::from(
             if let Some(pattern_start) = note.name().to_lowercase().find(&pattern.to_lowercase()) {
-                let pattern_end = &pattern_start + pattern.len();
+                let pattern_end = pattern_start + pattern.len();
                 vec![
                     Span::raw(&note.name()[..pattern_start])
                         .style(Style::new().add_modifier(Modifier::BOLD)),
@@ -167,7 +167,7 @@ pub fn draw_tag_notes_listing_state(
             } else {
                 warn!(
                     "The search pattern '{}' did not match on note &{}",
-                    pattern.deref(),
+                    &**pattern,
                     note.name()
                 );
                 vec![Span::raw(note.name())]

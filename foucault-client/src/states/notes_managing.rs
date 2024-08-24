@@ -1,4 +1,4 @@
-use std::{ops::Deref, sync::Arc};
+use std::sync::Arc;
 
 use anyhow::Result;
 use log::{info, warn};
@@ -199,7 +199,7 @@ pub fn draw_notes_managing_state(
             } else {
                 warn!(
                     "The search pattern '{}' did not match on note {}",
-                    pattern.deref(),
+                    &**pattern,
                     note.name()
                 );
                 vec![Span::raw(note.name())]

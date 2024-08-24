@@ -1,4 +1,4 @@
-use std::{ops::Deref, sync::Arc};
+use std::sync::Arc;
 
 use anyhow::Result;
 use log::{info, warn};
@@ -160,7 +160,7 @@ pub fn draw_tags_managing_state(
         } else {
             warn!(
                 "The search pattern '{}' did not match on tag {}",
-                pattern.deref(),
+                &**pattern,
                 tag.name()
             );
             Line::from(vec![Span::raw(tag.name())])

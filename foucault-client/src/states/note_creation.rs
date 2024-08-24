@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use anyhow::Result;
 use log::info;
 
@@ -65,7 +63,7 @@ pub async fn run_note_creation_state(
         }
         KeyCode::Enter => {
             if Note::validate_name(&state_data.name, notebook).await? {
-                info!("Create note : {}.", state_data.name.deref());
+                info!("Create note : {}.", &*state_data.name);
 
                 let new_note =
                     Note::new(state_data.name.consume(), String::new(), notebook).await?;
@@ -118,7 +116,7 @@ pub fn draw_note_creation_state(
     match preciding_state {
         PrecidingState::Nothing => {}
         PrecidingState::NotesManaging(state) => {
-            draw_notes_managing_state(state, notebook, frame, main_rect)
+            draw_notes_managing_state(state, notebook, frame, main_rect);
         }
     }
 
