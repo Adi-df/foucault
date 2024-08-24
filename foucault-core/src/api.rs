@@ -1,5 +1,7 @@
+use serde::{Deserialize, Serialize};
+
 pub mod note {
-    use serde::{Deserialize, Serialize};
+    use super::*;
 
     use crate::link_repr::Link;
 
@@ -46,8 +48,18 @@ pub mod note {
     }
 
     #[derive(Debug, Clone, Serialize, Deserialize)]
-    pub struct SearchWithTag {
+    pub struct SearchWithTagParam {
         pub tag_id: i64,
         pub pattern: String,
+    }
+}
+
+pub mod tag {
+    use super::*;
+
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    pub struct RenameParam {
+        pub id: i64,
+        pub name: String,
     }
 }

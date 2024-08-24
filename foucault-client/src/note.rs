@@ -310,7 +310,7 @@ impl NoteSummary {
         let res = notebook
             .client
             .get(notebook.build_url("/note/search/tag"))
-            .json(&api::note::SearchWithTag {
+            .json(&api::note::SearchWithTagParam {
                 tag_id,
                 pattern: pattern.to_string(),
             })

@@ -96,6 +96,16 @@ pub(crate) async fn search_by_name(pattern: &str, connection: &SqlitePool) -> Re
     .collect()
 }
 
+pub(crate) async fn rename(id: i64, name: &str, connection: &SqlitePool) -> Result<()> {
+    validate_name(name, connection).await?;
+
+    sqlx::query!("UPDATE tags_table SET name=$1 WHERE id=$2", name, id)
+        .execute(connection)
+        .await?;
+
+    Ok(())
+}
+
 pub(crate) async fn delete(id: i64, connection: &SqlitePool) -> Result<()> {
     sqlx::query!("DELETE FROM tags_table WHERE id=$1", id)
         .execute(connection)
