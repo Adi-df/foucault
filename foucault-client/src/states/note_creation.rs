@@ -12,7 +12,6 @@ use crate::{
     states::{
         note_viewing::NoteViewingStateData,
         notes_managing::{draw_notes_managing_state, NotesManagingStateData},
-        nothing::draw_nothing_state,
         State,
     },
     NotebookAPI,
@@ -117,7 +116,7 @@ pub fn draw_note_creation_state(
     main_rect: Rect,
 ) {
     match preciding_state {
-        PrecidingState::Nothing => draw_nothing_state(notebook, frame, main_rect),
+        PrecidingState::Nothing => {}
         PrecidingState::NotesManaging(state) => {
             draw_notes_managing_state(state, notebook, frame, main_rect)
         }
