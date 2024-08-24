@@ -118,6 +118,16 @@ pub async fn run_note_managing_state(
 
             State::NotesManaging(state_data)
         }
+        KeyCode::Left if key_event.modifiers == KeyModifiers::NONE => {
+            state_data.pattern.move_left();
+
+            State::NotesManaging(state_data)
+        }
+        KeyCode::Right if key_event.modifiers == KeyModifiers::NONE => {
+            state_data.pattern.move_right();
+
+            State::NotesManaging(state_data)
+        }
         KeyCode::Up if state_data.selected > 0 => State::NotesManaging(NotesManagingStateData {
             selected: state_data.selected - 1,
             ..state_data
