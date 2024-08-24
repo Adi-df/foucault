@@ -5,7 +5,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{layout::Rect, Frame};
 
 use crate::{
-    helpers::{draw_text_prompt, EdittableText},
+    helpers::{draw_text_prompt, EditableText},
     states::{
         note_tags_managing::{draw_note_tags_managing_state, NoteTagsManagingStateData},
         State,
@@ -17,7 +17,7 @@ use crate::{
 #[derive(Clone)]
 pub struct NoteTagAdditionStateData {
     note_tags_managing_data: NoteTagsManagingStateData,
-    tag_name: EdittableText,
+    tag_name: EditableText,
     valid: bool,
 }
 
@@ -25,22 +25,21 @@ impl NoteTagAdditionStateData {
     pub fn empty(note_tags_managing_data: NoteTagsManagingStateData) -> Self {
         NoteTagAdditionStateData {
             note_tags_managing_data,
-            tag_name: EdittableText::new(String::new()),
+            tag_name: EditableText::new(String::new()),
             valid: false,
         }
     }
 
     async fn validate(&mut self, notebook: &NotebookAPI) -> Result<()> {
         // TODO : Better error handling possible here
-        self.valid =
-            if let Some(tag) = Tag::load_by_name(self.tag_name.get_text(), notebook).await? {
-                self.note_tags_managing_data
-                    .note
-                    .validate_tag(tag.id(), notebook)
-                    .await?
-            } else {
-                false
-            };
+        self.valid = if let Some(tag) = Tag::load_by_name(&self.tag_name, notebook).await? {
+            self.note_tags_managing_data
+                .note
+                .validate_tag(tag.id(), notebook)
+                .await?
+        } else {
+            false
+        };
         Ok(())
     }
 }
@@ -62,41 +61,39 @@ pub async fn run_note_tag_addition_state(
                     .await?,
             )
         }
-        KeyCode::Enter => {
-            match Tag::load_by_name(state_data.tag_name.get_text(), notebook).await? {
-                Some(tag)
-                    if state_data
-                        .note_tags_managing_data
-                        .note
-                        .validate_tag(tag.id(), notebook)
-                        .await? =>
-                {
-                    info!(
-                        "Add tag {} to note {}.",
-                        tag.name(),
-                        state_data.note_tags_managing_data.note.name()
-                    );
-                    state_data
-                        .note_tags_managing_data
-                        .note
-                        .add_tag(tag.id(), notebook)
-                        .await?;
+        KeyCode::Enter => match Tag::load_by_name(&state_data.tag_name, notebook).await? {
+            Some(tag)
+                if state_data
+                    .note_tags_managing_data
+                    .note
+                    .validate_tag(tag.id(), notebook)
+                    .await? =>
+            {
+                info!(
+                    "Add tag {} to note {}.",
+                    tag.name(),
+                    state_data.note_tags_managing_data.note.name()
+                );
+                state_data
+                    .note_tags_managing_data
+                    .note
+                    .add_tag(tag.id(), notebook)
+                    .await?;
 
-                    State::NoteTagsManaging(
-                        NoteTagsManagingStateData::new(
-                            state_data.note_tags_managing_data.note,
-                            notebook,
-                        )
-                        .await?,
+                State::NoteTagsManaging(
+                    NoteTagsManagingStateData::new(
+                        state_data.note_tags_managing_data.note,
+                        notebook,
                     )
-                }
-                _ => {
-                    state_data.valid = false;
-
-                    State::NoteTagAddition(state_data)
-                }
+                    .await?,
+                )
             }
-        }
+            _ => {
+                state_data.valid = false;
+
+                State::NoteTagAddition(state_data)
+            }
+        },
         KeyCode::Backspace => {
             state_data.tag_name.remove_char();
             state_data.validate(notebook).await?;

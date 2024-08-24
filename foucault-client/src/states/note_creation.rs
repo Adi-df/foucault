@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use anyhow::Result;
 use log::info;
 
@@ -5,7 +7,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{layout::Rect, Frame};
 
 use crate::{
-    helpers::{draw_text_prompt, EdittableText},
+    helpers::{draw_text_prompt, EditableText},
     note::Note,
     states::{
         note_viewing::NoteViewingStateData,
@@ -25,7 +27,7 @@ enum PrecidingState {
 #[derive(Clone)]
 pub struct NoteCreationStateData {
     preciding_state: PrecidingState,
-    name: EdittableText,
+    name: EditableText,
     valid: bool,
 }
 
@@ -33,7 +35,7 @@ impl NoteCreationStateData {
     pub fn from_nothing() -> Self {
         NoteCreationStateData {
             preciding_state: PrecidingState::Nothing,
-            name: EdittableText::new(String::new()),
+            name: EditableText::new(String::new()),
             valid: false,
         }
     }
@@ -41,7 +43,7 @@ impl NoteCreationStateData {
     pub fn from_notes_managing(state_data: NotesManagingStateData) -> Self {
         NoteCreationStateData {
             preciding_state: PrecidingState::NotesManaging(state_data),
-            name: EdittableText::new(String::new()),
+            name: EditableText::new(String::new()),
             valid: false,
         }
     }
@@ -63,8 +65,8 @@ pub async fn run_note_creation_state(
             }
         }
         KeyCode::Enter => {
-            if Note::validate_name(state_data.name.get_text(), notebook).await? {
-                info!("Create note : {}.", state_data.name.get_text());
+            if Note::validate_name(&state_data.name, notebook).await? {
+                info!("Create note : {}.", state_data.name.deref());
 
                 let new_note =
                     Note::new(state_data.name.consume(), String::new(), notebook).await?;
@@ -79,12 +81,12 @@ pub async fn run_note_creation_state(
         }
         KeyCode::Backspace => {
             state_data.name.remove_char();
-            state_data.valid = Note::validate_name(state_data.name.get_text(), notebook).await?;
+            state_data.valid = Note::validate_name(&state_data.name, notebook).await?;
             State::NoteCreation(state_data)
         }
         KeyCode::Delete => {
             state_data.name.del_char();
-            state_data.valid = Note::validate_name(state_data.name.get_text(), notebook).await?;
+            state_data.valid = Note::validate_name(&state_data.name, notebook).await?;
             State::NoteCreation(state_data)
         }
         KeyCode::Left => {
@@ -97,7 +99,7 @@ pub async fn run_note_creation_state(
         }
         KeyCode::Char(c) => {
             state_data.name.insert_char(c);
-            state_data.valid = Note::validate_name(state_data.name.get_text(), notebook).await?;
+            state_data.valid = Note::validate_name(&state_data.name, notebook).await?;
             State::NoteCreation(state_data)
         }
         _ => State::NoteCreation(state_data),

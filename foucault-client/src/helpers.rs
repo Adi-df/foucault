@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use ratatui::{
     prelude::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
@@ -137,7 +139,7 @@ pub fn draw_yes_no_prompt(frame: &mut Frame, choice: bool, title: &str, main_rec
 pub fn draw_text_prompt(
     frame: &mut ratatui::Frame<'_>,
     title: &str,
-    text: &EdittableText,
+    text: &EditableText,
     valid: bool,
     main_rect: ratatui::prelude::Rect,
 ) {
@@ -157,21 +159,17 @@ pub fn draw_text_prompt(
 }
 
 #[derive(Clone)]
-pub struct EdittableText {
+pub struct EditableText {
     text: String,
     cursor: usize,
 }
 
-impl EdittableText {
+impl EditableText {
     pub fn new(text: String) -> Self {
         Self {
             cursor: text.len(),
             text,
         }
-    }
-
-    pub fn get_text(&self) -> &str {
-        &self.text
     }
 
     pub fn consume(self) -> String {
@@ -225,6 +223,13 @@ impl EdittableText {
                 .style(Style::new().add_modifier(Modifier::UNDERLINED))
         };
         Paragraph::new(Line::from(vec![before_cursor, cursor, after_cursor]))
+    }
+}
+
+impl Deref for EditableText {
+    type Target = str;
+    fn deref(&self) -> &Self::Target {
+        &self.text
     }
 }
 

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{ops::Deref, sync::Arc};
 
 use anyhow::Result;
 use log::{info, warn};
@@ -16,7 +16,7 @@ use ratatui::{
 };
 
 use crate::{
-    helpers::{create_help_bar, EdittableText},
+    helpers::{create_help_bar, EditableText},
     states::{
         tag_creation::TagsCreationStateData, tag_deletion::TagsDeletionStateData,
         tag_notes_listing::TagNotesListingStateData, State,
@@ -27,18 +27,16 @@ use crate::{
 
 #[derive(Clone)]
 pub struct TagsManagingStateData {
-    pub pattern: EdittableText,
+    pub pattern: EditableText,
     selected: usize,
     tags: Arc<[Tag]>,
     help_display: bool,
 }
 
 impl TagsManagingStateData {
-    pub async fn from_pattern(pattern: EdittableText, notebook: &NotebookAPI) -> Result<Self> {
+    pub async fn from_pattern(pattern: EditableText, notebook: &NotebookAPI) -> Result<Self> {
         Ok(TagsManagingStateData {
-            tags: Tag::search_by_name(pattern.get_text(), notebook)
-                .await?
-                .into(),
+            tags: Tag::search_by_name(&pattern, notebook).await?.into(),
             selected: 0,
             pattern,
             help_display: false,
@@ -46,7 +44,7 @@ impl TagsManagingStateData {
     }
 
     pub async fn empty(notebook: &NotebookAPI) -> Result<Self> {
-        Self::from_pattern(EdittableText::new(String::new()), notebook).await
+        Self::from_pattern(EditableText::new(String::new()), notebook).await
     }
 
     pub fn get_selected(&self) -> Option<&Tag> {
@@ -102,7 +100,7 @@ pub async fn run_tags_managing_state(
         }
         KeyCode::Backspace if key_event.modifiers == KeyModifiers::NONE => {
             state_data.pattern.remove_char();
-            state_data.tags = Tag::search_by_name(state_data.pattern.get_text(), notebook)
+            state_data.tags = Tag::search_by_name(&state_data.pattern, notebook)
                 .await?
                 .into();
             state_data.selected = 0;
@@ -110,7 +108,7 @@ pub async fn run_tags_managing_state(
         }
         KeyCode::Char(c) if key_event.modifiers == KeyModifiers::NONE && !c.is_whitespace() => {
             state_data.pattern.insert_char(c);
-            state_data.tags = Tag::search_by_name(state_data.pattern.get_text(), notebook)
+            state_data.tags = Tag::search_by_name(&state_data.pattern, notebook)
                 .await?
                 .into();
             state_data.selected = 0;
@@ -151,8 +149,8 @@ pub fn draw_tags_managing_state(
     );
 
     let list_results = List::new(tags.iter().map(|tag| {
-        if let Some(pattern_start) = tag.name().to_lowercase().find(pattern.get_text()) {
-            let pattern_end = pattern_start + pattern.get_text().len();
+        if let Some(pattern_start) = tag.name().to_lowercase().find(&pattern.to_lowercase()) {
+            let pattern_end = pattern_start + pattern.len();
             Line::from(vec![
                 Span::raw(&tag.name()[..pattern_start]),
                 Span::raw(&tag.name()[pattern_start..pattern_end])
@@ -162,7 +160,7 @@ pub fn draw_tags_managing_state(
         } else {
             warn!(
                 "The search pattern '{}' did not match on tag {}",
-                pattern.get_text(),
+                pattern.deref(),
                 tag.name()
             );
             Line::from(vec![Span::raw(tag.name())])

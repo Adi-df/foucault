@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{ops::Deref, sync::Arc};
 
 use anyhow::Result;
 use log::{info, warn};
@@ -17,7 +17,7 @@ use ratatui::{
 };
 
 use crate::{
-    helpers::EdittableText,
+    helpers::EditableText,
     note::{Note, NoteSummary},
     states::{note_viewing::NoteViewingStateData, State},
     tag::Tag,
@@ -27,7 +27,7 @@ use crate::{
 #[derive(Clone)]
 pub struct TagNotesListingStateData {
     tag: Tag,
-    pattern: EdittableText,
+    pattern: EditableText,
     selected: usize,
     notes: Arc<[NoteSummary]>,
 }
@@ -38,7 +38,7 @@ impl TagNotesListingStateData {
             notes: NoteSummary::search_with_tag(tag.id(), "", notebook)
                 .await?
                 .into(),
-            pattern: EdittableText::new(String::new()),
+            pattern: EditableText::new(String::new()),
             selected: 0,
             tag,
         })
@@ -69,26 +69,20 @@ pub async fn run_tag_notes_listing_state(
         }
         KeyCode::Backspace if key_event.modifiers == KeyModifiers::NONE => {
             state_data.pattern.remove_char();
-            state_data.notes = NoteSummary::search_with_tag(
-                state_data.tag.id(),
-                state_data.pattern.get_text(),
-                notebook,
-            )
-            .await?
-            .into();
+            state_data.notes =
+                NoteSummary::search_with_tag(state_data.tag.id(), &state_data.pattern, notebook)
+                    .await?
+                    .into();
             state_data.selected = 0;
 
             State::TagNotesListing(state_data)
         }
         KeyCode::Char(c) if key_event.modifiers == KeyModifiers::NONE => {
             state_data.pattern.insert_char(c);
-            state_data.notes = NoteSummary::search_with_tag(
-                state_data.tag.id(),
-                state_data.pattern.get_text(),
-                notebook,
-            )
-            .await?
-            .into();
+            state_data.notes =
+                NoteSummary::search_with_tag(state_data.tag.id(), &state_data.pattern, notebook)
+                    .await?
+                    .into();
             state_data.selected = 0;
 
             State::TagNotesListing(state_data)
@@ -157,12 +151,8 @@ pub fn draw_tag_notes_listing_state(
 
     let tag_notes = List::new(notes.iter().map(|note| {
         Line::from(
-            if let Some(pattern_start) = note
-                .name()
-                .to_lowercase()
-                .find(&pattern.get_text().to_lowercase())
-            {
-                let pattern_end = pattern_start + pattern.get_text().len();
+            if let Some(pattern_start) = note.name().to_lowercase().find(&pattern.to_lowercase()) {
+                let pattern_end = &pattern_start + pattern.len();
                 vec![
                     Span::raw(&note.name()[..pattern_start])
                         .style(Style::new().add_modifier(Modifier::BOLD)),
@@ -176,8 +166,8 @@ pub fn draw_tag_notes_listing_state(
                 ]
             } else {
                 warn!(
-                    "The search pattern '{}' did not match on note {}",
-                    pattern.get_text(),
+                    "The search pattern '{}' did not match on note &{}",
+                    pattern.deref(),
                     note.name()
                 );
                 vec![Span::raw(note.name())]

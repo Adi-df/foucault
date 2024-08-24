@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use anyhow::Result;
 use log::info;
 
@@ -5,7 +7,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{layout::Rect, Frame};
 
 use crate::{
-    helpers::{draw_text_prompt, EdittableText},
+    helpers::{draw_text_prompt, EditableText},
     note::Note,
     states::{
         note_viewing::{draw_note_viewing_state, NoteViewingStateData},
@@ -17,7 +19,7 @@ use crate::{
 #[derive(Clone)]
 pub struct NoteRenamingStateData {
     note_viewing_data: NoteViewingStateData,
-    new_name: EdittableText,
+    new_name: EditableText,
     valid: bool,
 }
 
@@ -25,7 +27,7 @@ impl NoteRenamingStateData {
     pub fn empty(note_viewing_data: NoteViewingStateData) -> Self {
         NoteRenamingStateData {
             note_viewing_data,
-            new_name: EdittableText::new(String::new()),
+            new_name: EditableText::new(String::new()),
             valid: false,
         }
     }
@@ -47,11 +49,11 @@ pub async fn run_note_renaming_state(
             )
         }
         KeyCode::Enter => {
-            if Note::validate_name(state_data.new_name.get_text(), notebook).await? {
+            if Note::validate_name(&state_data.new_name, notebook).await? {
                 info!(
                     "Rename note {} to {}.",
                     state_data.note_viewing_data.note.name(),
-                    state_data.new_name.get_text()
+                    state_data.new_name.deref()
                 );
                 state_data
                     .note_viewing_data
@@ -70,14 +72,12 @@ pub async fn run_note_renaming_state(
         }
         KeyCode::Backspace => {
             state_data.new_name.remove_char();
-            state_data.valid =
-                Note::validate_name(state_data.new_name.get_text(), notebook).await?;
+            state_data.valid = Note::validate_name(&state_data.new_name, notebook).await?;
             State::NoteRenaming(state_data)
         }
         KeyCode::Delete => {
             state_data.new_name.del_char();
-            state_data.valid =
-                Note::validate_name(state_data.new_name.get_text(), notebook).await?;
+            state_data.valid = Note::validate_name(&state_data.new_name, notebook).await?;
             State::NoteRenaming(state_data)
         }
         KeyCode::Left => {
@@ -90,8 +90,7 @@ pub async fn run_note_renaming_state(
         }
         KeyCode::Char(c) => {
             state_data.new_name.insert_char(c);
-            state_data.valid =
-                Note::validate_name(state_data.new_name.get_text(), notebook).await?;
+            state_data.valid = Note::validate_name(&state_data.new_name, notebook).await?;
             State::NoteRenaming(state_data)
         }
         _ => State::NoteRenaming(state_data),

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{ops::Deref, sync::Arc};
 
 use anyhow::Result;
 use log::{info, warn};
@@ -17,7 +17,7 @@ use ratatui::{
 };
 
 use crate::{
-    helpers::{create_help_bar, EdittableText},
+    helpers::{create_help_bar, EditableText},
     note::{Note, NoteSummary},
     states::{
         note_creation::NoteCreationStateData, note_deletion::NoteDeletionStateData,
@@ -30,16 +30,16 @@ use foucault_core::note_repr::NoteError;
 
 #[derive(Clone)]
 pub struct NotesManagingStateData {
-    pub pattern: EdittableText,
+    pub pattern: EditableText,
     selected: usize,
     notes: Arc<[NoteSummary]>,
     help_display: bool,
 }
 
 impl NotesManagingStateData {
-    pub async fn from_pattern(pattern: EdittableText, notebook: &NotebookAPI) -> Result<Self> {
+    pub async fn from_pattern(pattern: EditableText, notebook: &NotebookAPI) -> Result<Self> {
         Ok(NotesManagingStateData {
-            notes: NoteSummary::search_by_name(pattern.get_text(), notebook)
+            notes: NoteSummary::search_by_name(&pattern, notebook)
                 .await?
                 .into(),
             selected: 0,
@@ -49,7 +49,7 @@ impl NotesManagingStateData {
     }
 
     pub async fn empty(notebook: &NotebookAPI) -> Result<Self> {
-        Self::from_pattern(EdittableText::new(String::new()), notebook).await
+        Self::from_pattern(EditableText::new(String::new()), notebook).await
     }
 
     fn selected(&self) -> &NoteSummary {
@@ -102,7 +102,7 @@ pub async fn run_note_managing_state(
         }
         KeyCode::Backspace if key_event.modifiers == KeyModifiers::NONE => {
             state_data.pattern.remove_char();
-            state_data.notes = NoteSummary::search_by_name(state_data.pattern.get_text(), notebook)
+            state_data.notes = NoteSummary::search_by_name(&state_data.pattern, notebook)
                 .await?
                 .into();
             state_data.selected = 0;
@@ -111,7 +111,7 @@ pub async fn run_note_managing_state(
         }
         KeyCode::Delete if key_event.modifiers == KeyModifiers::NONE => {
             state_data.pattern.del_char();
-            state_data.notes = NoteSummary::search_by_name(state_data.pattern.get_text(), notebook)
+            state_data.notes = NoteSummary::search_by_name(&state_data.pattern, notebook)
                 .await?
                 .into();
             state_data.selected = 0;
@@ -120,7 +120,7 @@ pub async fn run_note_managing_state(
         }
         KeyCode::Char(c) if key_event.modifiers == KeyModifiers::NONE => {
             state_data.pattern.insert_char(c);
-            state_data.notes = NoteSummary::search_by_name(state_data.pattern.get_text(), notebook)
+            state_data.notes = NoteSummary::search_by_name(&state_data.pattern, notebook)
                 .await?
                 .into();
             state_data.selected = 0;
@@ -182,31 +182,28 @@ pub fn draw_notes_managing_state(
     );
 
     let list_results = List::new(notes.iter().map(|note| {
-        let mut note_line = if let Some(pattern_start) = note
-            .name()
-            .to_lowercase()
-            .find(&pattern.get_text().to_lowercase())
-        {
-            let pattern_end = pattern_start + pattern.get_text().len();
-            vec![
-                Span::raw(&note.name()[..pattern_start])
-                    .style(Style::new().add_modifier(Modifier::BOLD)),
-                Span::raw(&note.name()[pattern_start..pattern_end]).style(
-                    Style::new()
-                        .add_modifier(Modifier::BOLD)
-                        .add_modifier(Modifier::UNDERLINED),
-                ),
-                Span::raw(&note.name()[pattern_end..])
-                    .style(Style::new().add_modifier(Modifier::BOLD)),
-            ]
-        } else {
-            warn!(
-                "The search pattern '{}' did not match on note {}",
-                pattern.get_text(),
-                note.name()
-            );
-            vec![Span::raw(note.name())]
-        };
+        let mut note_line =
+            if let Some(pattern_start) = note.name().to_lowercase().find(&pattern.to_lowercase()) {
+                let pattern_end = pattern_start + pattern.len();
+                vec![
+                    Span::raw(&note.name()[..pattern_start])
+                        .style(Style::new().add_modifier(Modifier::BOLD)),
+                    Span::raw(&note.name()[pattern_start..pattern_end]).style(
+                        Style::new()
+                            .add_modifier(Modifier::BOLD)
+                            .add_modifier(Modifier::UNDERLINED),
+                    ),
+                    Span::raw(&note.name()[pattern_end..])
+                        .style(Style::new().add_modifier(Modifier::BOLD)),
+                ]
+            } else {
+                warn!(
+                    "The search pattern '{}' did not match on note {}",
+                    pattern.deref(),
+                    note.name()
+                );
+                vec![Span::raw(note.name())]
+            };
 
         note_line.push(Span::raw("    "));
 
