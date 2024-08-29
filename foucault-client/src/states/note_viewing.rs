@@ -386,7 +386,7 @@ pub fn draw_note_viewing_state(
     let toc_widget = Paragraph::new(
         table_of_content
             .iter()
-            .map(|header| Line::raw(&header.text))
+            .map(|header| Line::from(vec![header.build_span()]))
             .collect::<Vec<_>>(),
     )
     .style(Style::new().add_modifier(Modifier::BOLD))

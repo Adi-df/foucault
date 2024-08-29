@@ -1,15 +1,16 @@
 pub mod elements;
 
-use elements::InlineElement;
 use markdown::{to_mdast, ParseOptions};
 
 use ratatui::{
     prelude::Alignment,
     style::{Color, Modifier},
+    text::Span,
 };
 
 use crate::markdown::elements::{
-    BlockElement, BlockElements, RenderedBlock, SelectableInlineElements,
+    BlockElement, BlockElements, InlineElement, RenderedBlock, SelectableInlineElements,
+    HEADING_STYLE,
 };
 
 const HEADER_COLOR: [Color; 6] = [
@@ -58,7 +59,13 @@ const RICH_TEXT_COLOR: [Color; 6] = [
 #[derive(Debug)]
 pub struct Header {
     pub text: String,
-    pub level: u8,
+    level: u8,
+}
+
+impl Header {
+    pub fn build_span(&self) -> Span<'_> {
+        Span::raw(&self.text).style(HEADING_STYLE[usize::from(self.level)])
+    }
 }
 
 pub struct ParsedMarkdown {
