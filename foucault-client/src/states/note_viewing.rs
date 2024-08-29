@@ -193,7 +193,9 @@ pub async fn run_note_viewing_state(
                 State::NoteViewing(state_data)
             }
         }
-        KeyCode::Up | KeyCode::Char('k') if state_data.selected.1 > 0 => {
+        KeyCode::Up | KeyCode::Char('k')
+            if key_event.modifiers == KeyModifiers::NONE && state_data.selected.1 > 0 =>
+        {
             state_data.select_current(false);
             state_data.selected.1 -= 1;
             state_data.selected.0 = state_data.selected.0.min(
@@ -208,13 +210,14 @@ pub async fn run_note_viewing_state(
             State::NoteViewing(state_data)
         }
         KeyCode::Down | KeyCode::Char('j')
-            if state_data.selected.1
-                < state_data
-                    .parsed_content
-                    .lock()
-                    .pretty_unwrap()
-                    .block_count()
-                    .saturating_sub(1) =>
+            if key_event.modifiers == KeyModifiers::NONE
+                && state_data.selected.1
+                    < state_data
+                        .parsed_content
+                        .lock()
+                        .pretty_unwrap()
+                        .block_count()
+                        .saturating_sub(1) =>
         {
             state_data.select_current(false);
             state_data.selected.1 += 1;
@@ -229,24 +232,65 @@ pub async fn run_note_viewing_state(
             state_data.select_current(true);
             State::NoteViewing(state_data)
         }
-        KeyCode::Left | KeyCode::Char('h') if state_data.selected.0 > 0 => {
+        KeyCode::Left | KeyCode::Char('h')
+            if key_event.modifiers == KeyModifiers::CONTROL && state_data.selected.0 > 0 =>
+        {
             state_data.select_current(false);
             state_data.selected.0 -= 1;
             state_data.select_current(true);
             State::NoteViewing(state_data)
         }
         KeyCode::Right | KeyCode::Char('l')
-            if state_data.selected.0
-                < state_data
-                    .parsed_content
-                    .lock()
-                    .pretty_unwrap()
-                    .block_length(state_data.selected.1)
-                    .saturating_sub(1) =>
+            if key_event.modifiers == KeyModifiers::CONTROL
+                && state_data.selected.0
+                    < state_data
+                        .parsed_content
+                        .lock()
+                        .pretty_unwrap()
+                        .block_length(state_data.selected.1)
+                        .saturating_sub(1) =>
         {
             state_data.select_current(false);
             state_data.selected.0 += 1;
             state_data.select_current(true);
+            State::NoteViewing(state_data)
+        }
+        KeyCode::Up if key_event.modifiers == KeyModifiers::CONTROL => {
+            let mut parsed_content = state_data.parsed_content.lock().pretty_unwrap();
+            let current = parsed_content.related_header(state_data.selected.1);
+
+            parsed_content.select(state_data.selected, false);
+
+            if let Some(header) = current {
+                if let Some(block) = parsed_content.header_index(header.saturating_sub(1)) {
+                    state_data.selected = (0, block);
+                }
+            }
+
+            parsed_content.select(state_data.selected, true);
+
+            drop(parsed_content);
+            State::NoteViewing(state_data)
+        }
+        KeyCode::Down if key_event.modifiers == KeyModifiers::CONTROL => {
+            let mut parsed_content = state_data.parsed_content.lock().pretty_unwrap();
+            let current = parsed_content.related_header(state_data.selected.1);
+
+            parsed_content.select(state_data.selected, false);
+
+            if let Some(header) = current {
+                if let Some(block) = parsed_content.header_index(header + 1) {
+                    state_data.selected = (0, block);
+                }
+            } else {
+                if let Some(block) = parsed_content.header_index(0) {
+                    state_data.selected = (0, block);
+                }
+            }
+
+            parsed_content.select(state_data.selected, true);
+
+            drop(parsed_content);
             State::NoteViewing(state_data)
         }
         KeyCode::Char('g') => {

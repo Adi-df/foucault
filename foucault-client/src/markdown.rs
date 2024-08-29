@@ -110,6 +110,24 @@ impl ParsedMarkdown {
             })
     }
 
+    pub fn header_index(&self, header: usize) -> Option<usize> {
+        let mut header_counter = 0;
+        self.parsed_content
+            .iter()
+            .enumerate()
+            .find_map(move |(block, el)| match el {
+                BlockElements::Heading { .. } => {
+                    if header_counter == header {
+                        Some(block)
+                    } else {
+                        header_counter += 1;
+                        None
+                    }
+                }
+                _ => None,
+            })
+    }
+
     pub fn list_headers(&self) -> Vec<Header> {
         self.parsed_content
             .iter()
