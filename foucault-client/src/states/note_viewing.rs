@@ -288,10 +288,8 @@ pub async fn run_note_viewing_state(
                 if let Some(block) = parsed_content.header_index(header + 1) {
                     state_data.selected = (0, block);
                 }
-            } else {
-                if let Some(block) = parsed_content.header_index(0) {
-                    state_data.selected = (0, block);
-                }
+            } else if let Some(block) = parsed_content.header_index(0) {
+                state_data.selected = (0, block);
             }
 
             parsed_content.select(state_data.selected, true);
