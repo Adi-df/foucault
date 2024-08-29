@@ -383,23 +383,25 @@ pub fn draw_note_viewing_state(
                 .padding(Padding::uniform(1)),
         );
 
-    let toc_widget = Paragraph::new(
-        table_of_content
-            .iter()
-            .map(|header| Line::from(vec![header.build_span()]))
-            .collect::<Vec<_>>(),
-    )
-    .style(Style::new().add_modifier(Modifier::BOLD))
-    .alignment(Alignment::Left)
-    .block(
-        Block::new()
-            .title("Table of Content")
-            .title_style(Style::new())
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .border_style(Style::new().fg(Color::Blue))
-            .padding(Padding::uniform(1)),
-    );
+    let mut headers = table_of_content
+        .iter()
+        .map(|header| Line::from(vec![header.build_span()]))
+        .collect::<Vec<_>>();
+    if let Some(selected) = parsed_content.related_header(selected.1) {
+        headers[selected].style = headers[selected].style.bg(Color::Black);
+    }
+    let toc_widget = Paragraph::new(headers)
+        .style(Style::new().add_modifier(Modifier::BOLD))
+        .alignment(Alignment::Left)
+        .block(
+            Block::new()
+                .title("Table of Content")
+                .title_style(Style::new())
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::new().fg(Color::Blue))
+                .padding(Padding::uniform(1)),
+        );
 
     let content_block = Block::new()
         .title("Content")

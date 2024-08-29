@@ -98,6 +98,18 @@ impl ParsedMarkdown {
             .collect()
     }
 
+    pub fn related_header(&self, block: usize) -> Option<usize> {
+        self.parsed_content[0..=block]
+            .iter()
+            .fold(None, |acc, el| match el {
+                BlockElements::Heading { .. } => Some(match acc {
+                    Some(v) => v + 1,
+                    None => 0,
+                }),
+                _ => acc,
+            })
+    }
+
     pub fn list_headers(&self) -> Vec<Header> {
         self.parsed_content
             .iter()

@@ -35,7 +35,7 @@ const BLOCKQUOTE_STYLE: Style = Style::new()
     .fg(RICH_TEXT_COLOR[BLOCKQUOTE])
     .add_modifier(Modifier::ITALIC);
 
-pub const HEADING_STYLE: [Style; 6] = [
+pub(super) const HEADING_STYLE: [Style; 6] = [
     Style::new()
         .add_modifier(Modifier::union(HEADER_MODIFIER[0], Modifier::UNDERLINED))
         .fg(HEADER_COLOR[0]),
@@ -249,7 +249,7 @@ impl InlineElements {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct SelectableInlineElements {
     pub element: InlineElements,
     pub selected: bool,
@@ -310,6 +310,7 @@ impl InlineElement for SelectableInlineElements {
     }
 }
 
+#[derive(Debug)]
 pub enum BlockElements<T>
 where
     T: InlineElement,
