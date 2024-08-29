@@ -29,7 +29,7 @@ use ratatui::{
 use foucault_core::PrettyError;
 
 use crate::{
-    helpers::create_help_bar,
+    helpers::create_left_help_bar,
     links::Link,
     markdown::{
         combine,
@@ -489,18 +489,20 @@ pub fn draw_note_viewing_state(
         } else {
             Color::Red
         };
-        let (commands, commands_area) = create_help_bar(
+        let (commands, commands_area) = create_left_help_bar(
             &[
                 ("e", writing_op_color, "Edit"),
                 ("r", writing_op_color, "Rename"),
                 ("d", writing_op_color, "Delete"),
                 ("g", Color::Blue, "Go to note start"),
                 ("E", Color::Blue, "Go to note end"),
+                ("CTRL+t", Color::Blue, "Table of Content"),
+                ("CTRL+UP", Color::Blue, "Previous heading"),
+                ("CTRL+DOWN", Color::Blue, "Next heading"),
                 ("t", Color::Blue, "Related Tags"),
                 ("s", Color::Blue, "Manage notes"),
                 ("⏎", Color::Blue, "Open link"),
             ],
-            4,
             main_rect,
         );
 

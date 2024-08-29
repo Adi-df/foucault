@@ -46,7 +46,7 @@ pub fn create_popup(proportion: (Constraint, Constraint), rect: Rect) -> Rect {
     horizontal[1]
 }
 
-pub fn create_help_bar<'a>(
+pub fn create_bottom_help_bar<'a>(
     help: &[(&'a str, Color, &'a str)],
     max_by_row: usize,
     rect: Rect,
@@ -87,6 +87,35 @@ pub fn create_help_bar<'a>(
     )
     .split(rect);
     (table, vertical[1])
+}
+
+pub fn create_left_help_bar<'a>(
+    help: &[(&'a str, Color, &'a str)],
+    rect: Rect,
+) -> (Table<'a>, Rect) {
+    let rows: Vec<_> = help
+        .iter()
+        .map(|(key, color, def)| {
+            Row::new([
+                Cell::from(*key).style(Style::new().bg(*color).add_modifier(Modifier::BOLD)),
+                Cell::from(*def).style(Style::new().bg(Color::Black)),
+            ])
+        })
+        .collect();
+    let table = Table::new(rows, [Constraint::Fill(1), Constraint::Fill(2)]).block(
+        Block::new()
+            .padding(Padding::horizontal(1))
+            .borders(Borders::all())
+            .border_type(BorderType::Double)
+            .border_style(Style::new().fg(Color::White)),
+    );
+
+    let horrizontal = Layout::new(
+        Direction::Horizontal,
+        [Constraint::Percentage(40), Constraint::Min(0)],
+    )
+    .split(rect);
+    (table, horrizontal[0])
 }
 
 pub fn draw_yes_no_prompt(frame: &mut Frame, choice: bool, title: &str, main_rect: Rect) {

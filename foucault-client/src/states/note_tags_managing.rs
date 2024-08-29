@@ -13,7 +13,7 @@ use ratatui::{
 };
 
 use crate::{
-    helpers::create_help_bar,
+    helpers::create_bottom_help_bar,
     note::Note,
     states::{
         note_tag_addition::NoteTagAdditionStateData, note_tag_deletion::NoteTagDeletionStateData,
@@ -163,7 +163,7 @@ pub fn draw_note_tags_managing_state(
         } else {
             Color::Red
         };
-        let (commands, commands_area) = create_help_bar(
+        let (commands, commands_area) = create_bottom_help_bar(
             &[
                 ("a", writing_op_color, "Add tag"),
                 ("d", writing_op_color, "Delete tag"),

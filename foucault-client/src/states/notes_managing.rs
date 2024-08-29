@@ -17,7 +17,7 @@ use ratatui::{
 };
 
 use crate::{
-    helpers::{create_help_bar, EditableText},
+    helpers::{create_bottom_help_bar, EditableText},
     note::{Note, NoteSummary},
     states::{
         note_creation::NoteCreationStateData, note_deletion::NoteDeletionStateData,
@@ -253,7 +253,7 @@ pub fn draw_notes_managing_state(
         } else {
             Color::Red
         };
-        let (commands, commands_area) = create_help_bar(
+        let (commands, commands_area) = create_bottom_help_bar(
             &[
                 ("Ctrl+c", writing_op_color, "Create note"),
                 ("Ctrl+d", writing_op_color, "Delete note"),
