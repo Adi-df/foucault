@@ -99,6 +99,9 @@ impl ParsedMarkdown {
     }
 
     pub fn related_header(&self, block: usize) -> Option<usize> {
+        if self.parsed_content.is_empty() {
+            return None;
+        }
         self.parsed_content[0..=block]
             .iter()
             .fold(None, |acc, el| match el {

@@ -262,7 +262,13 @@ pub async fn run_note_viewing_state(
             parsed_content.select(state_data.selected, false);
 
             if let Some(header) = current {
-                if let Some(block) = parsed_content.header_index(header.saturating_sub(1)) {
+                let current_header_index = parsed_content.header_index(header).pretty_unwrap();
+                let up_header = if current_header_index == state_data.selected.1 {
+                    header.saturating_sub(1)
+                } else {
+                    header
+                };
+                if let Some(block) = parsed_content.header_index(up_header) {
                     state_data.selected = (0, block);
                 }
             }
