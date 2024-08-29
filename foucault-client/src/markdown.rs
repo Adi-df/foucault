@@ -1,5 +1,6 @@
 pub mod elements;
 
+use elements::InlineElement;
 use markdown::{to_mdast, ParseOptions};
 
 use ratatui::{
@@ -54,6 +55,12 @@ const RICH_TEXT_COLOR: [Color; 6] = [
     Color::Yellow,    // Blockquote
 ];
 
+#[derive(Debug)]
+pub struct Header {
+    pub text: String,
+    pub level: u8,
+}
+
 pub struct ParsedMarkdown {
     parsed_content: Vec<BlockElements<SelectableInlineElements>>,
 }
@@ -81,6 +88,22 @@ impl ParsedMarkdown {
             .flat_map(|block| block.get_content().iter())
             .map(|el| &el.element)
             .filter_map(|el| el.link_dest())
+            .collect()
+    }
+
+    pub fn list_headers(&self) -> Vec<Header> {
+        self.parsed_content
+            .iter()
+            .filter_map(|el| match el {
+                BlockElements::Heading { content, level } => {
+                    let text = content.iter().map(InlineElement::inner_text).collect();
+                    Some(Header {
+                        text,
+                        level: *level,
+                    })
+                }
+                _ => None,
+            })
             .collect()
     }
 
@@ -116,7 +139,7 @@ pub fn lines(blocks: &[RenderedBlock]) -> usize {
 pub fn combine(blocks: &[RenderedBlock]) -> RenderedBlock {
     blocks
         .iter()
-        .flat_map(|el| el.iter())
+        .flat_map(|el| el.lines().iter())
         .cloned()
         .collect::<Vec<_>>()
         .into()

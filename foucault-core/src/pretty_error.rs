@@ -37,3 +37,16 @@ where
         }
     }
 }
+
+impl<T> PrettyError for Option<T> {
+    type Item = T;
+    fn pretty_unwrap(self) -> Self::Item {
+        match self {
+            Some(val) => val,
+            None => {
+                pretty_error("Unwrapped an empty Option.");
+                panic::resume_unwind(Box::new(1));
+            }
+        }
+    }
+}

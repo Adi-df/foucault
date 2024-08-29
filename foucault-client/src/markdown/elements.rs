@@ -1,4 +1,4 @@
-use std::{borrow::Cow, ops::Deref};
+use std::borrow::Cow;
 
 use markdown::mdast;
 
@@ -108,6 +108,10 @@ pub struct RenderedBlock {
 }
 
 impl RenderedBlock {
+    pub fn lines(&self) -> &[Line<'static>] {
+        &self.content
+    }
+
     pub fn build_paragraph(self) -> Paragraph<'static> {
         Paragraph::new(self.content)
     }
@@ -166,14 +170,6 @@ impl RenderedBlock {
 impl From<Vec<Line<'static>>> for RenderedBlock {
     fn from(content: Vec<Line<'static>>) -> Self {
         Self { content }
-    }
-}
-
-impl Deref for RenderedBlock {
-    type Target = [Line<'static>];
-
-    fn deref(&self) -> &Self::Target {
-        self.content.as_slice()
     }
 }
 

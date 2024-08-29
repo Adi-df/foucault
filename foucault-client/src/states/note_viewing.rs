@@ -18,7 +18,7 @@ use crossterm::{
 use ratatui::{
     prelude::{Alignment, Constraint, Direction, Layout, Margin, Rect},
     style::{Color, Modifier, Style},
-    text::Text,
+    text::{Line, Text},
     widgets::{
         Block, BorderType, Borders, Clear, Padding, Paragraph, Row, Scrollbar,
         ScrollbarOrientation, ScrollbarState, Table,
@@ -34,7 +34,7 @@ use crate::{
     markdown::{
         combine,
         elements::{InlineElements, SelectableInlineElements},
-        lines, parse, ParsedMarkdown,
+        lines, parse, Header, ParsedMarkdown,
     },
     note::Note,
     states::{
@@ -50,9 +50,11 @@ use crate::{
 pub struct NoteViewingStateData {
     pub note: Note,
     tags: Arc<[Tag]>,
+    table_of_content: Arc<[Header]>,
     parsed_content: Arc<Mutex<ParsedMarkdown>>,
     selected: (usize, usize),
     help_display: bool,
+    toc_display: bool,
 }
 
 impl NoteViewingStateData {
@@ -61,18 +63,23 @@ impl NoteViewingStateData {
         parsed_content.select((0, 0), true);
         Ok(NoteViewingStateData {
             tags: note.tags(notebook).await?.into(),
-            note,
+            table_of_content: Arc::from(parsed_content.list_headers()),
             parsed_content: Arc::new(Mutex::new(parsed_content)),
             selected: (0, 0),
             help_display: false,
+            toc_display: false,
+            note,
         })
     }
 }
 
 impl NoteViewingStateData {
     fn re_parse_content(&mut self) {
-        self.parsed_content = Arc::new(Mutex::new(parse(self.note.content())));
+        let content = parse(self.note.content());
+        self.table_of_content = Arc::from(content.list_headers());
+        self.parsed_content = Arc::new(Mutex::new(content));
     }
+
     fn get_current(&self) -> Option<SelectableInlineElements> {
         self.parsed_content
             .lock()
@@ -80,6 +87,7 @@ impl NoteViewingStateData {
             .get_element(self.selected)
             .cloned()
     }
+
     fn select_current(&mut self, selected: bool) {
         self.parsed_content
             .lock()
@@ -116,6 +124,12 @@ pub async fn run_note_viewing_state(
         KeyCode::Char('h') if key_event.modifiers == KeyModifiers::CONTROL => {
             info!("Toogle the help display.");
             state_data.help_display = !state_data.help_display;
+
+            State::NoteViewing(state_data)
+        }
+        KeyCode::Char('t') if key_event.modifiers == KeyModifiers::CONTROL => {
+            info!("Toogle the table of content display.");
+            state_data.toc_display = !state_data.toc_display;
 
             State::NoteViewing(state_data)
         }
@@ -293,25 +307,50 @@ pub fn draw_note_viewing_state(
     NoteViewingStateData {
         note,
         tags,
+        table_of_content,
         parsed_content,
         selected,
         help_display,
+        toc_display,
     }: &NoteViewingStateData,
     notebook: &NotebookAPI,
     frame: &mut Frame,
     main_rect: Rect,
 ) {
     let parsed_content = parsed_content.lock().pretty_unwrap();
-    let vertical_layout = Layout::new(
-        Direction::Vertical,
-        [Constraint::Length(5), Constraint::Min(0)],
+    let [top_bar_rect, note_display_rect] = *TryInto::<&[Rect; 2]>::try_into(
+        Layout::new(
+            Direction::Vertical,
+            [Constraint::Length(5), Constraint::Min(0)],
+        )
+        .split(main_rect)
+        .as_ref(),
     )
-    .split(main_rect);
-    let horizontal_layout = Layout::new(
-        Direction::Horizontal,
-        [Constraint::Percentage(30), Constraint::Min(0)],
+    .pretty_unwrap();
+    let [note_title_rect, note_tags_rect] = *TryInto::<&[Rect; 2]>::try_into(
+        Layout::new(
+            Direction::Horizontal,
+            [Constraint::Percentage(30), Constraint::Min(0)],
+        )
+        .split(top_bar_rect)
+        .as_ref(),
     )
-    .split(vertical_layout[0]);
+    .pretty_unwrap();
+
+    let (content_rect, toc_rect) = if *toc_display {
+        let [toc_rect, content_rect] = *TryInto::<&[Rect; 2]>::try_into(
+            Layout::new(
+                Direction::Horizontal,
+                [Constraint::Percentage(30), Constraint::Min(0)],
+            )
+            .split(note_display_rect)
+            .as_ref(),
+        )
+        .pretty_unwrap();
+        (content_rect, Some(toc_rect))
+    } else {
+        (note_display_rect, None)
+    };
 
     let note_title = Paragraph::new(note.name())
         .style(Style::new().add_modifier(Modifier::BOLD))
@@ -344,6 +383,24 @@ pub fn draw_note_viewing_state(
                 .padding(Padding::uniform(1)),
         );
 
+    let toc_widget = Paragraph::new(
+        table_of_content
+            .iter()
+            .map(|header| Line::raw(&header.text))
+            .collect::<Vec<_>>(),
+    )
+    .style(Style::new().add_modifier(Modifier::BOLD))
+    .alignment(Alignment::Left)
+    .block(
+        Block::new()
+            .title("Table of Content")
+            .title_style(Style::new())
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::new().fg(Color::Blue))
+            .padding(Padding::uniform(1)),
+    );
+
     let content_block = Block::new()
         .title("Content")
         .borders(Borders::ALL)
@@ -351,7 +408,7 @@ pub fn draw_note_viewing_state(
         .border_style(Style::new().fg(Color::Yellow))
         .padding(Padding::uniform(1));
 
-    let content_area = content_block.inner(vertical_layout[1]);
+    let content_area = content_block.inner(content_rect);
     let rendered_content = parsed_content.render_blocks(content_area.width as usize);
     let scroll = lines(&rendered_content[..selected.1]);
 
@@ -363,18 +420,22 @@ pub fn draw_note_viewing_state(
         .begin_symbol(Some("↑"))
         .end_symbol(Some("↓"));
 
-    frame.render_widget(note_title, horizontal_layout[0]);
-    frame.render_widget(note_tags, horizontal_layout[1]);
-    frame.render_widget(note_content, content_block.inner(vertical_layout[1]));
-    frame.render_widget(content_block, vertical_layout[1]);
+    frame.render_widget(note_title, note_title_rect);
+    frame.render_widget(note_tags, note_tags_rect);
+    frame.render_widget(note_content, content_area);
+    frame.render_widget(content_block, content_rect);
     frame.render_stateful_widget(
         content_scrollbar,
-        vertical_layout[1].inner(Margin::new(0, 1)),
+        content_rect.inner(Margin::new(0, 1)),
         &mut ScrollbarState::default()
             .content_length(parsed_content.block_count().saturating_sub(1))
             .viewport_content_length(1)
             .position(selected.1),
     );
+
+    if *toc_display {
+        frame.render_widget(toc_widget, toc_rect.pretty_unwrap());
+    }
 
     if *help_display {
         let writing_op_color = if notebook.permissions.writable() {
