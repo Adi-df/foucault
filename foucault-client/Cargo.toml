@@ -11,7 +11,7 @@ foucault-core = { path = "../foucault-core" }
 dirs = "5.0.1"
 opener = "0.7.2"
 anyhow = "1.0.86"
-ratatui = "0.28.0"
+ratatui = "0.28.1"
 textwrap = "0.16.1"
 thiserror = "1.0.63"
 scopeguard = "1.2.0"
@@ -20,5 +20,5 @@ serde-error = "0.1.2"
 markdown = "1.0.0-alpha.20"
 unicode-segmentation = "1.11.0"
 log = { version = "0.4.22", features = ["std"] }
-tokio = { version = "1.39.3", features = ["full"] }
+tokio = { version = "1.40.0", features = ["full"] }
 reqwest = { version = "0.12.7", features = ["json"] }

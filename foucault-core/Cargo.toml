@@ -9,4 +9,4 @@ repository = "https://github.com/Adi-df/foucault/"
 [dependencies]
 colored = "2.1.0"
 thiserror = "1.0.63"
-serde = { version = "1.0.208", features = ["derive"] }
+serde = { version = "1.0.209", features = ["derive"] }
