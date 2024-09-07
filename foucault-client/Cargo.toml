@@ -1,6 +1,6 @@
 [package]
 name = "foucault-client"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2021"
 license = "GPL-3.0"
 authors = ["Adrien Degliame--Fecchio <adidf-web@laposte.net>"]
@@ -9,6 +9,7 @@ repository = "https://github.com/Adi-df/foucault/"
 [dependencies]
 foucault-core = { path = "../foucault-core" }
 dirs = "5.0.1"
+edit = "0.1.5"
 opener = "0.7.2"
 anyhow = "1.0.86"
 ratatui = "0.28.1"
@@ -22,4 +23,3 @@ unicode-segmentation = "1.11.0"
 log = { version = "0.4.22", features = ["std"] }
 tokio = { version = "1.40.0", features = ["full"] }
 reqwest = { version = "0.12.7", features = ["json"] }
-edit = "0.1.5"
