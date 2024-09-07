@@ -1,5 +1,4 @@
 use std::{
-    env,
     io::stdout,
     sync::{Arc, Mutex},
 };
@@ -8,7 +7,7 @@ use anyhow::Result;
 use log::info;
 use scopeguard::defer;
 
-use tokio::{fs, process::Command};
+use tokio::fs;
 
 use crossterm::{
     event::{KeyCode, KeyEvent, KeyModifiers},
@@ -328,8 +327,6 @@ async fn edit_note(note: &mut Note, notebook: &NotebookAPI) -> Result<()> {
     let tmp_file_path = APP_DIR_PATH.join(format!("{}.tmp.md", note.name()));
     note.export_content(tmp_file_path.as_path()).await?;
 
-    let editor = env::var("EDITOR")?;
-
     stdout()
         .execute(LeaveAlternateScreen)
         .expect("Leave the foucault screen.");
@@ -338,11 +335,8 @@ async fn edit_note(note: &mut Note, notebook: &NotebookAPI) -> Result<()> {
         stdout().execute(EnterAlternateScreen).expect("Return to the foucault screen.");
     }
 
-    Command::new(editor)
-        .args([&tmp_file_path])
-        .current_dir(&*APP_DIR_PATH)
-        .status()
-        .await?;
+    let tmp_file_path_clone = tmp_file_path.clone();
+    tokio::task::spawn_blocking(move || edit::edit_file(&tmp_file_path_clone)).await??;
 
     note.import_content(tmp_file_path.as_path(), notebook)
         .await?;

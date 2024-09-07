@@ -22,3 +22,4 @@ unicode-segmentation = "1.11.0"
 log = { version = "0.4.22", features = ["std"] }
 tokio = { version = "1.40.0", features = ["full"] }
 reqwest = { version = "0.12.7", features = ["json"] }
+edit = "0.1.5"
