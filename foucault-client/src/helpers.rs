@@ -7,6 +7,7 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, Cell, Clear, Padding, Paragraph, Row, Table},
     Frame,
 };
+use unicode_segmentation::UnicodeSegmentation;
 
 pub fn create_popup(proportion: (Constraint, Constraint), rect: Rect) -> Rect {
     let vertical = Layout::new(
@@ -196,9 +197,13 @@ pub struct EditableText {
 impl EditableText {
     pub fn new(text: String) -> Self {
         Self {
-            cursor: text.len(),
+            cursor: text.graphemes(true).count(),
             text,
         }
+    }
+
+    fn len(&self) -> usize {
+        self.text.graphemes(true).count()
     }
 
     pub fn consume(self) -> String {
@@ -210,45 +215,71 @@ impl EditableText {
     }
 
     pub fn move_right(&mut self) {
-        if self.cursor < self.text.len() {
+        if self.cursor < self.len() {
             self.cursor += 1;
         }
     }
 
     pub fn insert_char(&mut self, c: char) {
-        self.text.insert(self.cursor, c);
+        if self.cursor == 0 {
+            self.text.insert(0, c);
+        } else {
+            self.text.insert(
+                self.text
+                    .grapheme_indices(true)
+                    .map(|(i, g)| i + g.len())
+                    .nth(self.cursor - 1)
+                    .unwrap(),
+                c,
+            );
+        }
         self.move_right();
     }
 
     pub fn remove_char(&mut self) {
-        if !self.text.is_empty() {
-            self.text.remove(self.cursor.saturating_sub(1));
+        if !self.text.is_empty() && self.cursor > 0 {
+            let (start, end) = self
+                .text
+                .grapheme_indices(true)
+                .map(|(i, g)| (i, i + g.len()))
+                .nth(self.cursor - 1)
+                .unwrap();
+            self.text.drain(start..end);
             self.move_left();
         }
     }
 
     pub fn del_char(&mut self) {
         if self.cursor < self.text.len() {
-            self.text.remove(self.cursor);
+            let (start, end) = self
+                .text
+                .grapheme_indices(true)
+                .map(|(i, g)| (i, i + g.len()))
+                .nth(self.cursor)
+                .unwrap();
+            self.text.drain(start..end);
         }
     }
 
     pub fn build_paragraph(&self) -> Paragraph {
-        let before_cursor = Span::raw(&self.text[..self.cursor])
+        let graphemes: Vec<&str> =
+            UnicodeSegmentation::graphemes(self.text.as_str(), true).collect();
+
+        let before_cursor = Span::raw(graphemes[..self.cursor].concat())
             .style(Style::new().add_modifier(Modifier::UNDERLINED));
-        let cursor = if self.cursor == self.text.len() {
+        let cursor = if self.cursor == graphemes.len() {
             Span::raw(" ").style(Style::new().bg(Color::Black))
         } else {
-            Span::raw(&self.text[self.cursor..=self.cursor]).style(
+            Span::raw(graphemes[self.cursor..=self.cursor].concat()).style(
                 Style::new()
                     .bg(Color::Black)
                     .add_modifier(Modifier::UNDERLINED),
             )
         };
-        let after_cursor = if self.cursor == self.text.len() {
+        let after_cursor = if self.cursor == graphemes.len() {
             Span::raw("")
         } else {
-            Span::raw(&self.text[(self.cursor + 1)..])
+            Span::raw(graphemes[(self.cursor + 1)..].concat())
                 .style(Style::new().add_modifier(Modifier::UNDERLINED))
         };
         Paragraph::new(Line::from(vec![before_cursor, cursor, after_cursor]))
