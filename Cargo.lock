@@ -670,7 +670,7 @@ dependencies = [
 
 [[package]]
 name = "foucault"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "anyhow",
  "clap",
@@ -689,7 +689,7 @@ dependencies = [
 
 [[package]]
 name = "foucault-client"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "anyhow",
  "crossterm",
