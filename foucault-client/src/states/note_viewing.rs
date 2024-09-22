@@ -232,7 +232,7 @@ pub async fn run_note_viewing_state(
             State::NoteViewing(state_data)
         }
         KeyCode::Left | KeyCode::Char('h')
-            if key_event.modifiers == KeyModifiers::CONTROL && state_data.selected.0 > 0 =>
+            if key_event.modifiers == KeyModifiers::NONE && state_data.selected.0 > 0 =>
         {
             state_data.select_current(false);
             state_data.selected.0 -= 1;
@@ -240,7 +240,7 @@ pub async fn run_note_viewing_state(
             State::NoteViewing(state_data)
         }
         KeyCode::Right | KeyCode::Char('l')
-            if key_event.modifiers == KeyModifiers::CONTROL
+            if key_event.modifiers == KeyModifiers::NONE
                 && state_data.selected.0
                     < state_data
                         .parsed_content
