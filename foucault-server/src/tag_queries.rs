@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 
-use random_color::{Luminosity, RandomColor};
+use random_color::{options::Luminosity, RandomColor};
 
 use sqlx::SqlitePool;
 

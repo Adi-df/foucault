@@ -16,10 +16,10 @@ foucault-client = { path = "foucault-client" }
 foucault-server = { path = "foucault-server" }
 anyhow = "1.0.86"
 question = "0.2.2"
-ratatui = "0.28.1"
-thiserror = "1.0.63"
+ratatui = "0.29.0"
+thiserror = "2.0.12"
 scopeguard = "1.2.0"
-crossterm = "0.28.1"
+crossterm = "0.29.0"
 env_logger = "0.11.5"
 log = { version = "0.4.22", features = ["std"] }
 tokio = { version = "1.40.0", features = ["full"] }

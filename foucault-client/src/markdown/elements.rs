@@ -333,7 +333,7 @@ where
                 .iter()
                 .flat_map(BlockElements::parse_node)
                 .collect(),
-            mdast::Node::BlockQuote(blockquote) => vec![Self::BlockQuote {
+            mdast::Node::Blockquote(blockquote) => vec![Self::BlockQuote {
                 content: blockquote
                     .children
                     .iter()

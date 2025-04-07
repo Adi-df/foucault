@@ -15,7 +15,7 @@ use foucault_core::{
 use crate::tag_queries;
 
 pub(crate) async fn create(name: &str, content: &str, connection: &SqlitePool) -> Result<i64> {
-    info!("Insert note {} in the notebook", name);
+    info!("Insert note {name} in the notebook");
 
     if let Some(err) = validate_name(name, connection).await? {
         return Err(err.into());
