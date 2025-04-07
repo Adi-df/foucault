@@ -749,7 +749,7 @@ dependencies = [
 
 [[package]]
 name = "foucault"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "anyhow",
  "clap",
@@ -768,7 +768,7 @@ dependencies = [
 
 [[package]]
 name = "foucault-client"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "anyhow",
  "crossterm 0.29.0",
@@ -790,7 +790,7 @@ dependencies = [
 
 [[package]]
 name = "foucault-core"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "colored",
  "serde",
@@ -799,7 +799,7 @@ dependencies = [
 
 [[package]]
 name = "foucault-server"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "anyhow",
  "axum",
