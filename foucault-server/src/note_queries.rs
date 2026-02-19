@@ -19,7 +19,7 @@ pub(crate) async fn create(name: &str, content: &str, connection: &SqlitePool) -
 
     if let Some(err) = validate_name(name, connection).await? {
         return Err(err.into());
-    };
+    }
 
     let id = sqlx::query!(
         "INSERT INTO notes_table (name, content) VALUES ($1, $2) RETURNING id",
@@ -211,7 +211,7 @@ pub(crate) async fn validate_new_tag(
 pub(crate) async fn add_tag(id: i64, tag_id: i64, connection: &SqlitePool) -> Result<()> {
     if let Some(err) = validate_new_tag(id, tag_id, connection).await? {
         return Err(err);
-    };
+    }
 
     sqlx::query!(
         "INSERT INTO tags_join_table (note_id, tag_id) VALUES ($1, $2)",

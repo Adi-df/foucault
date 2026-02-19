@@ -110,7 +110,7 @@ async fn main() {
                     Notebook::new_notebook(name.trim(), &APP_DIR_PATH)
                         .await
                         .pretty_unwrap();
-                };
+                }
                 println!("Notebook {name} was successfully created.");
             }
             Commands::Open { name, port } => {

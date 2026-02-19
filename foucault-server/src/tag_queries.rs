@@ -18,7 +18,7 @@ fn rand_color() -> u32 {
 pub(crate) async fn create(name: String, connection: &SqlitePool) -> Result<Tag> {
     if let Some(err) = validate_name(&name, connection).await? {
         return Err(err.into());
-    };
+    }
 
     let color = rand_color();
     let id = sqlx::query!(

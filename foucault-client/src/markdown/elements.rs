@@ -214,7 +214,7 @@ impl InlineElement for InlineElements {
                         .collect::<String>(),
                 )
                 .style(HYPER_LINK_STYLE),
-                dest: link.url.to_string(),
+                dest: link.url.clone(),
             }],
             mdast::Node::Text(text) => parse_cross_links(text.value.as_str()),
             _ => Vec::new(),

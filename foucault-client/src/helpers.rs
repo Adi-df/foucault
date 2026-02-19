@@ -261,7 +261,7 @@ impl EditableText {
         }
     }
 
-    pub fn build_paragraph(&self) -> Paragraph {
+    pub fn build_paragraph(&self) -> Paragraph<'_> {
         let graphemes: Vec<&str> =
             UnicodeSegmentation::graphemes(self.text.as_str(), true).collect();
 
