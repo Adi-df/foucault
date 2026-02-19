@@ -127,6 +127,12 @@ jobs:
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
             echo "$HOME/.cargo/bin" >> $GITHUB_PATH
           fi
+      - name: "Install just"
+        uses: "extractions/setup-just@v2"
+      - name: "Install SQLx-cli"
+        run: "cargo install sqlx-cli --no-default-features --features sqlite"
+      - name: "Prepare queries"
+        run: "just prepare-queries"
       - name: Install dist
         run: ${{ matrix.install_dist.run }}
       # Get the dist-manifest

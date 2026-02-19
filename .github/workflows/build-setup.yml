@@ -1,6 +1,6 @@
 # This file is used by cargo-dist to prepare SQLx compile-time queries
-
-- uses: extractions/setup-just@v2
+- name: Install just
+  uses: extractions/setup-just@v2
 - name: Install SQLx-cli
   run: cargo install sqlx-cli --no-default-features --features sqlite
 - name: Prepare queries
