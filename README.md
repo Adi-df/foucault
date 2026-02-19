@@ -12,7 +12,7 @@ Note : Demo made using the [Helix](https://github.com/helix-editor/helix) editor
 Thanks to [cargo-dist](https://github.com/axodotdev/cargo-dist), an installer script exists to install foucault with just one command.
 
 ```sh
-curl --proto '=https' --tlsv1.2 -LsSf https://github.com/Adi-df/foucault/releases/download/v0.3.3/foucault-installer.sh | sh
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/Adi-df/foucault/releases/download/v0.3.5/foucault-installer.sh | sh
 ```
 
 ## Binaries
